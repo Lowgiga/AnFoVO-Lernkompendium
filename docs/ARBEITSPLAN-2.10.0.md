@@ -50,6 +50,13 @@ Backup + SHA-256 (`backups/2026-11-16_abschluss/`, 94 Dateien).
 
 ## 5. Nachweis – erbracht (16.11.2026)
 
+- **GitHub-Push (16.11.2026, komplett):** Remote `origin` =
+  `https://github.com/Lowgiga/AnFoVO-Lernkompendium.git`; lokaler `main` liegt dort auf dem
+  Branch `android-wrapper-2.10.0` (HEAD `6816d55`), Tags `v2.10.0` und `v2.9.5-baseline`
+  gepusht. Das entfernte `main` ist eine getrennte Historie (Standalone-PWA-Variante) und
+  wurde bewusst nicht überschrieben – Zusammenführung beim Betreiber (PR-Vorschlag:
+  `…/pull/new/android-wrapper-2.10.0`).
+
 - **Build:** `.\build-debug.ps1` → drei ABIs (arm64-v8a, universal, x86_64), je 4.284.397 Bytes,
   SHA256 `575D6689…`, Signatur OK; Assets Quelle ↔ Merge identisch; zusätzlich **alle sieben
   Text-Assets** aus dem fertigen APK entpackt und mit den Quellen verglichen (identisch);

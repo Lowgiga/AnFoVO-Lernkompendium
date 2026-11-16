@@ -163,6 +163,14 @@ drei Darstellungszuständen gemessen und müssen ≥ 4,5:1 bleiben (hell wie dun
   Git liegt unter `C:\Program Files\Git\cmd\git.exe` und ist **nicht** im PATH – Aufrufe mit
   vollem Pfad. `.gitignore` ignoriert `build/`, `.gradle/`, `*.apk`, `local.properties` und
   `backups/`.
+- **GitHub:** Remote `origin` = `https://github.com/Lowgiga/AnFoVO-Lernkompendium.git`.
+  Der lokale `main` liegt dort auf dem Branch **`android-wrapper-2.10.0`** (HEAD `6816d55`),
+  nachverfolgt mit `git push -u origin main:refs/heads/android-wrapper-2.10.0`; Tags
+  `v2.10.0` und `v2.9.5-baseline` sind ebenfalls gepusht.
+  **Wichtig:** Das entfernte `main` (`1baa119`) ist eine **getrennte Projekthistorie**
+  (Standalone-PWA-Variante, u. a. Tags `v2.9.2`/`v2.9.4`) – es wurde **bewusst nicht**
+  überschrieben. Ein Force-Push wäre Datenverlust; die Zusammenführung liegt beim Betreiber
+  (Pull-Request-Vorschlag: `…/pull/new/android-wrapper-2.10.0`).
   Die Baseline enthielt versehentlich noch 1263 Dateien (u. a. 1058 aus `app/build/` und die
   APKs); seit der Bereinigung sind **95 Dateien** versioniert (Stand 2.10.0 inklusive
   `docs/ARBEITSPLAN-2.10.0.md`) – ausschließlich Quellen und Dokumentation.

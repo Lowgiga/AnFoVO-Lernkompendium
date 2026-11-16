@@ -113,8 +113,13 @@ Neu: Offline-Kern (V1), Manifest-Farbe (V2), Versionsgleichheit (V4), `window.KO
   Projekt-Wrapper `.\gradlew.bat`, prüft die Signatur aller drei ABIs und vergleicht die
   Web-Assets zwischen Quelle und Merge-Verzeichnis – genau das nachgewiesen funktionierende
   Verfahren.
-- **Kein GitHub-Remote konfiguriert.** Das Repository ist rein lokal (Commit `b8079eb`,
-  `e59ade3`). Für eine Veröffentlichung fehlt noch die Entscheidung über die Gegenstelle.
+- **GitHub-Anbindung hergestellt (16.11.2026).** Remote `origin` =
+  `https://github.com/Lowgiga/AnFoVO-Lernkompendium.git`. Das dortige `main` tragt eine
+  **getrennte Historie** (Standalone-PWA-Variante mit eigener Versionslinie bis v2.9.5 und
+  eigenen Tags `v2.9.2`/`v2.9.4`); ein Überschreiben wäre Datenverlust gewesen. Deshalb liegt
+  der lokale Stand vollständig auf dem Branch **`android-wrapper-2.10.0`** (HEAD `6816d55`),
+  Tags `v2.10.0` und `v2.9.5-baseline` sind mitgepusht. Die Entscheidung über die
+  Zusammenführung (Pull-Request oder Force-Push) bleibt beim Betreiber.
 
 Korrekturen und Absicherung aus Phase 0 (Refactoring/Qualitätssicherung) vor Beginn von Phase 1.
 Dieser Arbeitsstand ist ab **[2.10.0]** (versionCode 296) ausgeliefert – der Eintrag dort
