@@ -33,8 +33,8 @@ AnFoeVO_AndroidWrapper_v2.9.1/
 ├─ app/src/main/java/de/omega/lernkompendium/MainActivity.java   WebView + JS-Bridge
 ├─ app/src/main/AndroidManifest.xml
 ├─ app/build.gradle               versionCode 295, versionName '2.9.5'
-├─ build-debug.ps1                Build-Hilfsskript
-├─ README-ANDROID.md              dieses Dokument
+├─ build-debug.ps1                Build- und Prüfskript (JDK/SDK selbst ermittelnd)
+├─ README.md                      dieses Dokument
 ├─ CHANGELOG.md                   Änderungsgeschichte
 ├─ docs/api-snapshot.txt          Regressionsvergleich (window.KOMP, CSS-Tokens, Keys)
 ├─ docs/TESTPROTOKOLL.md          Build-/Testnachweise, offene Punkte

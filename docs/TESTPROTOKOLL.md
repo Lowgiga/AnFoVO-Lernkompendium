@@ -42,6 +42,19 @@ zusätzlich die Datei `index.html.broken`; die ist entfernt.
 verglichen – `style.css`, `index.html`, `app.js`, `assistent.js` jeweils **identisch**. Die
 Web-Assets im Paket entsprechen also dem geprüften Arbeitsstand.
 
+**Wiederholungsbau am 16.11.2026:** `.\build-debug.ps1` bzw. `.\gradlew.bat :app:assembleDebug`
+meldet „34 up-to-date" – seit dem Bau `E3FFFEFA…` haben sich nur Dokumentation und das
+Build-Skript geändert, die Quellen unter `app/src/main/assets/` sind unverändert. Die APK-Hashes
+gelten daher unverändert weiter; der Selbsttest auf einem frischen Server (Port 8097) bestätigt
+erneut **99 / 99**.
+
+**Build-Skript korrigiert:** `build-debug.ps1` verwies auf ein SDK-Verzeichnis und eine globale
+Gradle-Installation (`gradle --version`, `gradle` ist auf diesem Rechner **nicht** im PATH) und
+prüfte nur die APK `app-debug.apk`. Das Skript ermittelt jetzt JAVA_HOME und ANDROID_HOME
+selbst (beide SDK-Pfade auf diesem Rechner sind vollständig; `local.properties` fehlt, daher
+entscheidet `ANDROID_HOME`), baut über den Projekt-Wrapper `.\gradlew.bat`, prüft die Signatur
+aller drei ABIs und vergleicht die Web-Assets zwischen Quelle und Merge-Verzeichnis.
+
 ## 4. Browser-Baseline
 
 `http://localhost:8099/index.html` – geprüft nach Wiederherstellung von `style.css`:
@@ -164,7 +177,7 @@ Vorher-Stände in `BACKUP_2026_11_16_Phase1/SHA256SUMS.txt` (78 Dateien, 13,62 M
    bestätigten USB-Debugging-Abfrage; das lässt sich nur am Gerät selbst beheben
    (Bildschirm entsperren, USB-Debugging-Abfrage bestätigen, evtl. Kabel neu anstecken).
    Alle übrigen Nachweise (Build, Selbsttest, Browser-Messungen) sind erbracht.
-2. Offene Punkte V1, V2, V4, V7 aus `README-ANDROID.md` Abschnitt 10 – V3, V5 und V6 sind
+2. Offene Punkte V1, V2, V4, V7 aus `README.md` Abschnitt 10 – V3, V5 und V6 sind
    mit dem Assistenten-Durchgang erledigt (siehe 5.2 und 5.4).
-3. Phase 1 fahrplan gemäß `README-ANDROID.md` Abschnitt 11 (Design-System-Token-Datei,
+3. Phase-1-Fahrplan gemäß `README.md` Abschnitt 11 (Design-System-Token-Datei,
    Theme-Schalter, Kontrast-Wächter, Fokus-Management, Textskalierung).

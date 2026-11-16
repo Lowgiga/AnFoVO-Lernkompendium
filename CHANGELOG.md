@@ -5,6 +5,21 @@ Versionsschema: MAJOR.MINOR.PATCH als `versionName`, dazu ein eigener `versionCo
 
 ## [Unveröffentlicht] – Arbeitsstand 16.11.2026
 
+### Repository in Ordnung gebracht (16.11.2026)
+
+- **Branch umbenannt** `master` → `main` (GitHub-Konvention; rein lokal, kein Remote).
+- **`README-ANDROID.md` → `README.md`** umbenannt: GitHub zeigt standardmäßig `README.md` an, und
+  der Inhalt beschreibt inzwischen das ganze Repository, nicht nur die Android-Hülle. Querverweise
+  in `CHANGELOG.md` und `docs/TESTPROTOKOLL.md` angepasst.
+- **`build-debug.ps1` korrigiert:** Das Skript verlangte eine globale Gradle-Installation
+  (`gradle` ist auf diesem Rechner nicht im PATH), prüfte nur die APK `app-debug.apk` und
+  hinterließ JAVA_HOME/SDK undokumentiert. Es ermittelt jetzt beides selbst, baut über den
+  Projekt-Wrapper `.\gradlew.bat`, prüft die Signatur aller drei ABIs und vergleicht die
+  Web-Assets zwischen Quelle und Merge-Verzeichnis – genau das nachgewiesen funktionierende
+  Verfahren.
+- **Kein GitHub-Remote konfiguriert.** Das Repository ist rein lokal (Commit `b8079eb`,
+  `e59ade3`). Für eine Veröffentlichung fehlt noch die Entscheidung über die Gegenstelle.
+
 Korrekturen und Absicherung aus Phase 0 (Refactoring/Qualitätssicherung) vor Beginn von Phase 1.
 Noch **kein** Versionssprung; die Build-Nummer bleibt 295 / 2.9.5.
 
@@ -56,8 +71,8 @@ Noch **kein** Versionssprung; die Build-Nummer bleibt 295 / 2.9.5.
   `boot` wird zur Laufzeit ergänzt, live 54), 68 CSS-Token-Namen, localStorage-Schlüssel.
   Vergleichsbasis für spätere Regressionsprüfungen.
 - `BACKUP_2026_11_16_Phase1/` – 78 Dateien, 13,62 MB, mit `SHA256SUMS.txt`.
-- `CHANGELOG.md`, `docs/TESTPROTOKOLL.md`, erweiterte `README-ANDROID.md` (Kodierungsfehler in
-  Umlauten der alten Fassung dabei bereinigt).
+- `CHANGELOG.md`, `docs/TESTPROTOKOLL.md`, erweiterte `README.md` (Kodierungsfehler in Umlauten
+  der alten Fassung dabei bereinigt; die Datei hieß vorher `README-ANDROID.md`).
 - Git-Repository mit Baseline-Commit `1637bb5` und Tag `v2.9.5-baseline`; `.gitignore` für
   `build/`, `*.apk`, `local.properties`, `BACKUP_*/`.
 - **Repository bereinigt:** `.gitignore` war in der Baseline versehentlich nicht angelegt
