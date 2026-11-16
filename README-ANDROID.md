@@ -130,10 +130,12 @@ eigener Berechnung nach alle ≥ 4,5:1.
 
 ## 9. Versionierung, Backups, Git
 
-- **Git** ist eingerichtet (Commit `1637bb5` „Baseline v2.9.5 vor Phase 1", Tag `v2.9.5-baseline`,
-  1261 versionierte Dateien). Git liegt unter `C:\Program Files\Git\cmd\git.exe` und ist **nicht**
-  im PATH – Aufrufe mit vollem Pfad. `.gitignore` ignoriert `build/`, `*.apk`, `local.properties`
-  und `BACKUP_*/`.
+- **Git** ist eingerichtet (Commit `1637bb5` „Baseline v2.9.5 vor Phase 1", Tag `v2.9.5-baseline`).
+  Git liegt unter `C:\Program Files\Git\cmd\git.exe` und ist **nicht** im PATH – Aufrufe mit
+  vollem Pfad. `.gitignore` ignoriert `build/`, `*.apk`, `local.properties`, `BACKUP_*/`.
+  Die Baseline enthielt versehentlich noch 1263 Dateien (u. a. 1058 aus `app/build/` und die
+  APKs); seit der Bereinigung sind **94 Dateien** versioniert – ausschließlich Quellen und
+  Dokumentation.
 - **Backups** werden vor jedem destruktiven Schritt angelegt, inklusive `SHA256SUMS.txt`.
 - **Versionslauf:** 2.9.5 (ausgeliefert) → 2.10.0 (Phase 1: Design-System + WCAG) →
   2.11.0 (Phase 2: AI-Lern-Assistent). versionCode 295 → 296 → 297.
