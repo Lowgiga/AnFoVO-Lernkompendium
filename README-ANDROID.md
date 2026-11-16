@@ -21,8 +21,9 @@ aus dem APK-Asset-Verzeichnis geladen. Die Web-Anwendung ist gleichzeitig als PW
 AnFoeVO_AndroidWrapper_v2.9.1/
 ├─ app/src/main/assets/           Web-Anwendung (wird ins APK gepackt)
 │  ├─ index.html                  Shell + 70 Lernseiten + Selbsttest-Block (476 Zeilen)
-│  ├─ style.css                   komplettes Styling, Design-Tokens, Light/Dark (520 Zeilen)
+│  ├─ style.css                   komplettes Styling, Design-Tokens, Light/Dark, Assistent (533 Zeilen)
 │  ├─ app.js                      Programmlogik, Store, Suche, Modi (958 Zeilen)
+│  ├─ assistent.js                Assistent: Hinweise, Lob, Sprache (238 Zeilen, Styling in style.css)
 │  ├─ assistent.js                Assistenten-Blase + Sprachausgabe
 │  ├─ robot-navigation.js         RobotNav: adaptive 3D-Navigation
 │  ├─ sw.js                       Service Worker (cache-first, versioniert)
@@ -118,8 +119,12 @@ Service-Worker-Registrierungen aufheben, `caches.keys()` löschen und die Seite 
 Cache-Buster (`?test=1&nocache=<Zeitstempel>`) neu laden – sonst werden veraltete Dateien
 geliefert.
 
-**Ergebnis vom 16.11.2026:** 95 / 99 bestanden, 1 übersprungen (nur bei Viewport ≥ 1200 px
-messbar), 4 offene Fehlschläge – siehe `docs/TESTPROTOKOLL.md`.
+**Ergebnis vom 16.11.2026:** **99 / 99 bestanden**, 1 übersprungen (nur bei Viewport ≥ 1200 px
+messbar). Einzelfälle und Messwerte in `docs/TESTPROTOKOLL.md`.
+Hinweis für die Wiederholung: Der Service Worker arbeitet cache-first und matcht mit
+`ignoreSearch: true` – ein Cache-Buster wie `?nocache=…` reicht **nicht**. Vor der Messung
+Registrierungen aufheben, `caches.keys()` löschen und notfalls von einem frischen Origin laden,
+sonst werden veraltete Dateien gemessen.
 
 ## 8. Barrierefreiheit
 
@@ -142,21 +147,24 @@ eigener Berechnung nach alle ≥ 4,5:1.
 
 ## 10. Bekannte offene Punkte (Stand 16.11.2026)
 
-| # | Fund | Auswirkung | geplant |
-|---|------|------------|---------|
-| V1 | `sw.js` cached `./style.css` und `./app.js` **nicht** | Styles/Logik nach erstem Start veraltet | W6 |
-| V2 | `manifest.json` `background_color: #f5f6f7` ≠ CSS `--bg: #f4eee3` | Splash-Farbe weicht ab | W6 |
-| V3 | `assistent.js` blendet die Blase bei ≤ 760 px **ganz aus** (Haupt-Smartphone-Format) und injiziert ein eigenes `<style>`-Element | Assistent auf dem Telefon unerreichbar, CSS-Doppelspur | P2-01 |
-| V4 | `DATA.version` ist `"2.7.0"`, `versionName` ist `2.9.5` | Export-/Versionsangabe falsch | W6 |
-| V5 | `anfoevo_assistent` ohne Präfix `anfoevo_v2_` | Speicherschlüssel-Inkonsistenz | P1 |
-| V6 | Assistenten-Schaltflächen nur 26 px hoch | Touch-Ziel < 44 px | P1-05 |
-| V7 | `window.KOMP` wird zweimal gesetzt: Literal (Z. 758) und `.boot` (Z. 746/755 in `init()`) | API nur deshalb vollständig, weil `init()` danach läuft – fragil | W6 |
+| # | Fund | Auswirkung | Stand |
+|---|------|------------|-------|
+| V1 | `sw.js` cached `./style.css` und `./app.js` **nicht** | Styles/Logik nach erstem Start veraltet | offen (W6) |
+| V2 | `manifest.json` `background_color: #f5f6f7` ≠ CSS `--bg: #f4eee3` | Splash-Farbe weicht ab | offen (W6) |
+| V3 | `assistent.js` blendete die Blase bei ≤ 760 px **ganz aus** und injizierte ein eigenes `<style>`-Element | Assistent auf dem Telefon unerreichbar, CSS-Doppelspur | **behoben 16.11.2026** |
+| V4 | `DATA.version` ist `"2.7.0"`, `versionName` ist `2.9.5` | Export-/Versionsangabe falsch | offen (W6) |
+| V5 | `anfoevo_assistent` ohne Präfix `anfoevo_v2_` | Speicherschlüssel-Inkonsistenz | **behoben 16.11.2026** (mit Migration) |
+| V6 | Assistenten-Schaltflächen nur 26 px hoch | Touch-Ziel < 44 px | **behoben 16.11.2026** (44 px) |
+| V7 | `window.KOMP` wird zweimal gesetzt: Literal (Z. 758) und `.boot` (Z. 746/755 in `init()`) | API nur deshalb vollständig, weil `init()` danach läuft – fragil | offen (W6) |
 
 ## 11. Nächste Schritte
 
 - **Phase 1 (→ 2.10.0):** Design-System-Token-Datei, Theme light/dark/auto, Kontrast-Wächter,
   Fokus-Management, Touch-Ziele & Reflow, Textskalierung, Reduced-Motion-/System-Oszillationen,
-  Semantik/Screenreader-Pass, Typografie-Raster, Inline-Style aus `assistent.js` auslagern.
+  Semantik/Screenreader-Pass, Typografie-Raster.
+  Bereits erledigt (16.11.2026): Touch-Ziele der Assistenten-Schaltflächen (44 px), Auslagerung
+  des Inline-Styles aus `assistent.js` in `style.css`, Speicherschlüssel-Präfix, Erreichbarkeit
+  des Assistenten auf dem Smartphone.
 - **Phase 2 (→ 2.11.0):** kontextbewusster, lokal regelbasierter Lern-Assistent (Chat-Panel als
   Bottom-Sheet, Slash-Befehle, Fehleranalyse, adaptiver Quiz, Lernziel-Modus, Sprachdialog,
   RobotNav-Anbindung).

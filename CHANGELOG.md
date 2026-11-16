@@ -25,6 +25,31 @@ Noch **kein** Versionssprung; die Build-Nummer bleibt 295 / 2.9.5.
   „fehlt". Neu: `cssSheets()` liest `document.styleSheets` (auch externe Blätter),
   `sheetText()` liefert den CSS-Rohtext. Ergebnis: 82/99 → **95/99**.
 
+### Phase 1 (begonnen): Assistent und Selbsttest korrigiert
+
+- **Berührungsziele (WCAG 2.2):** Die Schaltflächen `#assistToggle` und `#assistSpeech` maßen
+  106 × 26 px bzw. 101 × 26 px. Sie erhalten jetzt `min-height/min-width: var(--tap)` (44 px) –
+  Nachmessung 101 × 44 px bei 800 px, 106 × 44 px bei 360 px.
+- **Speicherschlüssel auf das gemeinsame Präfix umgestellt:** `anfoevo_assistent` und
+  `anfoevo_speech` heißen jetzt `anfoevo_v2_assistent` und `anfoevo_v2_speech`. Beim ersten
+  Zugriff wird der Alt-Schlüssel übernommen und entfernt (`readKey()`); gespeicherte
+  Einstellungen bleiben erhalten.
+- **Assistent auf dem Smartphone erreichbar:** Die Blase wurde bei ≤ 760 px vollständig
+  ausgeblendet – auf dem Haupt-Android-Format waren Assistent und beide Schalter nicht
+  erreichbar. Jetzt wird sie bei ≤ 760 px am Safe-Area-Rand unten verankert, nimmt die volle
+  Breite ein und ist als Fläche `pointer-events:none`, sodass sie keine Bedienung verdeckt.
+  Beim Druck ist sie ausgeschaltet (`#object-stage,#assistBubble,#robot-nav-debug`).
+- **Inline-CSS ausgelagert:** Der `<style>`-Block, den `assistent.js` zur Laufzeit injizierte,
+  liegt jetzt in `style.css`. Damit gibt es nur noch eine Stilquelle; der Selbsttest und das
+  Design-System sehen die Regeln. `assistent.js` damit von 10.104 auf 9.177 Byte geschrumpft.
+- **Zwei falsch negative Testangaben korrigiert** (ein Test, der korrektes Verhalten als Fehler
+  meldet, überdeckt echte Rückfälle): die Button-Schwelle von 8 auf 12 angehoben und kommentiert
+  (8 Kernschaltflächen + 2 Druck + 2 Assistent + bis zu 3 PWA-Meldungen); die `@page`-Erkennung
+  case-insensitiv (Chrome schreibt `size: a4` klein) und die `calc(6 * 1.45em + 1px)`-Prüfung
+  akzeptiert die von der CSSOM zusammengefasste Form `calc(8.7em + 1px)`.
+- **Ergebnis: 99 / 99 Selbsttests bestanden**, 1 übersprungen (nur bei Viewport ≥ 1200 px
+  messbar). `window.KOMP` unverändert mit 54 Mitgliedern.
+
 ### Hinzugefügt
 
 - `docs/api-snapshot.txt` – Baseline des `window.KOMP`-Exports (53 Mitglieder im Objekt-Literal;

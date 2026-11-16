@@ -11,36 +11,31 @@
   var stage = document.getElementById('object-stage');
   if (!stage) return;
 
-  var STORE = 'anfoevo_assistent', SPEECH = 'anfoevo_speech';
-  function store(k, d) { try { var v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } }
+  /* Schluessel folgen dem Praefix anfoevo_v2_ wie der Hauptstore; Alt-Schluessel werden
+     einmalig uebernommen und anschliessend entfernt. */
+  var STORE = 'anfoevo_v2_assistent', SPEECH = 'anfoevo_v2_speech';
+  var STORE_ALT = 'anfoevo_assistent', SPEECH_ALT = 'anfoevo_speech';
+  function readKey(k, alt) {
+    var v = null;
+    try { v = localStorage.getItem(k); } catch (e) { v = null; }
+    if (v === null && alt) {
+      try {
+        var old = localStorage.getItem(alt);
+        if (old !== null) { try { localStorage.setItem(k, old); localStorage.removeItem(alt); } catch (e2) {} }
+        v = old;
+      } catch (e) {}
+    }
+    return v;
+  }
+  function store(k, alt, d) { var v = readKey(k, alt); return v === null ? d : v; }
   function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
-  var on = store(STORE, 'ein') === 'ein';
-  var speak = store(SPEECH, 'aus') === 'ein';
+  var on = store(STORE, STORE_ALT, 'ein') === 'ein';
+  var speak = store(SPEECH, SPEECH_ALT, 'aus') === 'ein';
 
   function q(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
 
-  /* ---------- CSS (token-basiert, eigener Style-Block) ---------- */
-  var style = document.createElement('style');
-  style.id = 'assistent-style';
-  style.textContent =
-    '#assistBubble{position:fixed;right:max(18px,calc((100vw - 1240px)/2));bottom:calc(5vh + clamp(230px,34vh,360px) + 14px);' +
-    'width:clamp(220px,24vw,300px);background:var(--card,#fff);color:var(--ink,#222);border:1px solid var(--line,#ddd);' +
-    'border-radius:var(--r,10px);box-shadow:var(--shadow-lg,0 8px 24px rgba(24,43,32,.12));padding:.6rem .7rem;' +
-    'font-size:.8125rem;line-height:1.35;z-index:60;opacity:0;transform:translateY(6px);' +
-    'transition:opacity .22s ease,transform .22s ease;pointer-events:none;max-width:calc(100vw - 2rem)}' +
-    '#assistBubble.show{opacity:1;transform:none;pointer-events:auto}' +
-    '#assistBubble .ab-text{margin:0 0 .35rem;overflow-wrap:anywhere}' +
-    '#assistBubble .ab-actions{display:flex;gap:.4rem;flex-wrap:wrap}' +
-    '#assistBubble button{border:1px solid var(--field,#ccc);background:var(--card,#fff);color:var(--ink,#222);' +
-    'border-radius:var(--r-sm,3px);font:inherit;font-size:.75rem;padding:.25rem .5rem;cursor:pointer;touch-action:manipulation}' +
-    '#assistBubble button:focus-visible{outline:3px solid var(--focus,#a94738);outline-offset:2px}' +
-    '#object-stage[data-assist="hint"] .robot-status{background:#e6c86e;box-shadow:0 0 10px #e6c86e;animation:assistBlink 1s ease-in-out 3}' +
-    '#object-stage[data-assist="celebrate"] .robot-status{background:#2ecc71;box-shadow:0 0 12px #2ecc71}' +
-    '@keyframes assistBlink{50%{opacity:.2}}' +
-    '@media(max-width:760px){#assistBubble{display:none}}' +
-    '@media(prefers-reduced-motion:reduce){#assistBubble{transition:none}#object-stage[data-assist] .robot-status{animation:none}}';
-  document.head.appendChild(style);
+  /* Styling liegt in style.css (#assistBubble, Mood-LEDs) - kein Inline-Style mehr. */
 
   /* ---------- Bubble ---------- */
   var bubble = document.createElement('div');
