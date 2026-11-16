@@ -1,7 +1,7 @@
 # Testprotokoll – Lern-Kompendium § 8 AnFöVO NRW
 
-Stand: 16.11.2026 · Bezug: v2.9.5 (versionCode 295) · Phase 0 (Refactoring/QS) abgeschlossen,
-Phase 1 noch nicht begonnen.
+Stand: 16.11.2026 · Bezug: v2.10.0 (versionCode 296) · Phase 0 (Refactoring/QS) **und** Phase 1
+(Design-System + WCAG 2.2 AA) abgeschlossen; alle gemeldeten Defekte V1–V7 geschlossen.
 
 ## 1. Verifikationsgrundsatz
 
@@ -17,7 +17,7 @@ Ein erfolgreicher Build belegt nur die Kompilierbarkeit. Aussagefähig für die 
 |-------|----------|
 | Java-Build | `C:\Tools\jdk-21\jdk-21.0.13+9` (JDK 21), Gradle 8.13 / AGP 8.13.2 |
 | Android SDK | `C:\Android`, Platform 36, Build Tools 35.0.0 |
-| Lokaler Webserver | `jwebserver.exe` (JDK 21), Port 8099, Dokumentwurzel `app/src/main/assets` |
+| Lokaler Webserver | `jwebserver.exe` (JDK 21), Port 8099 (Vorlauf) bzw. 8096 (Lauf 2.10.0, frisches Origin), Dokumentwurzel `app/src/main/assets` |
 | Browser | Chromium (Edge/Chrome) mit Entwicklerkonsole |
 | Gerät | Samsung SM_S931B (echtes Gerät), `adb install -r`, `logcat`, `screencap` |
 | Versionsverwaltung | `C:\Program Files\Git\cmd\git.exe` (nicht im PATH) |
@@ -30,6 +30,7 @@ Zwei Aufbauten nachvollziehbar:
 |-------|-----|-------|---------|
 | Baseline (vor den Korrekturen) | app-universal-debug | 4.264.711 | `9FE03490E0AA5D4C32B6B1043BE4D6CCDCF7E79D5F15AED0C36EF214F088E2B5` |
 | nach Phase 0 + Assistent/Tests | app-universal-debug | 4.266.577 | `E3FFFEFAA61C1696B09E1EEC7CCFB961A45B217848A74D30FFD8D23AE7BDB482` |
+| **2.10.0 (Phase-1-Abschluss)** | app-universal-debug | 4.284.397 | `4C2B7A42260D8DEA8049E7C0ECED0B5BBD06F4C017C784C0FEAFD6DEDE96E8DF` |
 
 Alle drei Varianten (`arm64-v8a`, `universal`, `x86_64`) tragen jeweils denselben Hash.
 Größenzunahme +1.866 Bytes gegenüber der Baseline = wiederhergestellter CSS-Umfang,
@@ -41,6 +42,11 @@ zusätzlich die Datei `index.html.broken`; die ist entfernt.
 (`app/build/intermediates/assets/debug/mergeDebugAssets/`) wurden per SHA-256 mit den Quellen
 verglichen – `style.css`, `index.html`, `app.js`, `assistent.js` jeweils **identisch**. Die
 Web-Assets im Paket entsprechen also dem geprüften Arbeitsstand.
+
+**Zustandskontrolle 2.10.0 (weitergehend):** Zusätzlich zum Merge-Vergleich wurden **alle sieben
+Text-Assets** aus dem fertigen APK entpackt und mit den Quellen verglichen – `index.html`,
+`style.css`, `app.js`, `assistent.js`, `robot-navigation.js`, `sw.js`, `manifest.json` jeweils
+**identisch**. `aapt2 dump badging` bestätigt `versionCode='296' versionName='2.10.0'`.
 
 **Wiederholungsbau am 16.11.2026:** `.\build-debug.ps1` bzw. `.\gradlew.bat :app:assembleDebug`
 meldet „34 up-to-date" – seit dem Bau `E3FFFEFA…` haben sich nur Dokumentation und das
@@ -71,11 +77,17 @@ aller drei ABIs und vergleicht die Web-Assets zwischen Quelle und Merge-Verzeich
 Aufruf: `http://localhost:8099/index.html?test=1` (Query-Parameter nötig; ein reiner
 `#selftest`-Hash lädt die Seite nicht neu).
 
-| | Start | nach Phase 0 | nach Phase 1 (Assistent/Tests) |
-|---|---|---|---|
-| bestanden | 82 / 99 | 95 / 99 | **99 / 99** |
-| übersprungen | 1 | 1 | 1 |
-| Fehlschläge | 18 | 4 | 0 |
+| | Start | nach Phase 0 | nach Phase 1 (Assistent/Tests) | **nach 2.10.0 (Phase 1 abgeschlossen)** |
+|---|---|---|---|---|
+| bestanden | 82 / 99 | 95 / 99 | **99 / 99** | **106 / 106** |
+| übersprungen | 1 | 1 | 1 | 1 |
+| Fehlschläge | 18 | 4 | 0 | 0 |
+
+Der Lauf vom 16.11.2026 erfolgte auf einem **frischen Origin** (jwebserver, Port 8096) – genau das
+im Protokoll beschriebene Verfahren gegen den cache-first-Service-Worker. Ergebnis:
+**106 / 106 bestanden**, 1 übersprungen („Desktop: Kopfzeileninhalt auf 90ch begrenzt und
+zentriert", nur bei Viewport ≥ 1200 px messbar). Konsolenmeldungen: nur der bekannte
+Chromium-Hinweis auf `navigator.vibrate` ohne Nutzer-Tap (Richtlinienhinweis, kein App-Fehler).
 
 Vergleich zulässig: Die 18 Altfehlschläge waren überwiegend eine Folge der CSS-Auslagerung
 (Phase 0) – der Selbsttest suchte die Regeln im Inline-`<style>`, das es nicht mehr gab.
@@ -150,25 +162,53 @@ Zusätzlich ist `#assistBubble` in die bestehende Druckregel
 (`#object-stage,#assistBubble,#robot-nav-debug{display:none!important}`) aufgenommen, damit die
 Blende nicht auf dem A4-Arbeitsblatt landet.
 
-## 6. Prüfsummen (Stand nach Phase-0- und Assistenten-Korrekturen)
+### 5.5 Neu in 2.10.0 (Phase-1-Abschluss): sieben zusätzliche Prüfungen
+
+1. **Offline-Kern** – `sw.js` nennt `./style.css` und `./app.js` im Cache-Kern (V1). Gemessen
+   wird der ausgelieferte `sw.js`-Text (synchrones XMLHttpRequest; nur über http(s) prüfbar,
+   sonst übersprungen).
+2. **Startbild-Farbe** – `manifest.json` `background_color` = Licht-Token `--bg` (`#f4eee3`),
+   `theme_color` = `--hdr` (V2).
+3. **Versionsgleichheit** – `DATA.version` = Manifest-Version = Titel-Kennung (V4); alle drei
+   stehen auf `2.10.0`.
+4. **`window.KOMP`** – genau eine Zuweisung, 53 Mitglieder + `boot` = 54, kein Name gegenüber
+   `docs/api-snapshot.txt` entfernt (V7). Der Test prüft namentlich alle 53 Vergleichsnamen.
+5. **Darstellung** – der Menüknopf cycling Automatik → Hell → Dunkel → Automatik; `data-theme`
+   schaltet die Token wirksam um (`--bg`: `#f4eee3` hell / `#14181d` dunkel); die dunkle Regel
+   liegt in `@media screen` (Druck bleibt hell); `forced-colors`-Regel vorhanden; die Wahl wird
+   in `S.prefs.theme` gespeichert (mit Sicherung wandernd).
+6. **Kontrast-Wächter** – 13 Text-Tokenpaare, je in Automatik, Hell und Dunkel ≥ 4,5:1.
+   *Hinweis zum Messverfahren:* die erste Fassung maß über Inline-`var()` und ergab in der
+   Prüfumgebung transparente Hintergründe (ein Pseudomesswert von 1,00 bei `#000/--mark` deckte
+   das auf). Gemessen werden jetzt die **aufgelösten** Token-Werte – alle 39 Messungen bestehen.
+7. **Skip-Link** – erstes Element der Seite, Ziel `#maincontent`, `:focus`-Regel mit
+   Positionswechsel vorhanden.
+
+Zusätzlich verifiziert (nicht als Prüfung, sondern im Browser-Lauf): die Darstellungswahl
+übersteht ein Neuladen (lokaler Speicher), `meta name="theme-color"` folgt der Wahl
+(`#14181d` in Dunkel).
+
+## 6. Prüfsummen (Stand 2.10.0, 16.11.2026)
 
 | Datei | Bytes | SHA-256 |
 |-------|-------|---------|
-| `assets/index.html` | 490.523 | `803B8A09E639A000C0A36B02C4949C39CC3A644701EEE07754AFA2D6AAD2137D` |
-| `assets/style.css` | 57.685 | `AA23E2664970A112EE8FBBA937617B21218C73EC0CA40979E070C57E9655D05B` |
-| `assets/app.js` | 81.625 | `A98DBB2BECBC98DE64EA155E1104371BEA07130BB224A0D6AB2A7254B22DBC5F` |
+| `assets/index.html` | 496.759 | `3CF879A1E3A93D7D97B7CA707BE49968DB3248493E58563B25BA99612850DAD3` |
+| `assets/style.css` | 59.542 | `7BD0C7691A1CA50019210ADDF5A21F212014CF268A02ABC491A717F60442E43A` |
+| `assets/app.js` | 83.325 | `E282D0F717A6608852CBBB00A07D9BD45500D686C6BC455179DE6DF7E0443C93` |
 | `assets/assistent.js` | 9.177 | `80553AF403FE4327F46812A0B0345B36110DB239DAB1C7DA0F4013687919D79D` |
 | `assets/robot-navigation.js` | 22.263 | `A9424CABE94BD87B17B5DB67D9F42CC72DDD060F6BC7871E95772B1208DEA057` |
-| `assets/sw.js` | 2.555 | `32F5F7D318039F97FE3F1F6C473C63F86EC76910921861816F5BA641F5528DBC` |
-| `assets/manifest.json` | 774 | `C7947A54C6D934900D3B4D1E5D801ACD287F3B8106624EA8E274315A03DEB85E` |
+| `assets/sw.js` | 2.734 | `4B80A21085551AB6D078806E68D4D5BD99BAA915792771F1983B3AB08045B1F2` |
+| `assets/manifest.json` | 775 | `29A984DAF209E3B0554CD303E00862669D5B97CA12074339DB6E1386E515D574` |
 
 **API-Regressionskontrolle:** `window.KOMP` weiterhin **54 Mitglieder** (53 im Objekt-Literal +
 `boot` aus `init()`), `window.RobotNav` vorhanden, 70 Lernseiten. Kein Mitglied entfernt oder
-umbenannt – Vergleichsbasis `docs/api-snapshot.txt`.
+umbenannt – Vergleichsbasis `docs/api-snapshot.txt`. Die Konsole des Browser-Laufs meldet
+`Object.keys(window.KOMP).length === 54`.
 
-Vorher-Stände in `BACKUP_2026_11_16_Phase1/SHA256SUMS.txt` (78 Dateien, 13,62 MB).
+Vorher-Stände in `BACKUP_2026_11_16_Phase1/SHA256SUMS.txt` (78 Dateien, 13,62 MB) und
+`BACKUP_2026_11_16_Abschluss/SHA256SUMS.txt` (94 Dateien, Stand vor 2.10.0).
 
-## 7. Noch offene Arbeitspunkte
+## 7. Noch offene Arbeitspunkte (Stand 2.10.0)
 
 1. **Gerätelauf auf SM_S931B** (Install, `logcat`, `screencap`): Derzeit nicht ausführbar.
    `adb devices` zeigt kein Gerät, obwohl Windows das Telefon sieht
@@ -177,7 +217,8 @@ Vorher-Stände in `BACKUP_2026_11_16_Phase1/SHA256SUMS.txt` (78 Dateien, 13,62 M
    bestätigten USB-Debugging-Abfrage; das lässt sich nur am Gerät selbst beheben
    (Bildschirm entsperren, USB-Debugging-Abfrage bestätigen, evtl. Kabel neu anstecken).
    Alle übrigen Nachweise (Build, Selbsttest, Browser-Messungen) sind erbracht.
-2. Offene Punkte V1, V2, V4, V7 aus `README.md` Abschnitt 10 – V3, V5 und V6 sind
-   mit dem Assistenten-Durchgang erledigt (siehe 5.2 und 5.4).
-3. Phase-1-Fahrplan gemäß `README.md` Abschnitt 11 (Design-System-Token-Datei,
-   Theme-Schalter, Kontrast-Wächter, Fokus-Management, Textskalierung).
+2. **Phase 2 (→ 2.11.0):** Lern-Assistent – Fahrplan in `README.md` Abschnitt 11. Kein
+   Code-Defekt, sondern die nächste Leistungsbeschreibung.
+3. Die Punkte V1–V7 aus `README.md` Abschnitt 10 sind **alle geschlossen** (siehe 5.5);
+   die Design-Token bewusst in `style.css` belassen (Begründung im Arbeitsplan
+   `docs/ARBEITSPLAN-2.10.0.md`).

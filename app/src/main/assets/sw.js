@@ -2,11 +2,12 @@
    Relative URLs stay valid under the GitHub Pages project subpath
    /AnFoVO-Lernkompendium/ and under the Android asset-loader origin.
    VERSION/BUILD change when the cached shell changes. */
-var VERSION = '2.9.5';
-var BUILD = 'web-pwa-2.9.5';
+var VERSION = '2.10.0';
+var BUILD = 'web-pwa-2.10.0';
 var CACHE = 'anfoevo_v2_cache_' + VERSION + '-' + BUILD;
-/* Kern: muss vollständig sein (addAll) */
-var ASSETS = ['./', './index.html', './manifest.json', './robot-navigation.js', './assistent.js', './icon-192.png', './icon-512.png', './icon-512-maskable.png'];
+/* Kern: muss vollständig sein (addAll). v2.10.0 (V1): style.css und app.js gehören in den
+   Offline-Kern – ohne sie lieferte der Cache nach dem ersten Start alte Stile und alte Logik. */
+var ASSETS = ['./', './index.html', './style.css', './app.js', './manifest.json', './robot-navigation.js', './assistent.js', './icon-192.png', './icon-512.png', './icon-512-maskable.png'];
 /* Hintergrundbilder: einzeln, ein fehlendes Bild kippt die Offline-Installation nicht (B-02) */
 var EXTRA = [];
 /* Hintergrund-Bildsequenz (Buch): beide Größen offline verfügbar */

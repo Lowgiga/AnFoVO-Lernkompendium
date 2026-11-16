@@ -3,6 +3,79 @@
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/) – angepasst an dieses Projekt.
 Versionsschema: MAJOR.MINOR.PATCH als `versionName`, dazu ein eigener `versionCode`.
 
+## [2.10.0] – versionCode 296 (Phase 1 abgeschlossen: Design-System + WCAG 2.2 AA)
+
+*Auslieferungsstand 16.11.2026. Build: `.\build-debug.ps1` → drei ABIs, je 4.284.397 Bytes,
+SHA256 `4C2B7A42260D8DEA8049E7C0ECED0B5BBD06F4C017C784C0FEAFD6DEDE96E8DF`, Signatur OK;
+Assets im Paket identisch mit den Quellen (Entpack-Vergleich). Selbsttest: 106/106 bestanden,
+1 übersprungen.
+Dieser Eintrag nimmt den unten stehenden Arbeitsstand „[Unveröffentlicht]" (Repository/Build-Skript)
+mit auf – er ist erstmals Teil einer ausgelieferten Version.*
+
+### Darstellung: Automatik / Hell / Dunkel
+
+- **Manuelle Umschaltung** unter „☰ Mehr → 🌗 Darstellung" (Automatik → Hell → Dunkel →
+  Automatik). Vorher folgte die App nur dem System (`prefers-color-scheme`); jetzt lässt sich
+  Hell oder Dunkel dauerhaft wählen. Die Wahl liegt in `S.prefs.theme` und reist mit der Sicherung
+  (Sicherung speichern/laden) mit.
+- **`style.css`:** die dunklen Token zusätzlich als eigene Regel `:root[data-theme="dunkel"]`
+  (in `@media screen`, damit der Druck hell bleibt); die beiden System-Dunkel-Regeln sind auf
+  `:not([data-theme="hell"])` geschrieben, eine manuelle Hell-Wahl gewinnt also gegen einen
+  dunklen Systemmodus. Die Druck-Regel wurde auf `html:root,html:root[data-theme]` angehoben,
+  damit Druck auch bei manuellem Dunkel hell bleibt.
+- **Kein Farblitz:** ein kurzes Skript im `<head>` setzt die gespeicherte Wahl vor dem ersten
+  Stil-Aufbringen; ohne Speicher (z. B. `file://`) fällt es auf Automatik zurück.
+- **`meta name="theme-color"`** folgt jetzt ebenfalls der Wahl (hell `#294b3d`, dunkel `#14181d`).
+
+### Windows-Hohe-Kontraste (forced-colors)
+
+- `@media (forced-colors:active)`: Token auf Systemfarben (Canvas/CanvasText/LinkText/
+  ButtonFace/ButtonText/Highlight), dekorative 3D-Szene und Hintergrund ausgeblendet.
+  Das README hatte diese Verträglichkeit bisher ohne Grundlage behauptet – sie existiert jetzt.
+
+### Kontrast-Wächter (neuer Selbsttest)
+
+- 13 Text-Tokenpaare (u. a. `--ink/--bg`, `--btnfg/--btnbg`, `--accfg/--acc`, `--warnfg/--warnbg`,
+  `--ok/--okbg`, `--red/--redbg`, `--brand/--card`, `#fff/--hdr`, `#000/--mark`) werden in
+  **Automatik, Hell und Dunkel** gemessen und müssen ≥ 4,5:1 bleiben. Gemessen werden diesmal
+  aufgelöste Token-Werte – die frühere Messung über Inline-`var()` war unzuverlässig.
+
+### Defekte geschlossen (V1, V2, V4, V7 – aus README Abschnitt 10)
+
+- **V1 – Offline-Kern unvollständig:** `sw.js` nimmt jetzt `./style.css` und `./app.js` in den
+  Cache-Kern auf. Folgefehler behoben: Nach dem ersten Start lieferte der Service Worker
+  cache-first alte Stile und alte Logik aus. Cache-Version auf 2.10.0 gezogen
+  (`anfoevo_v2_cache_2.10.0-web-pwa-2.10.0`).
+- **V2 – Startbild-Farbe:** `manifest.json background_color` ist jetzt `#f4eee3` (= Token
+  `--bg`, hell), vorher `#f5f6f7`. `theme_color` blieb `#294b3d` (= `--hdr`). Beides wird vom
+  Selbsttest überwacht.
+- **V4 – Versionsangabe:** `DATA.version` ist jetzt `"2.10.0"` (vorher `"2.7.0"`); der Selbsttest
+  vergleicht DATA-, Manifest- und Titel-Version auf Gleichheit.
+- **V7 – `window.KOMP` doppelt gesetzt:** Ein einziges `var API = {…}` entsteht vor `init()`,
+  `init()` hängt nur noch `boot` an dieselbe Instanz; `window.KOMP = API` wird genau einmal
+  zugewiesen. Unverändert: 53 Mitglieder + `boot` = 54 – kein Name entfernt oder umbenannt
+  (Vergleich `docs/api-snapshot.txt`, nun als Selbsttest hinterlegt).
+
+### Selbsttest: 99 → 106 Prüfungen
+
+Neu: Offline-Kern (V1), Manifest-Farbe (V2), Versionsgleichheit (V4), `window.KOMP`-Schnittstelle
+(V7), Darstellungsumschaltung mit Token-Wirkung, Kontrast-Wächter, Skip-Link. Alle bisherigen
+99 Prüfungen bleiben unverändert und grün.
+
+### Version 2.10.0 / versionCode 296
+
+`app/build.gradle`, `index.html` (Titel, Fußzeile), `app.js` (`DATA.version`), `sw.js`
+(VERSION/BUILD), `manifest.json` – alle Versionsangaben abgeglichen.
+
+### Aufgeräumt
+
+- Menüknopf „🌗 Darstellung: Automatik" ergänzt (im Mehr-Menü, 44-px-Berührungsziel wie alle
+  `.mi`).
+- `docs/ARBEITSPLAN-2.10.0.md` – Plan und Abstimmung des Phase-1-Abschlusses.
+- `BACKUP_2026_11_16_Abschluss/` – 94 Dateien mit `SHA256SUMS.txt` vor den Änderungen.
+
+---
+
 ## [Unveröffentlicht] – Arbeitsstand 16.11.2026
 
 ### Repository in Ordnung gebracht (16.11.2026)
@@ -21,7 +94,8 @@ Versionsschema: MAJOR.MINOR.PATCH als `versionName`, dazu ein eigener `versionCo
   `e59ade3`). Für eine Veröffentlichung fehlt noch die Entscheidung über die Gegenstelle.
 
 Korrekturen und Absicherung aus Phase 0 (Refactoring/Qualitätssicherung) vor Beginn von Phase 1.
-Noch **kein** Versionssprung; die Build-Nummer bleibt 295 / 2.9.5.
+Dieser Arbeitsstand ist ab **[2.10.0]** (versionCode 296) ausgeliefert – der Eintrag dort
+beschreibt den Gesamtstand.
 
 ### Behoben
 

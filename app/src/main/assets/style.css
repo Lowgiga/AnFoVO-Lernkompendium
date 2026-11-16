@@ -4,7 +4,7 @@
  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",Arial,sans-serif;
  --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;--r:10px;--r-sm:3px;--r-pill:999px;--tap:44px;--shadow-sm:0 1px 2px rgba(40,30,15,.06);--shadow-md:0 4px 12px rgba(40,30,15,.08);--shadow-lg:0 8px 24px rgba(40,30,15,.10);--shadow-focus:0 0 0 3px rgba(169,71,56,.25);--t-fast:.15s;--t-ui:.22s;--t-emph:.3s;--warn:#8a6a00;--warnbg:#fff7e0;--warnfg:#5a4500;color-scheme:light;
  --le1:#2f5d7c;--le2:#8a5a2b;--le3:#4f6b3a;--le4:#6b4f7a;--le5:#94483f;--le6:#3c6470;--le7:#73601f;--le8:#3f6b5c;--le9:#855066;--le10:#585d6b;--le11:#8a4f2a}
-@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#14181d;--card:#1c2229;--ink:#ece6da;--mut:#b6afa3;--line:#353d46;--soft:#232a32;--brand:#a9c6e8;--brand2:#7fa6d4;--redbg:#3a1d1a;--red:#f2968c;--okbg:#17301e;--ok:#8fd19c;--badbg:#3a1d1a;--field:#8d8678;--focus:#ffc46b;--hdr:#111a24;--mark:#ffd27a;
+@media (prefers-color-scheme:dark){:root:not([data-theme="hell"]){color-scheme:dark;--bg:#14181d;--card:#1c2229;--ink:#ece6da;--mut:#b6afa3;--line:#353d46;--soft:#232a32;--brand:#a9c6e8;--brand2:#7fa6d4;--redbg:#3a1d1a;--red:#f2968c;--okbg:#17301e;--ok:#8fd19c;--badbg:#3a1d1a;--field:#8d8678;--focus:#ffc46b;--hdr:#111a24;--mark:#ffd27a;
  --acc:#e6a47e;--accfg:#1a1410;--btnbg:#a9c6e8;--btnfg:#0f1720;--veil:rgba(16,20,25,.86);
  --le1:#9cbcd6;--le2:#d9b38c;--le3:#b3c99c;--le4:#c6b0d3;--le5:#e3a89f;--le6:#a1c5cd;--le7:#d9c78e;--le8:#a8cdbf;--le9:#dbacc0;--le10:#bcc0ca;--le11:#e2b08e;--warn:#e6c86e;--warnbg:#3a3218;--warnfg:#e6c86e}}
 *{box-sizing:border-box}
@@ -175,7 +175,7 @@ footer a,.linklike{color:var(--mut);text-decoration:underline;cursor:pointer;dis
 /* Druck: A4-Arbeitsblätter, Einträge als Text, leere Felder als Linie, ohne Lösungen */
 @page{size:A4;margin:15mm 14mm}
 @media print{
- :root{color-scheme:light;--bg:#fff;--card:#fff;--ink:#000;--mut:#333;--line:#bbb;--soft:#fff;--brand:#1d3a5f;--brand2:#2b5a86;--field:#000}
+ html:root,html:root[data-theme]{color-scheme:light;--bg:#fff;--card:#fff;--ink:#000;--mut:#333;--line:#bbb;--soft:#fff;--brand:#1d3a5f;--brand2:#2b5a86;--field:#000}
  header,#readprog,#hits,#sclear,#mehrmenu,#printbtn,.curhead,#nores,.savehint,a.openlink,details.loesung,.quizscore,.gap-fb,.etfb,#selftest,#storenote{display:none!important}
  body{background:#fff;color:#000;font-size:11pt}
  .view{display:none!important}#view-heft{display:block!important}
@@ -373,7 +373,17 @@ details.schluessel>summary{cursor:pointer;font-weight:600;min-height:44px;displa
 
 /* ===== v2.7.0: 3D-Lernobjekt, Buchmechanik und Robotik ===== */
 :root{--hdr:#294b3d;--brand:#315b49;--brand2:#47745d;--btnbg:#315b49;--focus:#b94a3b;--acc:#a94738;--accfg:#fff;--green-deep:#203d32;--green-mid:#355b49;--green-light:#6f927d;--red-metal:#a94738;--book-fill:1;--robot-turn:0deg}
-@media(prefers-color-scheme:dark){:root{--hdr:#263f35;--brand:#a8c5b2;--brand2:#7da58e;--btnbg:#6f927d;--btnfg:#101a15;--focus:#e5a08f;--acc:#d36c5b;--accfg:#1a1410;--veil:rgba(13,19,16,.82);--warn:#e6c86e;--warnbg:#2a2412;--warnfg:#e6c86e}}
+@media(prefers-color-scheme:dark){:root:not([data-theme="hell"]){--hdr:#263f35;--brand:#a8c5b2;--brand2:#7da58e;--btnbg:#6f927d;--btnfg:#101a15;--focus:#e5a08f;--acc:#d36c5b;--accfg:#1a1410;--veil:rgba(13,19,16,.82);--warn:#e6c86e;--warnbg:#2a2412;--warnfg:#e6c86e}}
+/* v2.10.0: manuelle Dunkel-Umschaltung (data-theme="dunkel") – die wirksamen Werte des dunklen
+   Systemmodus in einer Regel; @media screen, damit der Druck hell bleibt. Spezifität
+   :root[data-theme] schlägt die light-Grundlage und die v2.7.0-Lichtkorrektur. */
+@media screen{:root[data-theme="dunkel"]{color-scheme:dark;--bg:#14181d;--card:#1c2229;--ink:#ece6da;--mut:#b6afa3;--line:#353d46;--soft:#232a32;--brand:#a9c6e8;--brand2:#7fa6d4;--redbg:#3a1d1a;--red:#f2968c;--okbg:#17301e;--ok:#8fd19c;--badbg:#3a1d1a;--field:#8d8678;--mark:#ffd27a;--btnfg:#0f1720;--le1:#9cbcd6;--le2:#d9b38c;--le3:#b3c99c;--le4:#c6b0d3;--le5:#e3a89f;--le6:#a1c5cd;--le7:#d9c78e;--le8:#a8cdbf;--le9:#dbacc0;--le10:#bcc0ca;--le11:#e2b08e;
+  --hdr:#263f35;--brand:#a8c5b2;--brand2:#7da58e;--btnbg:#6f927d;--btnfg:#101a15;--focus:#e5a08f;--acc:#d36c5b;--accfg:#1a1410;--veil:rgba(13,19,16,.82);--warn:#e6c86e;--warnbg:#2a2412;--warnfg:#e6c86e}}
+/* v2.10.0: Windows-Hohe-Kontraste (forced-colors) – Token auf Systemfarben legen; Text,
+   Ränder und Flächen übernimmt dann der Benutzeragent, die dekorative 3D-Szene blendet aus. */
+@media (forced-colors:active){:root{--bg:Canvas;--card:Canvas;--soft:Canvas;--ink:CanvasText;--mut:CanvasText;--line:CanvasText;--field:CanvasText;--hdr:Canvas;--veil:Canvas;--mark:Canvas;--brand:LinkText;--brand2:LinkText;--btnbg:ButtonFace;--btnfg:ButtonText;--acc:LinkText;--accfg:ButtonFace;--ok:LinkText;--red:LinkText;--warn:CanvasText;--warnbg:Canvas;--warnfg:CanvasText;--okbg:Canvas;--badbg:Canvas;--redbg:Canvas;--focus:Highlight;--le1:LinkText;--le2:LinkText;--le3:LinkText;--le4:LinkText;--le5:LinkText;--le6:LinkText;--le7:LinkText;--le8:LinkText;--le9:LinkText;--le10:LinkText;--le11:LinkText}
+ #object-stage,#bgc,#bgveil{display:none!important}
+}
 #readprog>div{background:linear-gradient(90deg,#a94738,#d17861)}
 header{background:linear-gradient(115deg,#263f35 0%,#315846 58%,#294536 100%);border-top:4px solid #a94738;box-shadow:0 12px 28px rgba(10,20,15,.22)}
 header .hrow{position:relative;isolation:isolate;padding:3px 8px 4px}

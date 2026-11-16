@@ -1,6 +1,8 @@
-# API- und Token-Snapshot (Baseline v2.9.5, 16.11.2026)
+# API- und Token-Snapshot (Baseline v2.9.5, 16.11.2026; Ergänzung 2.10.0, 16.11.2026)
 # Zweck: Regressionsvergleich vor/nach Phase 1 und Phase 2.
 # Regel: KEIN bestehendes window.KOMP-Mitglied darf entfernt oder umbenannt werden.
+# 2.10.0 (V7): window.KOMP wird genau EINMAL zugewiesen (var API vor init(); init() hängt
+# nur boot an dieselbe Instanz). 53 Mitglieder im Literal + boot zur Laufzeit = 54 live.
 
 ## window.KOMP - 53 Mitglieder
 - answer
@@ -136,6 +138,7 @@
 - Zeile 476: :root{--book-fill:1;--book-edge:#d7cfbd;--book-paper:#fbf7ec;--book-green:#244536;--book-red:#a94738}...
 
 ## localStorage-Keys (app.js Store / assistent.js)
-- anfoevo_v2_* (PREFIX)
-- anfoevo_assistent
-- anfoevo_speech
+- anfoevo_v2_* (PREFIX; u. a. prefs, gaps, done, cards, quiz, notes, darf, exam, endtest)
+- 2.10.0: Darstellungswahl liegt INNERHALB anfoevo_v2_prefs als prefs.theme ('auto'|'hell'|'dunkel');
+  gesetzt wird sie als data-theme am Wurzelelement (<html data-theme="hell|dunkel">).
+- anfoevo_assistent / anfoevo_speech: entfernt (2.9.5-Phase-1, Migration auf anfoevo_v2_*)

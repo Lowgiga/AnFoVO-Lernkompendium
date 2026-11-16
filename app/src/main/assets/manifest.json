@@ -7,7 +7,7 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f5f6f7",
+  "background_color": "#f4eee3",
   "theme_color": "#294b3d",
   "icons": [
     {
@@ -29,5 +29,5 @@
       "purpose": "maskable"
     }
   ],
-  "version": "2.9.5"
+  "version": "2.10.0"
 }
