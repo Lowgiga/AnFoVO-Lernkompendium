@@ -35,6 +35,11 @@ Noch **kein** Versionssprung; die Build-Nummer bleibt 295 / 2.9.5.
   Umlauten der alten Fassung dabei bereinigt).
 - Git-Repository mit Baseline-Commit `1637bb5` und Tag `v2.9.5-baseline`; `.gitignore` für
   `build/`, `*.apk`, `local.properties`, `BACKUP_*/`.
+- **Repository bereinigt:** `.gitignore` war in der Baseline versehentlich nicht angelegt
+  worden – verfolgt waren 1058 Dateien aus `app/build/`, 96 aus den beiden Backup-Ordnern,
+  15 aus `.gradle/` und 12 APK-Dateien. Verfolgung aufgehoben (nicht destruktiv: alle Dateien
+  bleiben auf der Platte; die Blöcke stehen weiter in der Historie). Danach 94 versionierte
+  Dateien statt 1263 – nur noch Quellen und Dokumentation.
 
 ### Bekannt, noch offen
 
