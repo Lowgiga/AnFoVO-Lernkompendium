@@ -6,7 +6,7 @@ Versionsschema: MAJOR.MINOR.PATCH als `versionName`, dazu ein eigener `versionCo
 ## [2.10.0] – versionCode 296 (Phase 1 abgeschlossen: Design-System + WCAG 2.2 AA)
 
 *Auslieferungsstand 16.11.2026. Build: `.\build-debug.ps1` → drei ABIs, je 4.284.397 Bytes,
-SHA256 `4C2B7A42260D8DEA8049E7C0ECED0B5BBD06F4C017C784C0FEAFD6DEDE96E8DF`, Signatur OK;
+SHA256 `575D6689E462671342B83D9182BDBC7690B07F858AE90E7FD541F79249507E78`, Signatur OK;
 Assets im Paket identisch mit den Quellen (Entpack-Vergleich). Selbsttest: 106/106 bestanden,
 1 übersprungen.
 Dieser Eintrag nimmt den unten stehenden Arbeitsstand „[Unveröffentlicht]" (Repository/Build-Skript)
@@ -71,6 +71,16 @@ Neu: Offline-Kern (V1), Manifest-Farbe (V2), Versionsgleichheit (V4), `window.KO
 
 - Menüknopf „🌗 Darstellung: Automatik" ergänzt (im Mehr-Menü, 44-px-Berührungsziel wie alle
   `.mi`).
+- **BOM in `sw.js` entfernt** – die Datei begann mit einem UTF-8-BOM und verstoß damit gegen
+  die eigene Regel „UTF-8 ohne BOM" (README Abschnitt 2). Fund aus dem Dokument-Abgleich
+  vom 16.11.2026; die Regel gilt jetzt für alle Textdateien.
+- **`docs/api-snapshot.txt` korrigiert:** 68 → **79** Token-Namen (elf zur Laufzeit gesetzte
+  Eigenschaften – `--navh`, `--dir/--turn`, `--robot-nav-*` – fehlten in der Liste);
+  `:root`-Zeilenreferenzen auf den Stand 2.10.0 gebracht.
+- **`README.md` korrigiert:** Installation nennt jetzt den echten Dateinamen
+  `app-universal-debug.apk` (vorher `app-debug.apk`, die es nicht gibt); Dateizahl 94 → 95;
+  „geprüftes Zielgerät" → „Zielgerät" (Gerätelauf derzeit nicht ausführbar, s. TESTPROTOKOLL
+  Abschnitt 7).
 - `docs/ARBEITSPLAN-2.10.0.md` – Plan und Abstimmung des Phase-1-Abschlusses.
 - `BACKUP_2026_11_16_Abschluss/` – 94 Dateien mit `SHA256SUMS.txt` vor den Änderungen.
 

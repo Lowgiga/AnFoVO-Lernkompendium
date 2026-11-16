@@ -1,4 +1,4 @@
-﻿/* Service Worker: cache-first, versioned cache.
+/* Service Worker: cache-first, versioned cache.
    Relative URLs stay valid under the GitHub Pages project subpath
    /AnFoVO-Lernkompendium/ and under the Android asset-loader origin.
    VERSION/BUILD change when the cached shell changes. */

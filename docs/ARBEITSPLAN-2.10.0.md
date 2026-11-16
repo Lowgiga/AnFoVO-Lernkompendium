@@ -30,7 +30,7 @@ Backup + SHA-256 (`BACKUP_2026_11_16_Abschluss/`, 94 Dateien).
 | Reduced-Motion / System-Oszillationen | Kill-Switch vorhanden | zusätzlich `forced-colors`-Verträglichkeit ergänzt (Token auf Systemfarben, 3D-Deko aus) – das README hatte sie bislang ohne Grundlage behauptet |
 | Semantik/Screenreader-Pass | Landmarks, `aria-live`, `lang` vorhanden | testbelegt (Überschriften, Statusmeldungen) |
 | Typografie-Raster | Tokens `--s1…--s6`, `--r`, `clamp()` | testbelegt |
-| Design-System-Token-Datei | Token leben in `style.css :root` | Bewusst **keine** Dateiauslagerung: die 68 Token-Namen sind bereits die Design-Grundlage und in `docs/api-snapshot.txt` erfasst; eine Zweitdatei würde CSP, Service-Worker-Kern und Wartung ohne Nutzen vergrößern |
+| Design-System-Token-Datei | Token leben in `style.css :root` | Bewusst **keine** Dateiauslagerung: die 79 Token-Namen (68 Design-Token + 11 Laufzeit-Token) sind bereits die Design-Grundlage und in `docs/api-snapshot.txt` erfasst; eine Zweitdatei würde CSP, Service-Worker-Kern und Wartung ohne Nutzen vergrößern |
 
 ## 3. Version 2.10.0 / versionCode 296 – alle Versionsangaben abgeglichen
 
@@ -51,11 +51,12 @@ Backup + SHA-256 (`BACKUP_2026_11_16_Abschluss/`, 94 Dateien).
 ## 5. Nachweis – erbracht (16.11.2026)
 
 - **Build:** `.\build-debug.ps1` → drei ABIs (arm64-v8a, universal, x86_64), je 4.284.397 Bytes,
-  SHA256 `4C2B7A42…`, Signatur OK; Assets Quelle ↔ Merge identisch; zusätzlich **alle sieben
+  SHA256 `575D6689…`, Signatur OK; Assets Quelle ↔ Merge identisch; zusätzlich **alle sieben
   Text-Assets** aus dem fertigen APK entpackt und mit den Quellen verglichen (identisch);
   `aapt2 dump badging`: `versionCode='296' versionName='2.10.0'`.
-- **Selbsttest:** frisches Origin (jwebserver, Port 8096), **106 / 106 bestanden**, 1 übersprungen.
-  Konsolenmeldungen: nur der bekannte Chromium-Hinweis zu `navigator.vibrate` ohne Nutzer-Tap.
+- **Selbsttest:** frische Origins (jwebserver, Ports 8096/8097/8094), **106 / 106 bestanden**,
+  1 übersprungen. Konsolenmeldungen: nur der bekannte Chromium-Hinweis zu `navigator.vibrate`
+  ohne Nutzer-Tap.
 - **Darstellung im Browser-Lauf:** Wahl übersteht ein Neuladen; `meta name="theme-color"` folgt.
 - **Dokumentation:** `README.md` (Stand 2.10.0, offene Punkte, Phase 2), `CHANGELOG.md`
   ([2.10.0]), `docs/TESTPROTOKOLL.md` (Build-Hashes, 5.5 neue Prüfungen, Prüfsummen),

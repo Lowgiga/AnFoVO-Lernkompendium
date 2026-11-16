@@ -6,7 +6,7 @@ Stand: 16.11.2026 · Bezug: v2.10.0 (versionCode 296) · Phase 0 (Refactoring/QS
 ## 1. Verifikationsgrundsatz
 
 Ein erfolgreicher Build belegt nur die Kompilierbarkeit. Aussagefähig für die Qualität ist der
-**app-eigene Funktionstest** (99 Prüfungen) im Browser plus ein Gerätelauf. Getrennt wird zwischen
+**app-eigene Funktionstest** (106 Prüfungen, Stand 2.10.0) im Browser plus ein Gerätelauf. Getrennt wird zwischen
 
 - **verifizierten Fakten** (hier belegt) und
 - **Schlussfolgerungen** (nicht selbst geprüft – im Text kenntlich gemacht).
@@ -17,7 +17,7 @@ Ein erfolgreicher Build belegt nur die Kompilierbarkeit. Aussagefähig für die 
 |-------|----------|
 | Java-Build | `C:\Tools\jdk-21\jdk-21.0.13+9` (JDK 21), Gradle 8.13 / AGP 8.13.2 |
 | Android SDK | `C:\Android`, Platform 36, Build Tools 35.0.0 |
-| Lokaler Webserver | `jwebserver.exe` (JDK 21), Port 8099 (Vorlauf) bzw. 8096 (Lauf 2.10.0, frisches Origin), Dokumentwurzel `app/src/main/assets` |
+| Lokaler Webserver | `jwebserver.exe` (JDK 21), Ports 8099 (Vorlauf) bzw. 8096/8097/8094 (Läufe 2.10.0, frische Origins), Dokumentwurzel `app/src/main/assets` (absoluter Pfad, `-d` lehnt relative ab) |
 | Browser | Chromium (Edge/Chrome) mit Entwicklerkonsole |
 | Gerät | Samsung SM_S931B (echtes Gerät), `adb install -r`, `logcat`, `screencap` |
 | Versionsverwaltung | `C:\Program Files\Git\cmd\git.exe` (nicht im PATH) |
@@ -30,7 +30,7 @@ Zwei Aufbauten nachvollziehbar:
 |-------|-----|-------|---------|
 | Baseline (vor den Korrekturen) | app-universal-debug | 4.264.711 | `9FE03490E0AA5D4C32B6B1043BE4D6CCDCF7E79D5F15AED0C36EF214F088E2B5` |
 | nach Phase 0 + Assistent/Tests | app-universal-debug | 4.266.577 | `E3FFFEFAA61C1696B09E1EEC7CCFB961A45B217848A74D30FFD8D23AE7BDB482` |
-| **2.10.0 (Phase-1-Abschluss)** | app-universal-debug | 4.284.397 | `4C2B7A42260D8DEA8049E7C0ECED0B5BBD06F4C017C784C0FEAFD6DEDE96E8DF` |
+| **2.10.0 (Phase-1-Abschluss)** | app-universal-debug | 4.284.397 | `575D6689E462671342B83D9182BDBC7690B07F858AE90E7FD541F79249507E78` |
 
 Alle drei Varianten (`arm64-v8a`, `universal`, `x86_64`) tragen jeweils denselben Hash.
 Größenzunahme +1.866 Bytes gegenüber der Baseline = wiederhergestellter CSS-Umfang,
@@ -83,8 +83,9 @@ Aufruf: `http://localhost:8099/index.html?test=1` (Query-Parameter nötig; ein r
 | übersprungen | 1 | 1 | 1 | 1 |
 | Fehlschläge | 18 | 4 | 0 | 0 |
 
-Der Lauf vom 16.11.2026 erfolgte auf einem **frischen Origin** (jwebserver, Port 8096) – genau das
-im Protokoll beschriebene Verfahren gegen den cache-first-Service-Worker. Ergebnis:
+Der Lauf vom 16.11.2026 erfolgte auf **frischen Origins** (jwebserver, Ports 8096, 8097 und
+8094 – jeweils neuer Port, damit kein Service-Worker-Cache aus einem Vorlauf greift) – genau das
+im Protokoll beschriebene Verfahren. Ergebnis (bei jedem der drei Läufe identisch):
 **106 / 106 bestanden**, 1 übersprungen („Desktop: Kopfzeileninhalt auf 90ch begrenzt und
 zentriert", nur bei Viewport ≥ 1200 px messbar). Konsolenmeldungen: nur der bekannte
 Chromium-Hinweis auf `navigator.vibrate` ohne Nutzer-Tap (Richtlinienhinweis, kein App-Fehler).
@@ -197,7 +198,7 @@ Zusätzlich verifiziert (nicht als Prüfung, sondern im Browser-Lauf): die Darst
 | `assets/app.js` | 83.325 | `E282D0F717A6608852CBBB00A07D9BD45500D686C6BC455179DE6DF7E0443C93` |
 | `assets/assistent.js` | 9.177 | `80553AF403FE4327F46812A0B0345B36110DB239DAB1C7DA0F4013687919D79D` |
 | `assets/robot-navigation.js` | 22.263 | `A9424CABE94BD87B17B5DB67D9F42CC72DDD060F6BC7871E95772B1208DEA057` |
-| `assets/sw.js` | 2.734 | `4B80A21085551AB6D078806E68D4D5BD99BAA915792771F1983B3AB08045B1F2` |
+| `assets/sw.js` | 2.731 | `BA49470A0EAA975EAE7B1A94A7226FDCC72D6EFF7E4E31C09E6A5BAD372630AA` |
 | `assets/manifest.json` | 775 | `29A984DAF209E3B0554CD303E00862669D5B97CA12074339DB6E1386E515D574` |
 
 **API-Regressionskontrolle:** `window.KOMP` weiterhin **54 Mitglieder** (53 im Objekt-Literal +

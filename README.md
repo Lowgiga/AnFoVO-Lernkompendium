@@ -42,13 +42,19 @@ AnFoeVO_AndroidWrapper_v2.9.1/
    BACKUP_2026_11_16_Abschluss/   Sicherung vor dem Phase-1-Abschluss + SHA256SUMS.txt
 ```
 
-Kodierung aller Textdateien: **UTF-8 ohne BOM**. `index.html` verwendet LF-Zeilenenden.
+Kodierung aller Textdateien: **UTF-8 ohne BOM** (das BOM in `sw.js` wurde am 16.11.2026
+entfernt – Verstoß gegen diese Regel). `index.html` verwendet LF-Zeilenenden; die übrigen
+Dateien unter `app/src/main/assets/` Windows-Zeilenenden (CRLF). Einzelne Streu-CRLF-Zeilen
+in `app.js`, `index.html`, `app/build.gradle`, `AndroidManifest.xml` und
+`gradle-wrapper.properties` stammen aus der Projekthistorie und sind funktional ohne Belang.
 
 ## 3. Architektur
 
-- **Android:** `MainActivity` lädt `file:///android_asset/index.html` in einer WebView. Origin
-  `appassets.androidplatform.net`. Die Java-Bridge stellt `saveProgress` und `printPage` bereit;
-  ohne Bridge fällt die App auf den Datei-Download zurück.
+- **Android:** `MainActivity` lädt die App über den WebView-Asset-Lader als
+  `https://appassets.androidplatform.net/assets/index.html` in einer WebView (gesicherte
+  Herkunft, daher arbeiten Speicher und Bridge zuverlässig; `file:///android_asset/` wird
+  nicht mehr benutzt). Die Java-Bridge stellt `saveProgress` und `printPage` bereit; ohne
+  Bridge fällt die App auf den Datei-Download zurück.
 - **Web-Shell:** `index.html` enthält die gesamte Seitenstruktur (70 `<article class="page">`),
   Kopfzeile, Suche, Menü, Infoseite und den Selbsttest.
 - **Styling:** `style.css` mit `:root`-Design-Tokens (Farben, Abstände, Radien, `--tap: 44px`),
@@ -93,12 +99,14 @@ Release braucht Keystore-Angaben über die Umgebungsvariablen `KOMPENDIUM_KEYSTO
 ## 5. Installation und Gerätetest
 
 ```powershell
-adb install -r .\app\build\outputs\apk\debug\app-debug.apk
+adb install -r .\app\build\outputs\apk\debug\app-universal-debug.apk
 adb logcat -s chromium:I            # WebView-Konsole
 adb shell screencap /sdcard/p.png   # Bildschirmfoto
 ```
 
-Geprüftes Zielgerät: **SM_S931B** (echtes Gerät, kein Emulator).
+Zielgerät für den Gerätetest: **SM_S931B** (echtes Gerät, kein Emulator). Der letzte
+Gerätelauf ist derzeit nicht ausführbar (`adb devices` zeigt kein Gerät – USB-Debugging
+am Telefon bestätigen); Nachweise in `docs/TESTPROTOKOLL.md` Abschnitt 7.
 
 ## 6. Signatur
 
@@ -110,14 +118,15 @@ Geprüftes Zielgerät: **SM_S931B** (echtes Gerät, kein Emulator).
 
 Die App bringt einen eigenen Funktionstest mit (106 Prüfungen). Er prüft Seitenstruktur, Suche,
 Speicher, Druckausgabe, Barrierefreiheit und Design – dazu seit 2.10.0 den Offline-Kern des
-Service Workers, die Manifest-Farbe, die Versionübereinstimmung, die `window.KOMP`-Schnittstelle,
+Service Workers, die Manifest-Farbe, die Versionsübereinstimmung, die `window.KOMP`-Schnittstelle,
 die Darstellungsumschaltung, den Kontrast-Wächter (13 Textpaar-Token in Automatik, Hell und
 Dunkel, je ≥ 4,5:1) und den Skip-Link.
 
 **Lokaler Start (Cache-Probleme vermeiden):**
 
 ```powershell
-& "C:\Tools\jdk-21\jdk-21.0.13+9\bin\jwebserver.exe" -p 8099 -d "app\src\main\assets" -b 0.0.0.0
+# -d braucht einen ABSOLUTEN Pfad (jwebserver lehnt relative ab)
+& "C:\Tools\jdk-21\jdk-21.0.13+9\bin\jwebserver.exe" -p 8099 -d "$(Resolve-Path 'app\src\main\assets')" -b 127.0.0.1
 ```
 
 Dann im Browser aufrufen: `http://localhost:8099/index.html?test=1`
@@ -149,8 +158,8 @@ drei Darstellungszuständen gemessen und müssen ≥ 4,5:1 bleiben (hell wie dun
   Git liegt unter `C:\Program Files\Git\cmd\git.exe` und ist **nicht** im PATH – Aufrufe mit
   vollem Pfad. `.gitignore` ignoriert `build/`, `*.apk`, `local.properties`, `BACKUP_*/`.
   Die Baseline enthielt versehentlich noch 1263 Dateien (u. a. 1058 aus `app/build/` und die
-  APKs); seit der Bereinigung sind **94 Dateien** versioniert – ausschließlich Quellen und
-  Dokumentation.
+  APKs); seit der Bereinigung sind **95 Dateien** versioniert (Stand 2.10.0 inklusive
+  `docs/ARBEITSPLAN-2.10.0.md`) – ausschließlich Quellen und Dokumentation.
 - **Backups** werden vor jedem destruktiven Schritt angelegt, inklusive `SHA256SUMS.txt`.
 - **Versionslauf:** 2.9.5 (ausgeliefert) → **2.10.0 (Phase 1: Design-System + WCAG 2.2 AA,
   abgeschlossen)** → 2.11.0 (Phase 2: Lern-Assistent). versionCode 295 → 296 → 297.
@@ -177,7 +186,8 @@ drei Darstellungszuständen gemessen und müssen ≥ 4,5:1 bleiben (hell wie dun
 ## 11. Nächste Schritte
 
 - **Phase 1 (→ 2.10.0) ist abgeschlossen** (16.11.2026): Design-System-Token (in `style.css`,
-  68 Namen, Vergleich in `docs/api-snapshot.txt`), Darstellung Automatik/Hell/Dunkel,
+  79 Namen (68 Design-Token + 11 zur Laufzeit gesetzte, Vergleich in `docs/api-snapshot.txt`),
+  Darstellung Automatik/Hell/Dunkel,
   Kontrast-Wächter, Fokus-Management (Skip-Link testbelegt), 44-px-Touch-Ziele, Reflow,
   Textskalierung (rem/em), Reduced-Motion/Kill-Switch, `forced-colors`-Verträglichkeit,
   Semantik/Screenreader-Pass, Typografie-Raster — belegt durch 106/106 Selbsttests.
