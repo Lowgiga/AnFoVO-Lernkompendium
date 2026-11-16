@@ -69,6 +69,11 @@ Neu: Offline-Kern (V1), Manifest-Farbe (V2), Versionsgleichheit (V4), `window.KO
 
 ### Aufgeräumt
 
+- **Repository logisch strukturiert:** die drei Sicherungsordner liegen jetzt unter einem
+  gemeinsamen `backups/` (`2026-11-16_phase0/`, `2026-11-16_phase1/`, `2026-11-16_abschluss/` –
+  nicht versioniert, jeweils mit `SHA256SUMS.txt`); `.gitignore` ignoriert `backups/`. Das
+  Wurzelverzeichnis enthält jetzt nur noch Quellen, Build-Konfiguration, README/CHANGELOG und
+  `docs/`.
 - Menüknopf „🌗 Darstellung: Automatik" ergänzt (im Mehr-Menü, 44-px-Berührungsziel wie alle
   `.mi`).
 - **BOM in `sw.js` entfernt** – die Datei begann mit einem UTF-8-BOM und verstoß damit gegen
@@ -82,7 +87,15 @@ Neu: Offline-Kern (V1), Manifest-Farbe (V2), Versionsgleichheit (V4), `window.KO
   „geprüftes Zielgerät" → „Zielgerät" (Gerätelauf derzeit nicht ausführbar, s. TESTPROTOKOLL
   Abschnitt 7).
 - `docs/ARBEITSPLAN-2.10.0.md` – Plan und Abstimmung des Phase-1-Abschlusses.
-- `BACKUP_2026_11_16_Abschluss/` – 94 Dateien mit `SHA256SUMS.txt` vor den Änderungen.
+- `backups/2026-11-16_abschluss/` – 94 Dateien mit `SHA256SUMS.txt` vor den Änderungen.
+
+### Bekannt, noch offen (kein Code-Defekt)
+
+- **G1 – Gerätelauf** auf SM_S931B: `adb devices` zeigt derzeit kein Gerät (USB-Debugging am
+  Telefon bestätigen). Build, Selbsttest und Browser-Messungen sind erbracht.
+- **G2 – Phase 2 (→ 2.11.0):** Lern-Assistent, Fahrplan in README Abschnitt 11.
+- **G3 – Impressum-Platzhalter** in the App-Fußzeile (Anbieterangaben nach § 5 DDG): persönliche
+  Angaben, nur vom Betreiber ausfüllbar – vor einer Veröffentlickeitung zu ergänzen.
 
 ---
 
@@ -154,7 +167,7 @@ beschreibt den Gesamtstand.
 - `docs/api-snapshot.txt` – Baseline des `window.KOMP`-Exports (53 Mitglieder im Objekt-Literal;
   `boot` wird zur Laufzeit ergänzt, live 54), 68 CSS-Token-Namen, localStorage-Schlüssel.
   Vergleichsbasis für spätere Regressionsprüfungen.
-- `BACKUP_2026_11_16_Phase1/` – 78 Dateien, 13,62 MB, mit `SHA256SUMS.txt`.
+- `backups/2026-11-16_phase1/` – 78 Dateien, 13,62 MB, mit `SHA256SUMS.txt`.
 - `CHANGELOG.md`, `docs/TESTPROTOKOLL.md`, erweiterte `README.md` (Kodierungsfehler in Umlauten
   der alten Fassung dabei bereinigt; die Datei hieß vorher `README-ANDROID.md`).
 - Git-Repository mit Baseline-Commit `1637bb5` und Tag `v2.9.5-baseline`; `.gitignore` für

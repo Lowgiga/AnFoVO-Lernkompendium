@@ -7,7 +7,7 @@ Schritt zurückstellen.
 
 Grundsatz wie im TESTPROTOKOLL: **verifizierte Fakten** und **Schlussfolgerungen** werden
 getrennt. Jede Änderung ist mit Build + Selbsttest + API-Diff abgesichert; vor den Änderungen
-Backup + SHA-256 (`BACKUP_2026_11_16_Abschluss/`, 94 Dateien).
+Backup + SHA-256 (`backups/2026-11-16_abschluss/`, 94 Dateien).
 
 ## 1. Offene echte Defekte schließen (README Abschnitt 10) – alle erledigt
 

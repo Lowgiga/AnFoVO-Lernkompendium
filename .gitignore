@@ -9,6 +9,7 @@ captures/
 .cxx/
 
 # Sicherungssnapshots (separat abgelegt mit SHA256SUMS, nicht versioniert)
+backups/
 BACKUP_*/
 
 # IDE / Editor

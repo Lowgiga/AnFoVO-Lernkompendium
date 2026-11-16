@@ -1,6 +1,8 @@
 # Lern-Kompendium § 8 AnFöVO NRW – Android-Wrapper
 
 **Stand:** v2.10.0 (versionCode 296) · Dokumentationsstand: 16.11.2026
+**Status:** Phase 0 und Phase 1 abgeschlossen (Selbsttest 106/106); offen: Gerätelauf (G1) und
+Phase 2 Lern-Assistent (→ 2.11.0). Details: Abschnitte 10 und 11.
 **Package:** `de.omega.lernkompendium` · minSdk 29 · targetSdk / compileSdk 36
 
 Inoffizielle Lernhilfe zur Basisqualifizierung nach § 8 AnFöVO NRW. Kein Ersatz für die
@@ -38,8 +40,11 @@ AnFoeVO_AndroidWrapper_v2.9.1/
 ├─ docs/api-snapshot.txt          Regressionsvergleich (window.KOMP, CSS-Tokens, Keys)
 ├─ docs/TESTPROTOKOLL.md          Build-/Testnachweise, offene Punkte
 ├─ docs/ARBEITSPLAN-2.10.0.md     Plan und Abschlussprotokoll Version 2.10.0 (Phase 1)
-└─ BACKUP_2026_11_16_Phase1/      Sicherungskopie + SHA256SUMS.txt
-   BACKUP_2026_11_16_Abschluss/   Sicherung vor dem Phase-1-Abschluss + SHA256SUMS.txt
+├─ backups/                       Sicherungssnapshots (nicht versioniert, je SHA256SUMS.txt)
+│  ├─ 2026-11-16_phase0/          Stand vor Phase 0 (17 Dateien)
+│  ├─ 2026-11-16_phase1/          Stand nach Phase 1-Vorlauf (79 Dateien)
+│  └─ 2026-11-16_abschluss/       Stand vor dem Phase-1-Abschluss 2.10.0 (96 Dateien)
+└─ (Tool-Ordner build/ und .gradle/ – Build-Ausgaben, nicht versioniert)
 ```
 
 Kodierung aller Textdateien: **UTF-8 ohne BOM** (das BOM in `sw.js` wurde am 16.11.2026
@@ -156,7 +161,8 @@ drei Darstellungszuständen gemessen und müssen ≥ 4,5:1 bleiben (hell wie dun
 
 - **Git** ist eingerichtet (Commit `1637bb5` „Baseline v2.9.5 vor Phase 1", Tag `v2.9.5-baseline`).
   Git liegt unter `C:\Program Files\Git\cmd\git.exe` und ist **nicht** im PATH – Aufrufe mit
-  vollem Pfad. `.gitignore` ignoriert `build/`, `*.apk`, `local.properties`, `BACKUP_*/`.
+  vollem Pfad. `.gitignore` ignoriert `build/`, `.gradle/`, `*.apk`, `local.properties` und
+  `backups/`.
   Die Baseline enthielt versehentlich noch 1263 Dateien (u. a. 1058 aus `app/build/` und die
   APKs); seit der Bereinigung sind **95 Dateien** versioniert (Stand 2.10.0 inklusive
   `docs/ARBEITSPLAN-2.10.0.md`) – ausschließlich Quellen und Dokumentation.
@@ -182,6 +188,7 @@ drei Darstellungszuständen gemessen und müssen ≥ 4,5:1 bleiben (hell wie dun
 |---|-------|-------|-----------------|
 | G1 | Gerätelauf auf SM_S931B (Install, `logcat`, `screencap`) | USB-Debugging am Telefon derzeit nicht bestätigt (`adb devices` zeigt kein Gerät) | Am Gerät entsperren + Debugging-Abfrage bestätigen, dann `adb install -r` |
 | G2 | Phase 2: Lern-Assistent | eigene Leistungsbeschreibung, nächstes Versionspaket 2.11.0 | Fahrplan wie unten |
+| G3 | Impressum-Platzhalter in der Fußzeile der App („Name, Anschrift, Kontakt" nach § 5 DDG) | Persönliche Anbieterangaben – nur vom Betreiber ausfüllbar | Vor einer Veröffentlichung (Download/Store) ergänzen; für private Nutzung bedeutungslos |
 
 ## 11. Nächste Schritte
 

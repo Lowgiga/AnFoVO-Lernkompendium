@@ -206,8 +206,9 @@ Zusätzlich verifiziert (nicht als Prüfung, sondern im Browser-Lauf): die Darst
 umbenannt – Vergleichsbasis `docs/api-snapshot.txt`. Die Konsole des Browser-Laufs meldet
 `Object.keys(window.KOMP).length === 54`.
 
-Vorher-Stände in `BACKUP_2026_11_16_Phase1/SHA256SUMS.txt` (78 Dateien, 13,62 MB) und
-`BACKUP_2026_11_16_Abschluss/SHA256SUMS.txt` (94 Dateien, Stand vor 2.10.0).
+Vorher-Stände in `backups/2026-11-16_phase1/SHA256SUMS.txt` (78 Dateien, 13,62 MB) und
+`backups/2026-11-16_abschluss/SHA256SUMS.txt` (94 Dateien, Stand vor 2.10.0); der älteste
+Stand (vor Phase 0) liegt in `backups/2026-11-16_phase0/`.
 
 ## 7. Noch offene Arbeitspunkte (Stand 2.10.0)
 
