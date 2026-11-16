@@ -41,9 +41,9 @@ AnFoeVO_AndroidWrapper_v2.9.1/
 ├─ docs/TESTPROTOKOLL.md          Build-/Testnachweise, offene Punkte
 ├─ docs/ARBEITSPLAN-2.10.0.md     Plan und Abschlussprotokoll Version 2.10.0 (Phase 1)
 ├─ backups/                       Sicherungssnapshots (nicht versioniert, je SHA256SUMS.txt)
-│  ├─ 2026-11-16_phase0/          Stand vor Phase 0 (17 Dateien)
-│  ├─ 2026-11-16_phase1/          Stand nach Phase 1-Vorlauf (79 Dateien)
-│  └─ 2026-11-16_abschluss/       Stand vor dem Phase-1-Abschluss 2.10.0 (96 Dateien)
+│  ├─ 2026-11-16_phase0/          Stand vor Phase 0 (17 Dateien + Prüfsummen, nachgetragen)
+│  ├─ 2026-11-16_phase1/          Stand nach Phase 1-Vorlauf (78 Dateien + Prüfsummen)
+│  └─ 2026-11-16_abschluss/       Stand vor dem Phase-1-Abschluss 2.10.0 (94 Dateien + Prüfsummen)
 └─ (Tool-Ordner build/ und .gradle/ – Build-Ausgaben, nicht versioniert)
 ```
 
@@ -166,7 +166,8 @@ drei Darstellungszuständen gemessen und müssen ≥ 4,5:1 bleiben (hell wie dun
   Die Baseline enthielt versehentlich noch 1263 Dateien (u. a. 1058 aus `app/build/` und die
   APKs); seit der Bereinigung sind **95 Dateien** versioniert (Stand 2.10.0 inklusive
   `docs/ARBEITSPLAN-2.10.0.md`) – ausschließlich Quellen und Dokumentation.
-- **Backups** werden vor jedem destruktiven Schritt angelegt, inklusive `SHA256SUMS.txt`.
+- **Backups** werden vor jedem destruktiven Schritt angelegt, inklusive `SHA256SUMS.txt`, und
+  liegen gesammelt unter `backups/` (nicht versioniert).
 - **Versionslauf:** 2.9.5 (ausgeliefert) → **2.10.0 (Phase 1: Design-System + WCAG 2.2 AA,
   abgeschlossen)** → 2.11.0 (Phase 2: Lern-Assistent). versionCode 295 → 296 → 297.
 
