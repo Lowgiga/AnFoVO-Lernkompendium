@@ -1,0 +1,141 @@
+# API- und Token-Snapshot (Baseline v2.9.5, 16.11.2026)
+# Zweck: Regressionsvergleich vor/nach Phase 1 und Phase 2.
+# Regel: KEIN bestehendes window.KOMP-Mitglied darf entfernt oder umbenannt werden.
+
+## window.KOMP - 53 Mitglieder
+- answer
+- applySearch
+- bg
+- bgTurn
+- checkGap
+- clearAll
+- closeMenu
+- darfAnswer
+- endAnswer
+- evalExam
+- evalTask
+- exportData
+- findRanges
+- flashSaved
+- flip
+- focusSearch
+- goTo
+- goToId
+- handleSwipe
+- highlight
+- idx
+- importData
+- isDone
+- list
+- mode
+- next
+- norm
+- normAns
+- onlyFillOn
+- onScroll
+- openMenu
+- openSolution
+- postPrint
+- prePrint
+- prev
+- rate
+- rebuild
+- restoreAll
+- S
+- setGap
+- setMode
+- setPrintOrder
+- setTempAll
+- showCard
+- startExam
+- state
+- stepInfo
+- Store
+- sureCount
+- syncAllBox
+- toggleAllSol
+- updateProgress
+- weiter
+
+## CSS Custom Properties (style.css) - 68 eindeutige Token-Namen
+- --acc
+- --accfg
+- --badbg
+- --bg
+- --book-edge
+- --book-fill
+- --book-green
+- --book-paper
+- --book-red
+- --brand
+- --brand2
+- --btnbg
+- --btnfg
+- --card
+- --field
+- --focus
+- --green-deep
+- --green-light
+- --green-mid
+- --hdr
+- --ink
+- --le1
+- --le10
+- --le11
+- --le2
+- --le3
+- --le4
+- --le5
+- --le6
+- --le7
+- --le8
+- --le9
+- --lec
+- --line
+- --mark
+- --mut
+- --ok
+- --okbg
+- --par-x
+- --par-y
+- --r
+- --r-pill
+- --r-sm
+- --red
+- --red-metal
+- --redbg
+- --robot-turn
+- --s1
+- --s2
+- --s3
+- --s4
+- --s5
+- --s6
+- --sans
+- --serif
+- --shadow-focus
+- --shadow-lg
+- --shadow-md
+- --shadow-sm
+- --soft
+- --t-emph
+- --t-fast
+- --t-ui
+- --tap
+- --veil
+- --warn
+- --warnbg
+- --warnfg
+
+## CSS :root-Definitionen (Zeilen)
+- Zeile 6: @media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#14181d;--card:#1c2229;--ink:#ece6da;--mut:#b6afa3;--lin...
+- Zeile 177:  :root{color-scheme:light;--bg:#fff;--card:#fff;--ink:#000;--mut:#333;--line:#bbb;--soft:#fff;--brand:#1d3a5f;--brand2:#...
+- Zeile 210: :root{--lec:var(--mut)}...
+- Zeile 374: :root{--hdr:#294b3d;--brand:#315b49;--brand2:#47745d;--btnbg:#315b49;--focus:#b94a3b;--acc:#a94738;--accfg:#fff;--green-...
+- Zeile 375: @media(prefers-color-scheme:dark){:root{--hdr:#263f35;--brand:#a8c5b2;--brand2:#7da58e;--btnbg:#6f927d;--btnfg:#101a15;-...
+- Zeile 476: :root{--book-fill:1;--book-edge:#d7cfbd;--book-paper:#fbf7ec;--book-green:#244536;--book-red:#a94738}...
+
+## localStorage-Keys (app.js Store / assistent.js)
+- anfoevo_v2_* (PREFIX)
+- anfoevo_assistent
+- anfoevo_speech
