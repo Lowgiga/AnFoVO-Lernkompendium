@@ -115,7 +115,45 @@ ist möglich, aber unnötig – eine Quelle reicht.
 - **Impressum (G3 aus README Abschnitt 10):** Fußzeilen-Platzhalter vor einer
   öffentlich beworbenen URL füllen (§ 5 DDG); für private Nutzung bedeutungslos.
 
-## 6. Risiken für »dauerhaft«
+## 7. Betriebszustand (eingetragen 17.11.2026)
+
+- Web-Produktion: **https://anfo-vo-lernkompendium.vercel.app** – Projekt
+  `anfo-vo-lernkompendium` (ID `prj_g9kzL0O68BcjsWfwzPQvhkeXaAR2`, Scope
+  `alex-fedc`), GitHub-verbunden mit `Lowgiga/AnFoVO-Lernkompendium`,
+  Output `app/src/main/assets`, Framework: None (kein Build).
+- Produktions-Deployment `dpl_7Sihbxztj…` (Commit `ed66bbb`) per CLI aus dem
+  lokalen Checkout deployt; Service Worker wird korrekt aus dem
+  Wurzelverzeichnis ausgeliefert (Offline-Kern vollständig).
+- **Production-Branch stand zuletzt auf `main`** (2.9.5-Stand). Pushes auf
+  `android-wrapper-2.10.0` erzeugen daher nur Previews. Zwei Wege, Production
+  aktuell zu halten:
+  1. Dashboard (ein Klick, danach dauerhaft automatisch):
+     Settings → Environments → Production → Branch Tracking →
+     `android-wrapper-2.10.0` speichern.
+  2. CLI aus dem Checkout (Token nötig):
+     ```
+     cd app/src/main/assets
+     npx vercel link --yes --project=anfo-vo-lernkompendium --token <TOKEN>
+     npx vercel deploy --prod --yes --token <TOKEN>
+     ```
+     Token kommt nur über den Chat, wird **nirgends** gespeichert oder committet.
+     `.env.local` (OIDC-Token aus `vercel link`) und `.vercel/` sind durch
+     `app/src/main/assets/.gitignore` ausgeschlossen.
+- Altprojekt `spry-plateau-66l1iic` (ID `prj_HYufz59wNHSyy8EOMWreRLrPpZcr`):
+     beanspruchtes Anonymous-Temp-Deployment ohne Git-Anbindung, funktionslos;
+     Löschung nur durch den Owner (Dashboard), nicht automatisiert.
+- CI-Status: Gradle-Dependency-Submission seit Commit `7bad297` **grün**
+     (Unix-`gradlew`, Modus 100755); vorher fünf rote Läufe.
+- Offene Owner-Entscheidungen (nicht automatisiert):
+  - **PR #7** (README-Showcase + GitHub Pages, Stand 2.9.3, vier offene
+    P2-Befunde von Greptile): Mergen würde Pages wieder einschalten und
+    veralteten Stand nach `main` bringen – bei „nur Vercel" empfehlen wir
+    Schließen.
+  - **Issue #8**: Codex-Review-Quittungspost (Automatisierung, harmlos).
+  - **GitHub Pages** liefert weiter v2.9.5 aus `main`. Abschaltung:
+    Repo → Settings → Pages → Source: None.
+
+## 8. Risiken für »dauerhaft«
 
 - Kostenloser Hobby-Tarif ist für **nicht-kommerzielle** Nutzung vorgesehen;
   bei Unsicherheit → Pro-Tarif. Seiten selbst ändern sich nie; nur das Konto
