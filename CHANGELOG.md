@@ -40,7 +40,7 @@ mit auf – er ist erstmals Teil einer ausgelieferten Version.*
   **Automatik, Hell und Dunkel** gemessen und müssen ≥ 4,5:1 bleiben. Gemessen werden diesmal
   aufgelöste Token-Werte – die frühere Messung über Inline-`var()` war unzuverlässig.
 
-### Defekte geschlossen (V1, V2, V4, V7 – aus README Abschnitt 10)
+### Defekte geschlossen (V1–V7 – aus README Abschnitt 10)
 
 - **V1 – Offline-Kern unvollständig:** `sw.js` nimmt jetzt `./style.css` und `./app.js` in den
   Cache-Kern auf. Folgefehler behoben: Nach dem ersten Start lieferte der Service Worker
@@ -88,6 +88,10 @@ Neu: Offline-Kern (V1), Manifest-Farbe (V2), Versionsgleichheit (V4), `window.KO
   Abschnitt 7).
 - `docs/ARBEITSPLAN-2.10.0.md` – Plan und Abstimmung des Phase-1-Abschlusses.
 - `backups/2026-11-16_abschluss/` – 94 Dateien mit `SHA256SUMS.txt` vor den Änderungen.
+- Web-Deployment vorbereitet (Commit `632cb94` … `f5e62c8`): `vercel.json` (Output
+  `app/src/main/assets`, SW/Manifest `max-age=0`), `docs/VERCEL-DEPLOY.md`,
+  Unix-`gradlew`, `packagingOptions`-Ausschluss für `.vercel`/`.env*` (Token-Leak-Fix),
+  `.gitignore`-Härtung (Keystore/Secrets).
 
 ### Bekannt, noch offen (kein Code-Defekt)
 
@@ -117,7 +121,7 @@ Neu: Offline-Kern (V1), Manifest-Farbe (V2), Versionsgleichheit (V4), `window.KO
   `https://github.com/Lowgiga/AnFoVO-Lernkompendium.git`. Das dortige `main` tragt eine
   **getrennte Historie** (Standalone-PWA-Variante mit eigener Versionslinie bis v2.9.5 und
   eigenen Tags `v2.9.2`/`v2.9.4`); ein Überschreiben wäre Datenverlust gewesen. Deshalb liegt
-  der lokale Stand vollständig auf dem Branch **`android-wrapper-2.10.0`** (HEAD `6816d55`),
+  der lokale Stand vollständig auf dem Branch **`android-wrapper-2.10.0`** (HEAD `21add01`),
   Tags `v2.10.0` und `v2.9.5-baseline` sind mitgepusht. Die Entscheidung über die
   Zusammenführung (Pull-Request oder Force-Push) bleibt beim Betreiber.
 

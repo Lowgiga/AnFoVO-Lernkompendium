@@ -54,6 +54,11 @@ Build-Skript geändert, die Quellen unter `app/src/main/assets/` sind unverände
 gelten daher unverändert weiter; der Selbsttest auf einem frischen Server (Port 8097) bestätigt
 erneut **99 / 99**.
 
+**Hinweis zur Zählung (Stand 2.10.0):** Die oben genannte 99/99-Messung bezieht sich auf den
+Zwischenstand *vor* der Erweiterung des Selbsttest-Blocks. Der endgültige Stand (Commit
+`2f34241`) enthält 7 zusätzliche Prüfungen (V1–V7) und ergibt **106 / 106**. Die Zählung
+„99 / 99" bleibt als historischer Meilenstein (Phase 1, Assistent/Tests) dokumentiert.
+
 **Build-Skript korrigiert:** `build-debug.ps1` verwies auf ein SDK-Verzeichnis und eine globale
 Gradle-Installation (`gradle --version`, `gradle` ist auf diesem Rechner **nicht** im PATH) und
 prüfte nur die APK `app-debug.apk`. Das Skript ermittelt jetzt JAVA_HOME und ANDROID_HOME

@@ -1,6 +1,6 @@
 # Lern-Kompendium § 8 AnFöVO NRW – Android-Wrapper
 
-**Stand:** v2.10.0 (versionCode 296) · Dokumentationsstand: 16.11.2026
+**Stand:** v2.10.0 (versionCode 296) · Dokumentationsstand: 17.11.2026
 **Status:** Phase 0 und Phase 1 abgeschlossen (Selbsttest 106/106); offen: Gerätelauf (G1) und
 Phase 2 Lern-Assistent (→ 2.11.0). Details: Abschnitte 10 und 11.
 **Package:** `de.omega.lernkompendium` · minSdk 29 · targetSdk / compileSdk 36
@@ -40,6 +40,10 @@ AnFoeVO_AndroidWrapper_v2.9.1/
 ├─ docs/api-snapshot.txt          Regressionsvergleich (window.KOMP, CSS-Tokens, Keys)
 ├─ docs/TESTPROTOKOLL.md          Build-/Testnachweise, offene Punkte
 ├─ docs/ARBEITSPLAN-2.10.0.md     Plan und Abschlussprotokoll Version 2.10.0 (Phase 1)
+├─ docs/VERCEL-DEPLOY.md          Web-Deployment-Anleitung (Vercel/GitHub Pages, Stand 17.11.2026)
+├─ vercel.json                    Statisches Web-Deployment (Output: app/src/main/assets)
+├─ gradlew                        Unix-Gradle-Wrapper (Linux/macOS/CI)
+├─ app/src/main/assets/.gitignore  Ignoriert .vercel/ und .env* (Build-/Secret-Artefakte)
 ├─ backups/                       Sicherungssnapshots (nicht versioniert, je SHA256SUMS.txt)
 │  ├─ 2026-11-16_phase0/          Stand vor Phase 0 (17 Dateien + Prüfsummen, nachgetragen)
 │  ├─ 2026-11-16_phase1/          Stand nach Phase 1-Vorlauf (78 Dateien + Prüfsummen)
@@ -164,7 +168,7 @@ drei Darstellungszuständen gemessen und müssen ≥ 4,5:1 bleiben (hell wie dun
   vollem Pfad. `.gitignore` ignoriert `build/`, `.gradle/`, `*.apk`, `local.properties` und
   `backups/`.
 - **GitHub:** Remote `origin` = `https://github.com/Lowgiga/AnFoVO-Lernkompendium.git`.
-  Der lokale `main` liegt dort auf dem Branch **`android-wrapper-2.10.0`** (HEAD `6816d55`),
+  Der lokale `main` liegt dort auf dem Branch **`android-wrapper-2.10.0`** (HEAD `21add01`),
   nachverfolgt mit `git push -u origin main:refs/heads/android-wrapper-2.10.0`; Tags
   `v2.10.0` und `v2.9.5-baseline` sind ebenfalls gepusht.
   **Wichtig:** Das entfernte `main` (`1baa119`) ist eine **getrennte Projekthistorie**
@@ -223,3 +227,35 @@ drei Darstellungszuständen gemessen und müssen ≥ 4,5:1 bleiben (hell wie dun
 - Android-Assets und Web-Version bleiben synchron; jede Änderung mit Build + Selbsttest +
   API-Diff + Browser-Test + Gerätetest absichern.
 - Vor destruktiven Änderungen: Backup + SHA-256 + Build-Verify. Kein Blind-Ändern.
+
+## 13. Betrieb, Wiederherstellung, Veröffentlichung
+
+**Rollback auf einen früheren Stand:**
+- Git-Commit zurücksetzen: `git reset --hard <commit>` (z. B. `befe779` für den Ausgangsstand
+  v2.9.5, `2f34241` für den Phase-1-Abschluss). Die Backups unter `backups/` sind dazu
+  unabhängig nutzbar.
+- Backup wiederherstellen: Ordnerinhalt aus `backups/<datum>/` in `app/src/main/assets/`
+  kopieren; Prüfsummen mit `SHA256SUMS.txt` abgleichen; dann `.\build-debug.ps1`.
+- Service-Worker-Cache beim Testen: Registrierungen aufheben, `caches.keys()` löschen,
+  frischen Origin (neuen Port) nutzen – sonst werden veraltete Dateien gemessen.
+
+**GitHub:**
+- Remote `origin` = `https://github.com/Lowgiga/AnFoVO-Lernkompendium.git`.
+- Lokaler `main` liegt auf Branch `android-wrapper-2.10.0` (HEAD `21add01`); Push:
+  `git push origin HEAD:android-wrapper-2.10.0`. Tags: `git push origin --tags`.
+- Das entfernte `main` ist eine getrennte Historie (Standalone-PWA) – nicht blind
+  überschreiben; Zusammenführung über Pull-Request
+  (`…/pull/new/android-wrapper-2.10.0`).
+
+**Web-Deployment (Vercel / GitHub Pages):**
+- Anleitung und Entscheidungsgrundlage in `docs/VERCEL-DEPLOY.md`; Konfiguration in
+  `vercel.json` (Output `app/src/main/assets`). `sw.js` und `manifest.json` werden
+  frisch ausgeliefert (`max-age=0, must-revalidate`).
+- Das `.vercel/`-Verzeichnis und `.env*` enthalten möglicherweise Secrets (OIDC-Token) und
+  dürfen nie versioniert werden (`.gitignore` deckt sie ab); bei versehentlichem Einpacken
+  in den Build greift `packagingOptions` in `app/build.gradle`.
+
+**Vor einer Veröffentlichung (Store/Download):**
+- Impressum-Platzhalter in der App-Fußzeile füllen (G3).
+- Release-Keystore über `KOMPENDIUM_KEYSTORE` etc. setzen; `.\gradlew.bat :app:bundleRelease`.
+- Datenschutz/Privacy-Policy-Verweis ergänzen (Vorlage `PRIVACY_POLICY.md` im Remote-Repo).

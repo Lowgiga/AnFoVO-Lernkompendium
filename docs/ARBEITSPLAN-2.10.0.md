@@ -52,7 +52,7 @@ Backup + SHA-256 (`backups/2026-11-16_abschluss/`, 94 Dateien).
 
 - **GitHub-Push (16.11.2026, komplett):** Remote `origin` =
   `https://github.com/Lowgiga/AnFoVO-Lernkompendium.git`; lokaler `main` liegt dort auf dem
-  Branch `android-wrapper-2.10.0` (HEAD `6816d55`), Tags `v2.10.0` und `v2.9.5-baseline`
+  Branch `android-wrapper-2.10.0` (HEAD `21add01`), Tags `v2.10.0` und `v2.9.5-baseline`
   gepusht. Das entfernte `main` ist eine getrennte Historie (Standalone-PWA-Variante) und
   wurde bewusst nicht überschrieben – Zusammenführung beim Betreiber (PR-Vorschlag:
   `…/pull/new/android-wrapper-2.10.0`).
