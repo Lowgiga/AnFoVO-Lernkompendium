@@ -172,7 +172,7 @@ drei Darstellungszuständen gemessen und müssen ≥ 4,5:1 bleiben (hell wie dun
   überschrieben. Ein Force-Push wäre Datenverlust; die Zusammenführung liegt beim Betreiber
   (Pull-Request-Vorschlag: `…/pull/new/android-wrapper-2.10.0`).
   Die Baseline enthielt versehentlich noch 1263 Dateien (u. a. 1058 aus `app/build/` und die
-  APKs); seit der Bereinigung sind **95 Dateien** versioniert (Stand 2.10.0 inklusive
+  APKs); seit der Bereinigung sind **99 Dateien** versioniert (Stand 2.10.0 inklusive
   `docs/ARBEITSPLAN-2.10.0.md`) – ausschließlich Quellen und Dokumentation.
 - **Backups** werden vor jedem destruktiven Schritt angelegt, inklusive `SHA256SUMS.txt`, und
   liegen gesammelt unter `backups/` (nicht versioniert).

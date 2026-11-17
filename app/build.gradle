@@ -50,6 +50,17 @@ android {
     }
 }
 
+// Verteidigung gegen versehentliches Einpacken von Build-/Secret-Artefakten in die Assets.
+// (16.11.2026: .env.local mit Vercel-OIDC-Token und .vercel/output/static lagen in
+// app/src/main/assets/ und wurden ins APK verpackt – Token-Leak + ~1,5 MB Bloat.)
+android {
+    packagingOptions {
+        resources {
+            excludes += ['**/.vercel/**', '**/.env*', '**/.env', 'assets/.vercel/**']
+        }
+    }
+}
+
 dependencies {
     implementation 'androidx.webkit:webkit:1.18.0'
 }

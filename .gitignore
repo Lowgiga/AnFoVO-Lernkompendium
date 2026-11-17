@@ -12,6 +12,14 @@ captures/
 backups/
 BACKUP_*/
 
+# Keystore / Secrets (nie versionieren)
+*.jks
+*.keystore
+*.p12
+*.tmp
+.env*
+.vercel/
+
 # IDE / Editor
 .idea/
 *.iml
