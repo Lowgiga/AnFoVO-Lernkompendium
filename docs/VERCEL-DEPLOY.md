@@ -130,6 +130,10 @@ ist möglich, aber unnötig – eine Quelle reicht.
   1. Dashboard (ein Klick, danach dauerhaft automatisch):
      Settings → Environments → Production → Branch Tracking →
      `android-wrapper-2.10.0` speichern.
+     **Geprüft 17.11.2026:** Per API/CLI nicht setzbar – PATCH /v9/projects/{id}
+     lehnt `productionBranch` und `link` ab (Live-Validierung),
+     `vercel project update` hat keine Branch-Option. Dashboard ist hier der
+     einzige Weg.
   2. CLI aus dem Checkout (Token nötig):
      ```
      cd app/src/main/assets
@@ -139,6 +143,11 @@ ist möglich, aber unnötig – eine Quelle reicht.
      Token kommt nur über den Chat, wird **nirgends** gespeichert oder committet.
      `.env.local` (OIDC-Token aus `vercel link`) und `.vercel/` sind durch
      `app/src/main/assets/.gitignore` ausgeschlossen.
+- Zusätzliches Ad-hoc-Werkzeug: **Deploy-Hook** `android-2-10-prod` (erstellt
+     17.11.2026, gebunden an Branch `android-wrapper-2.10.0`). URL liegt im
+     Dashboard (Settings → Git → Deploy Hooks – gilt wie ein Token, nicht
+     committen). Ein POST darauf erzeugt ein Branch-Deployment (Preview, da der
+     Branch nicht Production-Branch ist); für Production bleiben die Wege oben.
 - Altprojekt `spry-plateau-66l1iic` (ID `prj_HYufz59wNHSyy8EOMWreRLrPpZcr`):
      beanspruchtes Anonymous-Temp-Deployment ohne Git-Anbindung, funktionslos;
      Löschung nur durch den Owner (Dashboard), nicht automatisiert.
