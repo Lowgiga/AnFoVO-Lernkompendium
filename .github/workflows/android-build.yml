@@ -7,14 +7,20 @@ on:
       - "android/**"
       - "index.html"
       - "algorithm/**"
+      - "robot-navigation.js"
       - "docs/ARCHITECTURE.md"
       - "tests/**"
       - "docs/**"
       - "README.md"
+      - "CHANGELOG.md"
+      - "LICENSE"
+      - "PRIVACY_POLICY.md"
+      - "PRODUKT_SPEZIFIKATION.md"
       - "PROJECT_MANIFEST.json"
       - "manifest.json"
       - "sw.js"
       - ".nojekyll"
+      - ".gitignore"
       - "icon-*.png"
       - "bg/**"
       - "scripts/**"
@@ -27,14 +33,20 @@ on:
       - "android/**"
       - "index.html"
       - "algorithm/**"
+      - "robot-navigation.js"
       - "docs/ARCHITECTURE.md"
       - "tests/**"
       - "docs/**"
       - "README.md"
+      - "CHANGELOG.md"
+      - "LICENSE"
+      - "PRIVACY_POLICY.md"
+      - "PRODUKT_SPEZIFIKATION.md"
       - "PROJECT_MANIFEST.json"
       - "manifest.json"
       - "sw.js"
       - ".nojekyll"
+      - ".gitignore"
       - "icon-*.png"
       - "bg/**"
       - "scripts/**"
@@ -46,10 +58,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-and-build:
     name: Validate web app and build Android APKs
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -90,7 +107,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          files=(manifest.json sw.js icon-192.png icon-512.png icon-512-maskable.png)
+          files=(manifest.json sw.js robot-navigation.js icon-192.png icon-512.png icon-512-maskable.png)
           for file in "${files[@]}"; do
             test -f "$file"
             test -f "android/app/src/main/assets/$file"
@@ -141,10 +158,21 @@ jobs:
         uses: android-actions/setup-android@v4
 
       - name: Install Android SDK packages
-        run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
 
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
 
       - name: Build debug APKs
         working-directory: android
@@ -168,7 +196,7 @@ jobs:
       - name: Upload debug APKs
         uses: actions/upload-artifact@v7
         with:
-          name: AnFoeVO-v2.9.5-debug-apks
+          name: AnFoeVO-debug-apks
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
