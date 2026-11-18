@@ -88,10 +88,14 @@ Neu: Offline-Kern (V1), Manifest-Farbe (V2), Versionsgleichheit (V4), `window.KO
   Abschnitt 7).
 - `docs/ARBEITSPLAN-2.10.0.md` – Plan und Abstimmung des Phase-1-Abschlusses.
 - `backups/2026-11-16_abschluss/` – 94 Dateien mit `SHA256SUMS.txt` vor den Änderungen.
-- Web-Deployment vorbereitet (Commit `632cb94` … `f5e62c8`): `vercel.json` (Output
-  `app/src/main/assets`, SW/Manifest `max-age=0`), `docs/VERCEL-DEPLOY.md`,
-  Unix-`gradlew`, `packagingOptions`-Ausschluss für `.vercel`/`.env*` (Token-Leak-Fix),
-  `.gitignore`-Härtung (Keystore/Secrets).
+- Build/Hygiene (Commit `632cb94` … `f5e62c8`): Unix-`gradlew` ergänzt,
+  `packagingOptions`-Ausschluss für `.vercel`/`.env*` (Token-Leak-Fix), `.gitignore`-
+  Härtung (Keystore/Secrets).
+- **Vercel-Ansatz wieder entfernt (18.11.2026, auf Wunsch des Betreibers):** `vercel.json`
+  und `docs/VERCEL-DEPLOY.md` gelöscht; die Web-Auslieferung läuft über GitHub Pages
+  (bereits live), die App-Auslieferung über das APK. Die Schutzmaßnahmen
+  (`packagingOptions`, `.gitignore`, `app/src/main/assets/.gitignore`) bleiben bestehen –
+  sie verhindern, dass jemals wieder Secret- oder Build-Artefakte eingepackt werden.
 
 ### Bekannt, noch offen (kein Code-Defekt)
 

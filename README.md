@@ -40,8 +40,6 @@ AnFoeVO_AndroidWrapper_v2.9.1/
 ├─ docs/api-snapshot.txt          Regressionsvergleich (window.KOMP, CSS-Tokens, Keys)
 ├─ docs/TESTPROTOKOLL.md          Build-/Testnachweise, offene Punkte
 ├─ docs/ARBEITSPLAN-2.10.0.md     Plan und Abschlussprotokoll Version 2.10.0 (Phase 1)
-├─ docs/VERCEL-DEPLOY.md          Web-Deployment-Anleitung (Vercel/GitHub Pages, Stand 17.11.2026)
-├─ vercel.json                    Statisches Web-Deployment (Output: app/src/main/assets)
 ├─ gradlew                        Unix-Gradle-Wrapper (Linux/macOS/CI)
 ├─ app/src/main/assets/.gitignore  Ignoriert .vercel/ und .env* (Build-/Secret-Artefakte)
 ├─ backups/                       Sicherungssnapshots (nicht versioniert, je SHA256SUMS.txt)
@@ -247,13 +245,14 @@ drei Darstellungszuständen gemessen und müssen ≥ 4,5:1 bleiben (hell wie dun
   überschreiben; Zusammenführung über Pull-Request
   (`…/pull/new/android-wrapper-2.10.0`).
 
-**Web-Deployment (Vercel / GitHub Pages):**
-- Anleitung und Entscheidungsgrundlage in `docs/VERCEL-DEPLOY.md`; Konfiguration in
-  `vercel.json` (Output `app/src/main/assets`). `sw.js` und `manifest.json` werden
-  frisch ausgeliefert (`max-age=0, must-revalidate`).
-- Das `.vercel/`-Verzeichnis und `.env*` enthalten möglicherweise Secrets (OIDC-Token) und
-  dürfen nie versioniert werden (`.gitignore` deckt sie ab); bei versehentlichem Einpacken
-  in den Build greift `packagingOptions` in `app/build.gradle`.
+**Web-Auslieferung:** über GitHub Pages (das Remote-Repository liefert die Web-App bereits
+live). Der Vercel-Ansatz wurde am 18.11.2026 auf Wunsch des Betreibers vollständig entfernt
+(`vercel.json`, `docs/VERCEL-DEPLOY.md`) – ein Hosting-Werkzeug reicht.
+- Sicherheitshinweis (bleibt): Lokale `.vercel/`-Verzeichnisse und `.env*`-Dateien können
+  Secrets enthalten (im Vorlauf lag dort ein OIDC-Token, der in einer APK landete – bitte
+  rotieren) und dürfen nie versioniert werden. `.gitignore` und `app/src/main/assets/.gitignore`
+  decken sie ab; bei versehentlichem Einpacken in den Build greift `packagingOptions` in
+  `app/build.gradle`.
 
 **Vor einer Veröffentlichung (Store/Download):**
 - Impressum-Platzhalter in der App-Fußzeile füllen (G3).
