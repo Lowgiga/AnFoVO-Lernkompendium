@@ -45,7 +45,9 @@ Stand: 17. November 2026 · gilt für die Auslieferung aus diesem Repository
    menschlichem Review (siehe `docs/CONTENT_PRESERVATION.md`).
 8. **Tag + Release:** `git tag -a <version>` auf den Release-Commit,
    `git push origin <branch> --tags`; GitHub-Release mit den Prüfsummen aus
-   dem Build-Report. **Offen:** für v2.9.5 existiert bisher kein Tag/Release.
+   dem Build-Report. Stand 18.11.2026: `v2.9.2`, `v2.9.4` und `v2.9.5` (nachträglich auf
+   `dcc4388`) sind getaggt; ein GitHub-Release-Eintrag (mit Checksummen-Text) war nie
+   angelegt – der Schritt ist nur Datenpflege im Reiter „Releases".
 9. **Web:** Push auf `main` – GitHub Pages baut automatisch neu (Branch-Root,
    siehe `docs/GITHUB_PAGES.md`).
 

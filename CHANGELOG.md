@@ -40,8 +40,11 @@ App-Code, Tests/CI, Dokumentation, Build/Deployment, Git).*
 - **Datenschutzerklärung:** defektes Dateiende („PY") entfernt.
 - **Externe Badge-Bilder:** fünf Vercel-gehostete Anzeigebilder aus der README entfernt
   (auf Wunsch des Betreibers); es bleibt ein Hosting-Werkzeug (GitHub Pages).
-- **Offen (Dokumentiert, kein Code-Defekt):** kein Tag/Release für v2.9.5;
-  Impressum-Platzhalter (§ 5 DDG) lebt und ist vor öffentlicher Bewerbung zu ersetzen;
+- **Release-Tag nachgezogen:** `v2.9.5` liegt jetzt auf dem Release-Commit `dcc4388`
+  (angelegt und gepuscht am 18.11.2026; die Vorgänger-Tags `v2.9.2`/`v2.9.4` hatten ihre
+  Releases markiert, für 2.9.5 fehlte er).
+- **Offen (Dokumentiert, kein Code-Defekt):** Impressum-Platzhalter (§ 5 DDG) lebt und ist
+  vor öffentlicher Bewerbung zu ersetzen;
   zwei konkurrierende Dark-Mode-Paletten (visueller Eingriff, daher nicht umgesetzt);
   Monster-Zeilen im HTML (Inhaltsdiff); Gerätetest v2.9.5 (Gerät offline).
 
