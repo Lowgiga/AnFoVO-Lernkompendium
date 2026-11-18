@@ -1,36 +1,76 @@
 # GitHub Pages
 
-The repository root can be served later as an installable offline PWA at the project-site subpath `/AnFoVO-Lernkompendium/`. This branch does not enable GitHub Pages, change repository settings, merge to `main`, or modify billing.
+**Stand: 17.11.2026 – verifiziert (Live-Abruf).** GitHub Pages ist für dieses Repository
+**aktiv** und liefert die Web-App aus:
 
-## Ready on this branch
+- Projekt-Site: `https://lowgiga.github.io/AnFoVO-Lernkompendium/` (Antwort 200, Titel
+  „Lern-Kompendium § 8 AnFöVO NRW – v2.9.5", 70 Lernseiten, PWA installierbar).
 
-- `index.html` links `./manifest.json`, `./icon-192.png`, and an apple-touch icon.
-- `manifest.json` uses relative `start_url` and `scope` (`./`), so installation stays inside the project subpath.
-- `sw.js` precaches the shell, icons, and both `bg/d` and `bg/m` frame sets. Its cache name is `anfoevo_v2_cache_2.9.5-web-pwa-2.9.5`.
-- `.nojekyll` is present so a later Pages publish does not run Jekyll.
-- The service worker is registered only when `location.protocol` is `http:` or `https:`, and the registration returns before calling `register` when the URL contains `android_asset`. Opening `index.html` with `file://` does not register a worker.
-- The same `index.html`, `manifest.json`, `sw.js`, icons, and `bg/` frames are byte-identical under `android/app/src/main/assets/`.
+## Was heute wirklich published wird (wichtig)
 
-The Android WebView loads `https://appassets.androidplatform.net/assets/index.html`. That origin is `https` and does not contain `android_asset`, so the same registration runs there. `MainActivity` already attaches `ServiceWorkerControllerCompat` to the asset loader. A failed registration is ignored and does not block the page. Legacy `file:///android_asset/` URLs skip registration.
+Veröffentlicht wird der **Branch-Root von `main`**, nicht der bereinigte Surface. Verifiziert
+öffentlich abrufbar sind daher auch:
 
-## Clean publish surface
+- `android/README-ANDROID.md` (Quellcode-Hinweise der WebView-Hülle)
+- `tests/verify-build.py` (Test-Quellcode)
+- `TESTBERICHT_v2.9.5.txt`, `SHA256SUMS_*`, `BUILD-REPORT-*`
+- `gradle/wrapper/gradle-wrapper.jar`
 
-The Git branch also contains `android/`, `tests/`, and the Gradle wrapper. Those directories are not the public site.
+Der Abruf ist harmlos (keine Secrets im Repo, Signing nur über Umgebungsvariablen), aber es
+ist **nicht** die beabsichtigte Veröffentlichungsfläche. `scripts/prepare-pages-surface.sh`
+bereitet genau diese bereinigte Flche (`dist/pages/`) vor – ihre Ausgabe wird derzeit von
+**keiner** Automation konsumiert.
 
-`scripts/prepare-pages-surface.sh` copies only the web shell into `dist/pages/` (gitignored):
+**Versionsdrift Live vs. Repository:** Die Live-Seite liefert `index.html` mit 619.449 Bytes,
+das Repository hat 630.032 Bytes (Stand `dcc4388`, RobotNav als eigene Datei). Der letzte
+Pages-Bau stammt damit aus einem etwas älteren 2.9.5-Stand. Nach dem nächsten Push auf `main`
+mit Pages-Quelle „Branch-Root" baut GitHub die Site automatisch neu.
 
-- `index.html`, `manifest.json`, `sw.js`
+## Bereit auf diesem Branch
+
+- `index.html` linkt `./manifest.json`, `./icon-192.png` und ein Apple-Touch-Icon.
+- `manifest.json` nutzt relative `start_url`/`scope` (`./`), die Installation bleibt im
+  Projekt-Unterpfad.
+- `sw.js` precacht die Hlle, Icons, `robot-navigation.js` und beide `bg/d`- and `bg/m`-
+  Bildstze; Cache-Name `anfoevo_v2_cache_2.9.5-web-pwa-2.9.5`.
+- `.nojekyll` ist vorhanden, ein Pages-Bau läuft ohne Jekyll.
+- Die Service-Worker-Registrierung läuft nur bei `http:`/`https:`. **Korrektur zur früheren
+  Doku:** Im WebView wird **nicht** registriert – `index.html` (Registrierungsblock,
+  „PWA: register only on http(s)") kehrt für `appassets.androidplatform.net` vorzeitig zurück.
+  Die Offline-Fähigkeit der App kommt dort vom Asset-Lader, nicht vom Service Worker. Die
+  `ServiceWorkerControllerCompat`-Einrichtung in `MainActivity` ist somit wirkungslos, aber
+  harmlos; eine Entscheidung dazu ist offen (Doku-Punkt C4 im Technical-Audit-Abgleich).
+- `index.html`, `manifest.json`, `sw.js`, `robot-navigation.js`, Icons und `bg/` sind
+  byte-identisch unter `android/app/src/main/assets/`.
+
+## Bereinigte Verffentlichungsflche (optional)
+
+`scripts/prepare-pages-surface.sh` kopiert nur die Web-Hlle nach `dist/pages/` (gitignored):
+
+- `index.html`, `manifest.json`, `sw.js`, **`robot-navigation.js`**
 - `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`
 - `bg/`
 - `.nojekyll`
 - `LICENSE`
 
-It excludes `android/`, `tests/`, and Gradle. It does not enable GitHub Pages, push a branch, or change repository settings. `dist/pages/` is a local directory you can publish yourself later. A custom destination is accepted only under `dist/` or outside the repository. The script refuses to delete the repository itself. An existing destination is replaced only when it already contains the `.pages-surface` marker written by this script.
+(Die Liste war unvollstndig: `robot-navigation.js` wird seit dem Skript kopiert und von
+`sw.js` precached, war aber nicht dokumentiert.)
 
-## Before a public launch
+Das Skript nimmt ein Ziel nur unter `dist/` oder außerhalb des Repos an, löscht das Repository
+nie und ersetzt ein Ziel nur bei vorhandenem `.pages-surface`-Marker. Es ändert keine
+Repository-Einstellungen. Wer die bereinigte Fläche live schalten will, stellt die
+Pages-Quelle in den Repository-Einstellungen auf „GitHub Actions" und ergänzt einen Deploy-
+Workflow (Skript → `actions/upload-pages-artifact` → `actions/deploy-pages`); dann fallen
+`android/`, `tests/`, Gradle-Wrapper und die Berichte aus dem öffentlichen Angebot heraus.
 
-1. Replace the § 5 DDG placeholder in the impressum (`[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]`) with the provider's real name, address, and contact. Do not publish while that placeholder is present, and do not invent those details. `tests/verify-build.py` currently requires the placeholder to stay, so updating it is a deliberate content change.
-2. Keep the repository free of workbook photos, verbatim workbook text, and personal notes.
-3. Enable GitHub Pages yourself only after that review. Use the project site `https://<owner>.github.io/AnFoVO-Lernkompendium/`. Publish the contents of `dist/pages/` if the public site should omit Android, tests, and Gradle. Publishing the branch root would also expose those directories.
-4. GitHub Actions billing stays a manual account decision. `.github/workflows/android-build.yml` runs on pull requests to `main` and consumes Actions minutes when Actions is enabled. This change does not modify billing, spending limits, or repository settings.
-5. Merge to `main` only when you choose to. This branch does not merge itself.
+## Vor einer beworbenen ffntlichkeit
+
+1. Das §-5-DDG-Impressum-Platzhalter (`[vor Veröffentlichung ergänzen: Name, Anschrift,
+   Kontakt]`) is **live** und wird von `tests/verify-build.py` erzwungen. Vor einer beworbenen
+   Verffentlichung ersetzen – eigene Angaben, nichts erfinden.
+2. Repository frei von Heft-Fotos, Heft-Wortlaut und persönlichen Notizen halten.
+3. Seiten-Cache-Hinweis: GitHub Pages erlaubt keine eigenen `Cache-Control`-Header. `sw.js`
+   arbeitet cache-first; Rückkehrer können daher kurz einen alten Stand ziehen, bis der
+   Worker aktualisiert. (Im Wrapper-Zweig ist dafür `vercel.json` mit
+   `max-age=0, must-revalidate` dokumentiert.)
+4. Merge/Release nur, wenn du es willst – dieses Dokument ändert keine Einstellungen.
