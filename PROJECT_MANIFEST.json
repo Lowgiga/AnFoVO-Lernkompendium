@@ -40,7 +40,8 @@
         "debug_apk_file": "release/AnFoeVO_Lernkompendium_v2.9.5-debug-arm64.apk",
         "debug_apk_sha256": "844CFC34106886B994ADC7D078F1749E283B848701182286F65321BA884645F7",
         "release_apk_sha256": "063FF7D92657C354C467931743D9C1B879EA0055B31FD0E3E6F4E217D69BA1FB",
-        "html_sha256": "5461f6feb43b6eed755e40b7a32091a4e29552779bccc90a17971368af40cbbf",
+        "html_sha256": "5dc7e4dd45e61f2cc117d024804e82e1973602a219d4d7f48176d10d06b46580",
+        "html_bytes": 630032,
         "debug_apk_matches_current_html": true,
         "release_aab_sha256": "180D5E4F112F8A444FD259C173F2AFA7D8055286E915559CD34E1880BA04457A"
     },
@@ -50,7 +51,7 @@
         "project_subpath": "/AnFoVO-Lernkompendium/",
         "service_worker_cache": "anfoevo_v2_cache_2.9.5-web-pwa-2.9.5",
         "impressum_placeholder_required": true,
-        "current_index_sha256": "5461f6feb43b6eed755e40b7a32091a4e29552779bccc90a17971368af40cbbf",
+        "current_index_sha256": "5dc7e4dd45e61f2cc117d024804e82e1973602a219d4d7f48176d10d06b46580",
         "note": "GitHub Pages aktiv: https://lowgiga.github.io/AnFoVO-Lernkompendium/ (PWA installierbar, Offline-fähig). Impressum-Platzhalter vor öffentlicher Freigabe ersetzen."
     },
     "browser_validation": {

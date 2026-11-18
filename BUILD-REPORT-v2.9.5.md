@@ -14,7 +14,10 @@
 - Clean local build (Gradle 8.13, JDK 21, SDK 36, Build-Tools 36.0.0): `:app:assembleDebug`, `:app:assembleRelease`, `:app:bundleRelease` successful.
 - `apksigner verify` passed; certificate DN `CN=AnFoeVO Lernkompendium, OU=Development, O=Lowgiga, L=NRW, ST=NRW, C=DE`.
 - APK asset hashes match repo byte-for-byte:
-  - `assets/index.html` = `5461F6FEB43B6EED755E40B7A32091A4E29552779BCCC90A17971368AF40CBBF` (629905 B)
+  - `assets/index.html` = `5DC7E4DD45E61F2CC117D024804E82E1973602A219D4D7F48176D10D06B46580` (630032 B)
+  (Prüfsumme am 17.11.2026 an den gelieferten Stand angeglichen; die ursprüngliche Angabe
+  `5461F6FE…` / 629905 B beschrieb den Vorläufer vor der RobotNav-Auslagerung `dcc4388`.
+  Root- und Android-Assets-Kopie sind byte-identisch.)
   - `assets/sw.js` = `819CEE725073E5797C8E1487BC8771185805E6B284658CED7510EDC3734D62D9`
   - `assets/robot-navigation.js` = `A9424CABE94BD87B…` (22263 B)
 - Static verification: 32/32; `TESTBERICHT_v2.9.5.json/.txt` generated.
