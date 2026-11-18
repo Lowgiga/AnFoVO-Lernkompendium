@@ -1,6 +1,5 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0D1117,50:1e3a8a,100:38bdf8&height=150&section=header&text=AnF%C3%B6VO%20Lernkompendium&fontSize=34&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=Offline%20Lern-App%20%C2%B7%2070%20Lernseiten%20%C2%B7%20PWA%20%2B%20Android&descAlignY=64&descSize=15&descColor=93c5fd" width="100%"/>
 
 <a href="https://github.com/Lowgiga/AnFoVO-Lernkompendium">
   <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=20&duration=2800&pause=900&color=38BDF8&center=true&vCenter=true&width=780&lines=70+interaktive+Lernseiten+mit+Aufgaben+und+L%C3%B6sungen;Offline-First+%E2%80%94+l%C3%A4uft+komplett+ohne+Cloud;Installierbare+PWA+%2B+Android-WebView-App;RobotNav+%E2%80%A2+deterministische+Buch-Navigation;Dark+Mode+%E2%80%A2+Haptik+%E2%80%A2+Konfetti+%E2%80%A2+3D-Parallax" alt="Typing SVG" />
@@ -42,7 +41,7 @@
 | Browser- & RobotNav-Harness | ✅ grün (lokal, Chromium/Playwright) | `npm run test:all` |
 | PWA/Offline (Subpath) | ✅ lokal getestet (Manifest, Worker, Cache, Offline-Ladevorgang) | `tests/verify-build.py` |
 | Android-Build (Quellstand) | ✅ Version `2.9.5`, Version Code `295` | `android/app/build.gradle` |
-| GitHub-Actions-CI | ⚠️ Workflow definiert; Läufe hängen von Kontobilling ab | `.github/workflows/android-build.yml`, `BUILD-REPORT-v2.9.1.md` |
+| GitHub-Actions-CI | ⚠️ Workflow definiert und gehärtet (17.11.2026); tatsächliche Läufe hängen an der Actions-Freigabe/Billing des Kontos | `.github/workflows/android-build.yml` |
 | Release-Signing | ✅ konfiguriert (Keystore lokal, nicht im Repo) | `docs/RELEASE_PROCESS.md` |
 | Geräteinstallation (Galaxy S25) | ✅ v2.9.3 verifiziert; v2.9.5-Reinstall nach Build | `PROJECT_MANIFEST.json` |
 
@@ -54,7 +53,7 @@
 flowchart LR
     subgraph WEB["🌐 Web-Oberfläche · Repository-Root"]
         IDX["index.html<br/>70 Lernseiten · Aufgaben · Lösungen"]
-        PWA["manifest.json · sw.js<br/>Icons · bg/ (29 Frames)"]
+        PWA["manifest.json · sw.js<br/>Icons · bg/ (58 Dateien: 29 Frames × 2 Sets)"]
         IDX --- PWA
     end
     subgraph APP["📱 Android · de.omega.lernkompendium"]
@@ -86,7 +85,7 @@ flowchart LR
 | `algorithm/` | RobotNav-Quellmaterial und algorithmische Komponenten |
 | `tests/` | Statische Prüfungen, Browser-Smoke-Tests und RobotNav-Tests |
 | `docs/` | Architektur-, Design- und Inhaltserhaltungsdokumentation |
-| `release/` | Erstellte Testartefakte und Android-Quellpakete |
+| `release/` | *(nicht im Repository – Release-Artefakte entstehen lokal im Build, siehe [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md))* |
 
 ## ✨ Funktionen im Detail
 
@@ -139,6 +138,30 @@ flowchart LR
 - ⚠️ Vor öffentlicher Freigabe: Impressum-Platzhalter `[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]` durch echte Angaben nach § 5 DDG ersetzen — Schritte in [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md)
 
 </details>
+
+## ♿ Barrierefreiheit
+
+Ziel **WCAG 2.2 AA**. Umgesetzt und im In-App-Selbsttest (100 Prüfungen, 17.11.2026
+100/100) teilweise live gemessen:
+
+| Kriterium | Stand |
+|---|---|
+| Sprache | `lang="de"` |
+| Sprungmarke | `.skiplink` → `#maincontent`, bei Fokus sichtbar |
+| Landmarks | `header`, `main`, `nav`, `footer`; genau eine `h1` |
+| Überschriften | Hierarchie ohne Sprung (26 × `h2`, 95 × `h3`) |
+| Berührungsziele | ≥ 44 px (`--tap`; Radios 22 px in 44-px-Labels) – im Selbsttest gemessen |
+| Fokus | `:focus-visible` mit 3-px-Outline |
+| Statusmeldungen | `role="status"` / `aria-live` (#hits, #savedflash, #curstep, #pagerinfo) |
+| Kontraste | Luminanz-Berechnung im Selbsttest; Textpaare ≥ 4,5:1 |
+| Dunkelmodus | `prefers-color-scheme` (Token-basiert) |
+| Bewegung | `prefers-reduced-motion` schaltet Animationen und Konfetti ab (11 Stellen) |
+| Dialoge | `confirmDlg` benannt + beschrieben, Fokus-Falle |
+| Dekoration | Canvas, Bühne, Fortschrittsbalken `aria-hidden` |
+
+**Offener Gap:** `forced-colors` / `prefers-contrast` (Windows-Kontrastmodus) werden
+noch nicht bedient – Token-Mapping ist reines CSS und als nächster Schritt in
+`docs/TECHNICAL_AUDIT.md` notiert.
 
 ## 🛠️ Tech-Stack
 
@@ -195,14 +218,18 @@ npx playwright install chromium
 npm run test:all
 ```
 
-Bei vorhandenem Chrome/Chromium genügt `CHROMIUM_PATH` statt der Playwright-Installation. Die Browserprüfungen decken Desktop- und Mobilansicht, Seitennavigation, Suche, Fortschrittsspeicherung, Backup-Export, Druckfunktion, Hintergrundressourcen und Browserfehler ab. `npm run test:all` prüft zusätzlich die Auslieferung unter `/AnFoVO-Lernkompendium/`: Manifest, Service-Worker-Registrierung, Cache der Hintergrundframes und einen **Offline-Ladevorgang** (über `file://` registriert sich dabei kein Worker).
+**Voraussetzungen lokal:** Node ≥ 20 (npm-Lock ist committed), Python ≥ 3.9 für die statische Prüfung (auf manchen Windows-Rechnern liegt Python nur unter
+`%LOCALAPPDATA%\Programs\Python\Python3xx\python.exe` und nicht im PATH), Chromium wahlweise über Playwright oder einen lokalen Browser per `CHROMIUM_PATH`.
+
+`npm run test:all` enthält seit 17.11.2026 auch `test:selftest` (In-App-Selbsttest, 100 Prüfungen). Die Browserprüfungen decken Desktop- und Mobilansicht, Seitennavigation, Suche, Fortschrittsspeicherung, Backup-Export, Druckfunktion, Hintergrundressourcen und Browserfehler ab. `npm run test:all` prüft zusätzlich die Auslieferung unter `/AnFoVO-Lernkompendium/`: Manifest, Service-Worker-Registrierung, Cache der Hintergrundframes und einen **Offline-Ladevorgang** (über `file://` registriert sich dabei kein Worker).
 
 ### Verifizierter Stand (v2.9.5)
 
-- ✅ Statische Projektprüfung: **32/32 Checks bestanden**
+- ✅ Statische Projektprüfung: **33/33 Checks bestanden** (17.11.2026; enthält die neue Versionsketten-Prüfung)
 - ✅ Browser- und RobotNav-Harness grün; 70 Lernseiten im Smoke-Test erkannt; keine Seiten- oder Konsolenfehler in den geprüften Läufen
 - ✅ PWA-Subpath (Manifest, Worker, Icons, Hintergrundframes, Offline-Ladevorgang) lokal grün
-- ✅ GitHub-Actions-CI: Läufe grün auf `main` (Workflow `android-build.yml`; Quellstand v2.9.5)
+- ✅ GitHub-Actions-CI: Workflow `android-build.yml` definiert und am 17.11.2026 gehärtet (Path-Filter, Concurrency, Timeout, Gradle-Cache, Lizenz-Akzeptanz, Selbsttest-Automation). **Lauf-Status:** auf `main` wurden grüne Läufe aufgezeichnet; ob Läufe aktuell erfolgen, hängt an der Actions-Freigabe/Billing des Kontos (Entscheid des Kontoinhabers, nicht des Repos).
+- ✅ App-Selbsttest automatisiert: `tests/selftest-app.cjs` fährt die 100 In-App-Prüfungen (`?test=1`) headless und ist in `npm run test:all` sowie CI eingebunden — am 17.11.2026 **100/100 bestanden, 0 übersprungen, 0 Seitenfehler**.
 - ✅ Release-Signing konfiguriert (Keystore in `AnFoeVO-Release-Keystore/`, nicht im Repo) — siehe [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)
 - ✅ Geräteinstallation (Galaxy S25) verifiziert: v2.9.3 installiert, App startet, Fortschritt bleibt erhalten (v2.9.5-Reinstall nach Build)
 - ✅ Visueller Pixelvergleich: 0 Pixel Diff im App-Inhalt (v2.9.2 vs. v2.9.3)
@@ -225,7 +252,7 @@ Details zum Build-Weg: [BUILD-REPORT-v2.9.5.md](BUILD-REPORT-v2.9.5.md).
 | WebView | androidx.webkit 1.18.0 |
 | ABIs | arm64-v8a · x86_64 · universal |
 
-> **Hinweis:** In CI-/Build-Berichten sind noch v2.9.1-Artefaktbezeichnungen (z. B. `AnFoeVO-v2.9.1-debug-apks`) sichtbar. Der Quellstand ist `2.9.2` (Version Code `292`); das Artefakt-Label wird beim nächsten Build-Durchlauf aktualisiert.
+> **Hinweis (17.11.2026):** In älteren CI-/Build-Berichten sind noch v2.9.1-Artefaktbezeichnungen (z. B. `AnFoeVO-v2.9.1-debug-apks`) sichtbar. Der Quellstand ist `2.9.5` (Version Code `295`); der CI-Artefaktname ist inzwischen versionsunabhängig (`AnFoeVO-debug-apks`) und wird nicht mehr manuell gepflegt.
 
 ### Debug-APK erstellen
 
@@ -263,8 +290,6 @@ Hinweis: Screenshots dürfen keine personenbezogenen Lernfortschritte, Workbook-
 
 <div align="center">
 
-<img height="170em" src="https://github-readme-stats.vercel.app/api?username=Lowgiga&show_icons=true&theme=tokyonight&include_all_commits=true&count_private=true&hide_border=true&bg_color=0D1117&title_color=38BDF8&icon_color=7B2FBE&text_color=c9d1d9"/>
-<img height="170em" src="https://github-readme-stats.vercel.app/api/top-langs/?username=Lowgiga&layout=compact&theme=tokyonight&hide_border=true&bg_color=0D1117&title_color=38BDF8&text_color=c9d1d9"/>
 
 <br/>
 
@@ -272,7 +297,6 @@ Hinweis: Screenshots dürfen keine personenbezogenen Lernfortschritte, Workbook-
 
 <br/>
 
-<img src="https://github-profile-trophy.vercel.app/?username=Lowgiga&theme=algolia&no-frame=true&no-bg=true&margin-w=4&row=1"/>
 
 </div>
 
@@ -328,7 +352,6 @@ Beiträge sind willkommen — bitte die folgenden Grundsätze beachten:
 
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:38bdf8,50:1e3a8a,100:0D1117&height=90&section=footer" width="100%"/>
 
 *Offline lernen, Fortschritt behalten — **AnFöVO Lernkompendium** · gebaut von **Lowgiga***
 

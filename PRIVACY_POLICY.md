@@ -22,4 +22,3 @@ Da keine personenbezogenen Daten erhoben werden, entfallen Auskunfts-, Lösch- u
 
 ## 7. Kontakt
 Bei Fragen: GitHub Issues (https://github.com/Lowgiga/AnFoVO-Lernkompendium/issues)
-PY

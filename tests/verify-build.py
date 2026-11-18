@@ -12,6 +12,15 @@ ROOT = Path(__file__).resolve().parents[1]
 HTML = (ROOT / "index.html").read_text(encoding="utf-8")
 HTML_BYTES = (ROOT / "index.html").read_bytes()
 ANDROID_ASSETS = ROOT / "android" / "app" / "src" / "main" / "assets"
+HTML_TITLE = re.search(r"<title>(.*?)</title>", HTML, re.S).group(1).strip()
+DATA_VERSION = re.search(r'var DATA = \{"version":\s*"([^"]+)"', HTML).group(1)
+MANIFEST = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8"))
+MANIFEST_VERSION = MANIFEST.get("version", "")
+SW = (ROOT / "sw.js").read_text(encoding="utf-8")
+SW_VERSION = re.search(r"var VERSION = '([^']+)'", SW).group(1)
+PKG_VERSION = json.loads(
+    (ROOT / "tests" / "package.json").read_text(encoding="utf-8")
+).get("version", "")
 ANDROID_HTML = ANDROID_ASSETS / "index.html"
 PWA_FILES = (
     "manifest.json",
@@ -64,12 +73,21 @@ check(
 check(
     "RobotNav loads via standalone script tag",
     '<script src="robot-navigation.js"' in HTML
-    and "RobotNav v2.8.0" in JS
+    and "RobotNav v2.9.5" in JS
     and "RobotNav v2.7.0" not in HTML,
 )
 check(
     "Standalone engine has no fetch/XHR/WebSocket",
     not re.search(r"\b(?:fetch\s*\(|XMLHttpRequest\b|WebSocket\b)", JS),
+)
+check(
+    "Version chain is consistent (DATA, title, manifest, sw.js, package)",
+    DATA_VERSION
+    == MANIFEST_VERSION
+    == SW_VERSION
+    == PKG_VERSION
+    and DATA_VERSION in HTML_TITLE,
+    f"DATA={DATA_VERSION}; manifest={MANIFEST_VERSION}; sw={SW_VERSION}; tests={PKG_VERSION}; title={HTML_TITLE!r}",
 )
 check("No polling interval used", not re.search(r"\bsetInterval\s*\(", JS))
 check(
@@ -351,11 +369,26 @@ report = {
     "checks": checks,
 }
 
-(ROOT / "TESTBERICHT_v2.9.5.json").write_text(
+import argparse
+
+parser = argparse.ArgumentParser(description="Static build verification for the Lernkompendium PWA.")
+parser.add_argument(
+    "--out",
+    default=None,
+    help="Verzeichnis fuer die Testberichte (Default: build/verify/ - gitignoriert, kein Tree-Drift). "
+    "Fuer ein Release bewusst ein Release-Verzeichnis waehen und die Berichte committen.",
+)
+args = parser.parse_args()
+OUT_DIR = Path(args.out) if args.out else ROOT / "build" / "verify"
+OUT_DIR.mkdir(parents=True, exist_ok=True)
+REPORT_JSON = OUT_DIR / "TESTBERICHT_v2.9.5.json"
+REPORT_TXT = OUT_DIR / "TESTBERICHT_v2.9.5.txt"
+
+REPORT_JSON.write_text(
     json.dumps(report, ensure_ascii=False, indent=2) + "\n",
     encoding="utf-8",
 )
-(ROOT / "TESTBERICHT_v2.9.5.txt").write_text(
+REPORT_TXT.write_text(
     "\n".join(
         ("PASS" if item["ok"] else "FAIL")
         + " "

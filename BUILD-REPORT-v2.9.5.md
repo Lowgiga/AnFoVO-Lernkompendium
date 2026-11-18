@@ -5,7 +5,8 @@
 - Adopted the parallel wrapper workstream: `index.html` now loads the RobotNav engine via `<script src="robot-navigation.js">` instead of an inline embedded block; the engine file is a first-class asset.
 - `sw.js` precaches `./robot-navigation.js` and supports a `skip-waiting` message for faster service-worker updates.
 - Learning content unchanged: the embedded DATA blob is byte-identical between the previous embedded build and this build (SHA-256 match); the v2.9.4 animation overhaul (compositor-only transform/opacity, rAF-throttled parallax, reduced-motion aware) is carried over.
-- Byte parity restored across all surfaces: root `index.html` == repo Android assets == wrapper Android assets; `robot-navigation.js` identical in root, `algorithm/`, Android assets, and wrapper assets.
+- Byte parity restored across all surfaces: root `index.html` == repo Android assets; `robot-navigation.js` identical in root, `algorithm/`, Android assets, and (at v2.9.5 release time) wrapper assets.
+  **Update 17.11.2026:** The wrapper workstream has since moved to v2.10.0 (modular style.css/app.js/assistent.js, versionCode 296), so its copies have diverged by design. Parity within THIS repository (root == algorithm == android assets) is enforced by CI; the wrapper branch is a separate product line.
 - Verification updated for the new architecture: `tests/verify-build.py` now checks the script reference and byte-parity of the engine copies (root ↔ `algorithm/` ↔ Android assets) instead of the embedded-block match; PWA precache expectation extended to 65 entries.
 
 ## Verified
@@ -14,10 +15,11 @@
 - Clean local build (Gradle 8.13, JDK 21, SDK 36, Build-Tools 36.0.0): `:app:assembleDebug`, `:app:assembleRelease`, `:app:bundleRelease` successful.
 - `apksigner verify` passed; certificate DN `CN=AnFoeVO Lernkompendium, OU=Development, O=Lowgiga, L=NRW, ST=NRW, C=DE`.
 - APK asset hashes match repo byte-for-byte:
-  - `assets/index.html` = `5DC7E4DD45E61F2CC117D024804E82E1973602A219D4D7F48176D10D06B46580` (630032 B)
-  (Prüfsumme am 17.11.2026 an den gelieferten Stand angeglichen; die ursprüngliche Angabe
-  `5461F6FE…` / 629905 B beschrieb den Vorläufer vor der RobotNav-Auslagerung `dcc4388`.
-  Root- und Android-Assets-Kopie sind byte-identisch.)
+  - `assets/index.html` = `2BD1DEC44F87B85ED95C9E198DE32F0DF8E8DA60962431D365D14328C9A133EC` (630032 B)
+  (Prüfsumme am 17.11.2026 an den gelieferten Stand angeglichen: `DATA.version` 2.7.0 → 2.9.5
+  und RobotNav-Kopf 2.8.0 → 2.9.5; die ursprüngliche Angabe `5461F6FE…` / 629905 B beschrieb
+  den Vorläufer vor der RobotNav-Auslagerung `dcc4388`. Root- und Android-Assets-Kopie sind
+  byte-identisch; SHA-256 der Arbeitsbaum-Datei, LF-Blob weicht ab.)
   - `assets/sw.js` = `819CEE725073E5797C8E1487BC8771185805E6B284658CED7510EDC3734D62D9`
   - `assets/robot-navigation.js` = `A9424CABE94BD87B…` (22263 B)
 - Static verification: 32/32; `TESTBERICHT_v2.9.5.json/.txt` generated.

@@ -71,6 +71,5 @@ Workflow (Skript → `actions/upload-pages-artifact` → `actions/deploy-pages`)
 2. Repository frei von Heft-Fotos, Heft-Wortlaut und persönlichen Notizen halten.
 3. Seiten-Cache-Hinweis: GitHub Pages erlaubt keine eigenen `Cache-Control`-Header. `sw.js`
    arbeitet cache-first; Rückkehrer können daher kurz einen alten Stand ziehen, bis der
-   Worker aktualisiert. (Im Wrapper-Zweig ist dafür `vercel.json` mit
-   `max-age=0, must-revalidate` dokumentiert.)
+   Worker aktualisiert.
 4. Merge/Release nur, wenn du es willst – dieses Dokument ändert keine Einstellungen.
