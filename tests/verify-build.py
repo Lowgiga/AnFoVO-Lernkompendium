@@ -12,6 +12,15 @@ ROOT = Path(__file__).resolve().parents[1]
 HTML = (ROOT / "index.html").read_text(encoding="utf-8")
 HTML_BYTES = (ROOT / "index.html").read_bytes()
 ANDROID_ASSETS = ROOT / "android" / "app" / "src" / "main" / "assets"
+HTML_TITLE = re.search(r"<title>(.*?)</title>", HTML, re.S).group(1).strip()
+DATA_VERSION = re.search(r'var DATA = \{"version":\s*"([^"]+)"', HTML).group(1)
+MANIFEST = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8"))
+MANIFEST_VERSION = MANIFEST.get("version", "")
+SW = (ROOT / "sw.js").read_text(encoding="utf-8")
+SW_VERSION = re.search(r"var VERSION = '([^']+)'", SW).group(1)
+PKG_VERSION = json.loads(
+    (ROOT / "tests" / "package.json").read_text(encoding="utf-8")
+).get("version", "")
 ANDROID_HTML = ANDROID_ASSETS / "index.html"
 PWA_FILES = (
     "manifest.json",
@@ -31,17 +40,12 @@ def check(name, ok, detail=""):
     checks.append({"name": name, "ok": bool(ok), "detail": detail})
 
 
-matches = [
-    match.group(1).strip()
-    for match in re.finditer(r"<script>([\s\S]*?)</script>", HTML)
-    if "RobotNav v2.8.0" in match.group(1)
-]
-embedded = matches[-1] if matches else ""
+ROOT_ENGINE = (ROOT / "robot-navigation.js").read_text(encoding="utf-8").strip()
 
 check(
-    "Embedded RobotNav block matches standalone source",
-    embedded == JS,
-    f"embedded={len(embedded)} chars; source={len(JS)} chars",
+    "Root RobotNav copy matches algorithm source",
+    ROOT_ENGINE == JS,
+    f"root={len(ROOT_ENGINE)} chars; algorithm={len(JS)} chars",
 )
 
 standalone_syntax = subprocess.run(
@@ -53,13 +57,12 @@ check(
     (standalone_syntax.stderr or standalone_syntax.stdout).strip(),
 )
 
-embedded_syntax = subprocess.run(
-    ["node", "--check", "-"], input=embedded, capture_output=True, text=True
-)
+android_engine = ANDROID_ASSETS / "robot-navigation.js"
 check(
-    "Embedded JavaScript syntax",
-    embedded_syntax.returncode == 0,
-    (embedded_syntax.stderr or embedded_syntax.stdout).strip(),
+    "Android RobotNav asset matches algorithm source",
+    android_engine.is_file()
+    and android_engine.read_text(encoding="utf-8").strip() == JS,
+    f"asset exists={android_engine.is_file()}",
 )
 
 check("HTML document has one html root", len(re.findall(r"<html\b", HTML, re.I)) == 1)
@@ -68,12 +71,23 @@ check(
     ANDROID_HTML.is_file() and ANDROID_HTML.read_bytes() == HTML_BYTES,
 )
 check(
-    "RobotNav v2.8.0 embedded",
-    HTML.count("RobotNav v2.8.0") >= 1 and "RobotNav v2.7.0" not in HTML,
+    "RobotNav loads via standalone script tag",
+    '<script src="robot-navigation.js"' in HTML
+    and "RobotNav v2.9.5" in JS
+    and "RobotNav v2.7.0" not in HTML,
 )
 check(
     "Standalone engine has no fetch/XHR/WebSocket",
     not re.search(r"\b(?:fetch\s*\(|XMLHttpRequest\b|WebSocket\b)", JS),
+)
+check(
+    "Version chain is consistent (DATA, title, manifest, sw.js, package)",
+    DATA_VERSION
+    == MANIFEST_VERSION
+    == SW_VERSION
+    == PKG_VERSION
+    and DATA_VERSION in HTML_TITLE,
+    f"DATA={DATA_VERSION}; manifest={MANIFEST_VERSION}; sw={SW_VERSION}; tests={PKG_VERSION}; title={HTML_TITLE!r}",
 )
 check("No polling interval used", not re.search(r"\bsetInterval\s*\(", JS))
 check(
@@ -185,8 +199,8 @@ except json.JSONDecodeError:
     sw_frames = []
 check(
     "Service worker cache version is current",
-    "var VERSION = '2.9.1';" in sw_text
-    and "var BUILD = 'web-pwa-2.9.1';" in sw_text
+    "var VERSION = '2.9.5';" in sw_text
+    and "var BUILD = 'web-pwa-2.9.5';" in sw_text
     and "anfoevo_v2_cache_" in sw_text
     and "robotnav-v2.8.0" not in sw_text,
 )
@@ -226,8 +240,8 @@ check(
 impressum = re.search(r'id="imp-h"[\s\S]*?</section>', HTML)
 impressum_text = impressum.group(0) if impressum else ""
 check(
-    "Impressum shows v2.9.1 and keeps the required DDG placeholder",
-    "v2.9.1" in impressum_text
+    "Impressum shows v2.9.5 and keeps the required DDG placeholder",
+    "v2.9.5" in impressum_text
     and "v2.7.0" not in impressum_text
     and "§ 5 DDG" in impressum_text
     and PLACEHOLDER in impressum_text,
@@ -319,7 +333,7 @@ def pages_subpath_detail():
             and served_manifest.get("start_url") == "./"
             and served_manifest.get("scope") == "./"
             and worker_status == 200
-            and b"web-pwa-2.9.1" in worker_body
+            and b"web-pwa-2.9.5" in worker_body
             and icon_status == 200
             and icon_type == "image/png"
             and icon_body.startswith(b"\x89PNG")
@@ -348,18 +362,33 @@ check(
 failed = [item for item in checks if not item["ok"]]
 passed = len(checks) - len(failed)
 report = {
-    "version": "2.9.1",
+    "version": "2.9.5",
     "static_checks": len(checks),
     "passed": passed,
     "failed": len(failed),
     "checks": checks,
 }
 
-(ROOT / "TESTBERICHT_v2.9.1.json").write_text(
+import argparse
+
+parser = argparse.ArgumentParser(description="Static build verification for the Lernkompendium PWA.")
+parser.add_argument(
+    "--out",
+    default=None,
+    help="Verzeichnis fuer die Testberichte (Default: build/verify/ - gitignoriert, kein Tree-Drift). "
+    "Fuer ein Release bewusst ein Release-Verzeichnis waehen und die Berichte committen.",
+)
+args = parser.parse_args()
+OUT_DIR = Path(args.out) if args.out else ROOT / "build" / "verify"
+OUT_DIR.mkdir(parents=True, exist_ok=True)
+REPORT_JSON = OUT_DIR / "TESTBERICHT_v2.9.5.json"
+REPORT_TXT = OUT_DIR / "TESTBERICHT_v2.9.5.txt"
+
+REPORT_JSON.write_text(
     json.dumps(report, ensure_ascii=False, indent=2) + "\n",
     encoding="utf-8",
 )
-(ROOT / "TESTBERICHT_v2.9.1.txt").write_text(
+REPORT_TXT.write_text(
     "\n".join(
         ("PASS" if item["ok"] else "FAIL")
         + " "

@@ -1,6 +1,32 @@
-# Technischer Audit-Bericht: AnFöVO Lernkompendium v2.9.1
+# Technischer Audit-Bericht: AnFöVO Lernkompendium v2.9.5
 
 Stand: 12. November 2026 | Prüfer: OpenCode Agent (Deep-Code-Audit)
+
+> **Abgleich 17. November 2026 (vollständige Nachprüfung aller Aussagen).** Der Ursprungs-
+> Audit ist als Momentaufnahme gültig; die folgenden Angaben darin sind inzwischen überholt
+> und wurden an den geprüften Ist-Zustand angeglichen:
+>
+> | Ursprungs-Audit | Ist-Zustand (17.11.2026, verifiziert) |
+> |---|---|
+> | RobotNav-Engine „inline in index.html" | **Standalone** seit `dcc4388`: `<script src="robot-navigation.js">` (Z. 1587); Engine 22.263 B in `robot-navigation.js`, byte-identisch in Wurzel, `algorithm/` und Android-Assets (CI-Parity-Gate) |
+> | index.html „~2.200 Zeilen" | 1.959 Zeilen |
+> | `MainActivity.java` „132 Zeilen" | 143 Zeilen |
+> | verify-build „21 Prüfungen" | **32 Prüfungen** (u. a. Byte-Parität, Struktur, Manifest, SW-Version, Impressum-Platzhalter, Deploy-Pfad/Surface-Vertrag, lokaler HTTP-Server-Test) |
+> | „29 WebP-Hintergrundbilder" | 58 Dateien (29 Frames × 2 Sets `bg/d` + `bg/m`) |
+> | RobotNav-Version 2.8.0 | 2.9.5 (Kopf + `inspect()`, 17.11.2026 angeglichen) |
+> | `DATA.version` | 2.9.5 (war 2.7.0 – floss in Export-Metadaten; jetzt versionskette-prüfung in `verify-build.py`: DATA = Manifest = sw.js = tests = Titel) |
+> | `index.html`-Hash 5461F6FE…/629.905 B | `2BD1DEC4…` / 630.032 B (Arbeitsbaum-SHA-256; Wurzel und Android-Assets identisch) |
+> | CI ohne Härtung | Path-Filter inkl. `robot-navigation.js`, Concurrency, Timeout, Gradle-Cache, Lizenz-Akzeptanz, versionsunabhäniger Artefaktname, Selbsttest-Automation (`tests/selftest-app.cjs`, 100 Prüfungen, in `test:all`) |
+>
+> **Offene Punkte (neu dokumentiert, kein Code-Defekt):**
+> - `forced-colors`/`prefers-contrast` werden nicht bedient (Windows-Kontrastmodus) – der
+>   Wrapper-Zweig hat dafür ein Token-Mapping; Übertragung ist reines CSS-Thema.
+> - Zwei konkurrierende Dark-Mode-Paletten (Token-Block Z. 20 vs. Override Z. 389); der
+>   spätere Block gewinnt, der frühere ist halb tot. Zusammeführung ist ein visueller
+>   Eingriff und daher bewusst noch nicht umgesetzt.
+> - CSP mit `script-src 'unsafe-inline'` (notwendig für den Single-File-Ansatz und den
+>   dynamisch geladenen Selbsttest) – kein Schutznetz gegen XSS, nur Dekoration.
+> - GitHub Pages ist aktiv und published den Branch-Root (Details: `docs/GITHUB_PAGES.md`).
 
 ## 1. Architektur-Übersicht
 

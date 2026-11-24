@@ -30,12 +30,13 @@ class VerifyBuildTests(unittest.TestCase):
             Path("tests/verify-build.py"),
             Path("index.html"),
             ENGINE,
+            Path("robot-navigation.js"),
             Path("docs/ARCHITECTURE.md"),
             Path(".nojekyll"),
             Path("scripts/prepare-pages-surface.sh"),
         ]
         relatives.extend(Path(name) for name in PWA_NAMES)
-        relatives.extend(ASSET / name for name in ("index.html", *PWA_NAMES))
+        relatives.extend(ASSET / name for name in ("index.html", "robot-navigation.js", *PWA_NAMES))
         for relative in relatives:
             target = self.root / relative
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -101,7 +102,7 @@ class VerifyBuildTests(unittest.TestCase):
         self.assertIsNotNone(failure)
 
     def test_impressum_placeholder_is_required(self):
-        name = "Impressum shows v2.9.1 and keeps the required DDG placeholder"
+        name = "Impressum shows v2.9.5 and keeps the required DDG placeholder"
         html = self.root / "index.html"
         original = html.read_text(encoding="utf-8")
         self.assertEqual(self.run_check(name), (0, None))

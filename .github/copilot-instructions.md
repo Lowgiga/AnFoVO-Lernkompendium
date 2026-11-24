@@ -19,7 +19,7 @@ This repository contains a local-first digital learning compendium for Â§ 8 AnFÃ
 ## Architecture boundaries
 - `index.html` is the authoritative self-contained web application and offline runtime.
 - `android/app/src/main/assets/index.html` must remain byte-identical to the root `index.html`.
-- `algorithm/robot-navigation.js` is the maintained RobotNav source. Its embedded runtime in `index.html` must remain synchronized; use the existing static verifier.
+- `algorithm/robot-navigation.js` is the maintained RobotNav source. It is loaded via `<script src="robot-navigation.js">` (no embedded copy since v2.9.5); keep the three copies in sync (root, `algorithm/`, Android assets) and use the existing static verifier plus the CI parity gate.
 - Do not introduce mandatory servers, remote fonts, CDN scripts, analytics, telemetry, runtime API calls or external runtime dependencies.
 - Do not extract, bundle or split the standalone HTML runtime unless a tested migration proves offline behavior and Android asset parity.
 - Preserve existing navigation, search, progress, notes, quizzes, printing and local persistence behavior.

@@ -1,5 +1,5 @@
 /*
- * RobotNav v2.8.0
+ * RobotNav v2.9.5
  * Five-part architecture: DOM inventory -> obstacle cache -> position planner
  * -> motion controller -> event scheduler.
  * Standalone browser JavaScript; no network calls, dependencies, timers for polling,
@@ -352,7 +352,7 @@
 
   function inspect() {
     var target = findTarget();
-    return { version: '2.8.0', target: target ? target.tagName.toLowerCase() + (target.id ? '#' + target.id : '') : null,
+    return { version: '2.9.5', target: target ? target.tagName.toLowerCase() + (target.id ? '#' + target.id : '') : null,
       obstacles: currentObstacles(), side: lastSide, progress: lastProgress, debug: debugEnabled,
       cacheValid: cacheValid, cacheSize: cache.length, scrollRoots: observedRoots.size,
       diagnostics: Object.assign({}, diagnostics) };

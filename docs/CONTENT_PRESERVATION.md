@@ -20,6 +20,5 @@ This project is a learning compendium for § 8 AnFöVO NRW. Existing curriculum 
 - HTML entry: `index.html`.
 - Existing learning articles: 70 (verified in v2.9.0 static inspection).
 - Static build checks: 20 passed / 0 failed after restoring the expected RobotNav marker in the v2.9.0 baseline.
-- Current static verifier: `python tests/verify-build.py` (32 passed / 0 failed after the root PWA shell was added).
-- Real browser interaction tests: not yet verified in the original Windows environment recorded for v2.9.0.
-- On this branch, `npm run test:all` from `tests/` passed with system Chrome: RobotNav harness, `file://` smoke test (70 pages), and the `/AnFoVO-Lernkompendium/` service-worker check. The in-page `?test` self-test still fails the same three pre-existing layout checks as `main` (97/100) and reports no page errors.
+- Current static verifier: `python tests/verify-build.py` (33 passed / 0 failed, 17.11.2026 – includes the version-chain check DATA = manifest = sw.js = tests = title).
+- Real browser interaction tests: verified locally on Windows (Node 24, Playwright 1.65, bundled Chromium): RobotNav harness, `file://` smoke test (70 pages), the `/AnFoVO-Lernkompendium/` service-worker check, and since 17.11.2026 the automated in-app self-test (`npm run test:selftest` → `tests/selftest-app.cjs`): **100/100 checks passed, 0 skipped, 0 page errors** (the three layout failures recorded for the v2.9.0-era branch are gone).

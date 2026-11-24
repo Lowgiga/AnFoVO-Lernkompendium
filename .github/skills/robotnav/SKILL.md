@@ -6,7 +6,7 @@ description: Maintain the deterministic RobotNav browser-side mascot positioning
 # RobotNav Engineering Skill
 
 ## Use this skill when
-Changing `algorithm/robot-navigation.js`, its embedded copy in `index.html`, mascot placement, obstacle discovery, scroll roots, observers, cache invalidation, scheduling, motion or teardown.
+Changing `algorithm/robot-navigation.js` or one of its mirrored copies (root, Android assets), mascot placement, obstacle discovery, scroll roots, observers, cache invalidation, scheduling, motion or teardown.
 
 ## Required context
 Read `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md` and `tests/run-browser-tests.cjs`. Inspect the current harness and engine before proposing changes.
@@ -24,7 +24,7 @@ Read `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md` and `tests/run-browser-test
 1. State the invariant being changed and the regression risk.
 2. Prefer targeted updates over a full engine rewrite.
 3. Extend `tests/robotnav-harness.html` or the existing browser test when a new invariant is introduced.
-4. Keep the maintained source and embedded runtime synchronized.
+4. Keep the maintained source and its two mirrored copies (root, Android assets) synchronized.
 5. Do not change educational content to make a navigation test pass.
 
 ## Validation

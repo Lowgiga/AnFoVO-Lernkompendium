@@ -1,5 +1,10 @@
 const { chromium } = require('playwright');
 const path = require('path');
+// Expected engine version is read from the maintained source, so a release bump never
+// leaves this harness asserting a stale literal (the 2.8.0 literal drifted twice).
+const engineSource = require('fs').readFileSync(path.resolve(__dirname, '..', 'robot-navigation.js'), 'utf8');
+const engineVersion = (/RobotNav v(\d+\.\d+\.\d+)/.exec(engineSource) || [])[1];
+if (!engineVersion) { console.error('Engine version marker not found in robot-navigation.js'); process.exit(1); }
 (async()=>{
  const launchOptions={headless:true,args:['--no-sandbox']};
  if(process.env.CHROMIUM_PATH)launchOptions.executablePath=process.env.CHROMIUM_PATH;
@@ -9,7 +14,7 @@ const path = require('path');
  await page.goto('file://'+path.resolve(__dirname,'robotnav-harness.html'));
  await page.waitForTimeout(100);
  const initial=await page.evaluate(()=>RobotNav.inspect());
- if(initial.version!=='2.8.0'||!initial.cacheValid||initial.cacheSize<3)throw new Error('Initial inventory/cache not ready: '+JSON.stringify(initial));
+ if(initial.version!==engineVersion||!initial.cacheValid||initial.cacheSize<3)throw new Error('Initial inventory/cache not ready (expected engine '+engineVersion+'): '+JSON.stringify(initial));
  const initialScans=initial.diagnostics.scans;
  await page.evaluate(async()=>{const p=document.querySelector('#left-pane');for(let i=0;i<50;i++){p.scrollTop=i*5;p.dispatchEvent(new Event('scroll'));}await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
  const scrolled=await page.evaluate(()=>RobotNav.inspect());

@@ -1,14 +1,46 @@
+# Gradle / Android
 .gradle/
 **/build/
 local.properties
+*.apk
+*.aab
 *.jks
 *.keystore
 *.p12
 *.pfx
-*.log
-.DS_Store
-Thumbs.db
+captures/
+.cxx/
+.externalNativeBuild/
+
+# Web-Deployment (Vercel o.ae.) - nie Artefakte oder Secrets versionieren
+.vercel/
+.env*
+*.env
+
+# Sicherungssnapshots / Altstaende
+BACKUP_*/
+backups/
+
+# IDE / Editor
+.idea/
+*.iml
+.vscode/
+*.tmp
+
+# Node / Python / Tests
 node_modules/
 __pycache__/
 *.pyc
 dist/
+playwright-report/
+test-results/
+.cache/
+
+# GitHub Pages / Jekyll
+_site/
+.jekyll-cache/
+
+# Logs / OS
+*.log
+.DS_Store
+Thumbs.db
