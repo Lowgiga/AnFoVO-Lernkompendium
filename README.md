@@ -39,11 +39,11 @@
 | --- | --- | --- |
 | Statische Projektprüfung | ✅ 32/32 Checks grün | `python tests/verify-build.py` |
 | Browser- & RobotNav-Harness | ✅ grün (lokal, Chromium/Playwright) | `npm run test:all` |
-| PWA/Offline (Subpath) | ✅ lokal getestet (Manifest, Worker, Cache, Offline-Ladevorgang) | `tests/verify-build.py` |
+| PWA/Offline (Subpath) | ✅ lokal getestet (Manifest, Worker, Cache, Offline-Ladevorgang) | `tests/pwa-subpath.cjs` |
 | Android-Build (Quellstand) | ✅ Version `2.9.5`, Version Code `295` | `android/app/build.gradle` |
 | GitHub-Actions-CI | ⚠️ Workflow definiert und gehärtet (17.11.2026); tatsächliche Läufe hängen an der Actions-Freigabe/Billing des Kontos | `.github/workflows/android-build.yml` |
 | Release-Signing | ✅ konfiguriert (Keystore lokal, nicht im Repo) | `docs/RELEASE_PROCESS.md` |
-| Geräteinstallation (Galaxy S25) | ✅ v2.9.3 verifiziert; v2.9.5-Reinstall nach Build | `PROJECT_MANIFEST.json` |
+| Geräteinstallation (Galaxy S25) | ✅ v2.9.3 verifiziert; v2.9.5-Reinstall nach APK-Rebuild noch offen | `PROJECT_MANIFEST.json` |
 
 > **Versionsstand (v2.9.5):** Alle Inhalte, Version Codes und Artefakte sind auf `2.9.5` angehoben. Die Buch-/Navigationsanimation wurde compositor-only überarbeitet (nur `transform`/`opacity`, rAF-gedrosselter Parallax, `prefers-reduced-motion` respektiert). RobotNav wird als eigenständige Datei (`robot-navigation.js`) geladen und vom Service-Worker vorgeladen (skip-waiting). Die Lerninhalte in `index.html` blieben unverändert. GitHub Pages sind aktiv unter `https://lowgiga.github.io/AnFoVO-Lernkompendium/`. Die Release-Signing wurde lokal konfiguriert und über CI validiert.
 
@@ -231,8 +231,8 @@ npm run test:all
 - ✅ GitHub-Actions-CI: Workflow `android-build.yml` definiert und am 17.11.2026 gehärtet (Path-Filter, Concurrency, Timeout, Gradle-Cache, Lizenz-Akzeptanz, Selbsttest-Automation). **Lauf-Status:** auf `main` wurden grüne Läufe aufgezeichnet; ob Läufe aktuell erfolgen, hängt an der Actions-Freigabe/Billing des Kontos (Entscheid des Kontoinhabers, nicht des Repos).
 - ✅ App-Selbsttest automatisiert: `tests/selftest-app.cjs` fährt die 100 In-App-Prüfungen (`?test=1`) headless und ist in `npm run test:all` sowie CI eingebunden — am 17.11.2026 **100/100 bestanden, 0 übersprungen, 0 Seitenfehler**.
 - ✅ Release-Signing konfiguriert (Keystore in `AnFoeVO-Release-Keystore/`, nicht im Repo) — siehe [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)
-- ✅ Geräteinstallation (Galaxy S25) verifiziert: v2.9.3 installiert, App startet, Fortschritt bleibt erhalten (v2.9.5-Reinstall nach Build)
-- ✅ Visueller Pixelvergleich: 0 Pixel Diff im App-Inhalt (v2.9.2 vs. v2.9.3)
+- ✅ Geräteinstallation (Galaxy S25) verifiziert: v2.9.3 installiert, App startet, Fortschritt bleibt erhalten; v2.9.5-Reinstall nach APK-Rebuild noch offen
+- ✅ Visueller Pixelvergleich: 0 Pixel Diff im App-Inhalt (v2.9.2 vs. v2.9.3); der Statusleisten-Diff ist außerhalb des App-Inhalts
 - ⏳ Play-Store-Veröffentlichung: Release-AAB + Store-Listing vorbereitet
 
 Details zum Build-Weg: [BUILD-REPORT-v2.9.5.md](BUILD-REPORT-v2.9.5.md).
@@ -329,7 +329,7 @@ Beiträge sind willkommen — bitte die folgenden Grundsätze beachten:
 
 - **Fehler melden:** [GitHub Issues](https://github.com/Lowgiga/AnFoVO-Lernkompendium/issues)
 - **Fragen zur Nutzung:** über Issues oder die Projektdokumentation unter `docs/`
-- **Sicherheitsrelevante Hinweise:** bitte nicht öffentlich posten; stattdessen ein Issue mit Label `security` (oder direkter Kontakt über das Profil) — Keystore/Secrets niemals committen.
+- **Sicherheitsrelevante Hinweise:** keine Details zu Sicherheitslücken öffentlich posten. Für Meldungen direkten Kontakt über das Profil nutzen; ein Issue mit Label `security` darf nur für eine Kontaktanfrage ohne Details verwendet werden. Keystore/Secrets niemals committen.
 
 ## ⚖️ Lizenz & Grundsätze
 
