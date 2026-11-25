@@ -114,7 +114,7 @@ class VerifyBuildTests(unittest.TestCase):
         html_mutations = {
             "placeholder": (
                 "<b>Lowgiga</b>",
-                "<i>[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]</i>",
+                "<b>Lowgiga</b> <i>[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]</i>",
             ),
             "provider name": ("<b>Lowgiga</b>", "<b>Example Provider</b>"),
             "provider address": ("New York 11354 USA", "Berlin 10115 Germany"),
@@ -124,7 +124,7 @@ class VerifyBuildTests(unittest.TestCase):
             ),
             "contact link markup": (
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
-                "Vid80gmx@gmail.com",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)",
             ),
         }
         for field, (old, new) in html_mutations.items():
@@ -141,7 +141,7 @@ class VerifyBuildTests(unittest.TestCase):
         markdown_mutations = {
             "placeholder": (
                 "**Diensteanbieter:** Lowgiga",
-                "**Diensteanbieter:** [vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]",
+                "**Diensteanbieter:** Lowgiga [vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]",
             ),
             "provider name": (
                 "**Diensteanbieter:** Lowgiga",
@@ -157,7 +157,7 @@ class VerifyBuildTests(unittest.TestCase):
             ),
             "contact link markup": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
-                "Vid80gmx@gmail.com",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)",
             ),
         }
         for field, (old, new) in markdown_mutations.items():
