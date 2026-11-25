@@ -36,7 +36,7 @@
 - Service worker cache: `anfoevo_v2_cache_2.9.5-web-pwa-2.9.5`; `2.9.4` no longer present.
 - Galaxy S25 verification is current: release v2.9.3 remains installed; a separate v2.9.5 debug app was installed side-by-side and cold-started successfully. Only the interactive seven-point smoke checklist is still open.
 - GitHub Release v2.9.4 (animation update, embedded architecture) remains published; v2.9.5 is the canonical follow-up with the standalone-engine architecture.
-- GitHub Pages is public and the live `index.html` still contains the DDG Impressum placeholder; the documented publication gate is therefore not met. The placeholder must be replaced with real legal-contact details or Pages must be disabled.
+- GitHub Pages is public and the live `index.html` still contains the DDG Impressum placeholder; the documented publication gate is therefore not met. The placeholder must be replaced with real legal-contact details or Pages must be disabled. A replacement must update the static verifier, its regression test, and both byte-parity copies of `index.html` in the same change.
 
 ## Rebuild
 

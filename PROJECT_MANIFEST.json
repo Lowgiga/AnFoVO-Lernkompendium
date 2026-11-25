@@ -59,7 +59,7 @@
         "impressum_placeholder_present_in_live_site": true,
         "public_release_gate_met": false,
         "current_index_sha256": "242e2822d64d85fa4b9fbdee11aac74c88350f65337b6492a6e9479e7d1740dd",
-        "note": "GitHub Pages is public at https://lowgiga.github.io/AnFoVO-Lernkompendium/ (installable PWA, offline-capable). The live published index.html still contains the required DDG Impressum placeholder, so the documented publication gate is not met. Replace the placeholder with real legal-contact details or disable GitHub Pages."
+        "note": "GitHub Pages is public at https://lowgiga.github.io/AnFoVO-Lernkompendium/ (installable PWA, offline-capable). The live published index.html still contains the required DDG Impressum placeholder, so the documented publication gate is not met. Replace the placeholder with real legal-contact details or disable GitHub Pages. A placeholder replacement must update tests/verify-build.py, tests/test_verify_build.py, and both index.html copies (repository root and Android assets) in the same change so the verifier accepts real details and byte parity is retained."
     },
     "browser_validation": {
         "engine": "Google Chrome",

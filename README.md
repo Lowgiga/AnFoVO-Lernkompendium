@@ -136,7 +136,7 @@ flowchart LR
 - Service Worker registriert sich nur unter `http(s)`; `file://` und `android_asset` bleiben voll nutzbar
 - Lokale Web-Oberfläche erzeugbar mit `bash scripts/prepare-pages-surface.sh` → `dist/pages/`
 - **GitHub Pages aktiv und öffentlich erreichbar:** https://lowgiga.github.io/AnFoVO-Lernkompendium/ (PWA installierbar, Offline-fähig)
-- ⚠️ **Veröffentlichungsgate derzeit nicht erfüllt:** Der live ausgelieferte Stand enthält weiterhin den Impressum-Platzhalter `[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]`. Bis zur Entscheidung muss entweder der Platzhalter durch echte Angaben nach § 5 DDG ersetzt oder GitHub Pages deaktiviert werden — Schritte in [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md)
+- ⚠️ **Veröffentlichungsgate derzeit nicht erfüllt:** Der live ausgelieferte Stand enthält weiterhin den Impressum-Platzhalter `[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]`. Bis zur Entscheidung muss entweder der Platzhalter durch echte Angaben nach § 5 DDG ersetzt oder GitHub Pages deaktiviert werden. Beim Ersetzen müssen im selben PR/Commit auch `tests/verify-build.py`, `tests/test_verify_build.py` und beide `index.html`-Kopien (Repository-Wurzel und Android-Assets) aktualisiert werden, damit die Prüfung reale Angaben akzeptiert und die Byte-Parität erhalten bleibt — Schritte in [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md)
 
 </details>
 

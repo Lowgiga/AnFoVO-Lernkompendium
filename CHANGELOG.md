@@ -45,7 +45,8 @@ App-Code, Tests/CI, Dokumentation, Build/Deployment, Git).*
   Releases markiert, für 2.9.5 fehlte er).
 - **Offen (Dokumentiert, kein Code-Defekt):** GitHub Pages ist bereits öffentlich erreichbar;
   das Veröffentlichungsgate ist derzeit nicht erfüllt. Der Impressum-Platzhalter (§ 5 DDG)
-  muss durch echte Angaben ersetzt werden oder GitHub Pages muss deaktiviert werden;
+  muss durch echte Angaben ersetzt werden (dabei Verifier, Regressionstest und beide
+  `index.html`-Kopien gemeinsam aktualisieren) oder GitHub Pages muss deaktiviert werden;
   zwei konkurrierende Dark-Mode-Paletten (visueller Eingriff, daher nicht umgesetzt);
   Monster-Zeilen im HTML (Inhaltsdiff); Gerätetest v2.9.5 (Gerät offline).
 
