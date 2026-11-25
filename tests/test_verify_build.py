@@ -30,6 +30,7 @@ class VerifyBuildTests(unittest.TestCase):
             Path("tests/verify-build.py"),
             Path("tests/package.json"),
             Path("index.html"),
+            Path("IMPRESSUM.md"),
             ENGINE,
             Path("robot-navigation.js"),
             Path("docs/ARCHITECTURE.md"),
@@ -102,18 +103,30 @@ class VerifyBuildTests(unittest.TestCase):
         self.assertEqual(status, 1)
         self.assertIsNotNone(failure)
 
-    def test_impressum_placeholder_is_required(self):
-        name = "Impressum shows v2.9.5 and keeps the required DDG placeholder"
+    def test_impressum_requires_provider_details(self):
+        name = "Impressum contains the required DDG provider details"
         html = self.root / "index.html"
         original = html.read_text(encoding="utf-8")
         self.assertEqual(self.run_check(name), (0, None))
-        html.write_text(
-            original.replace(
-                "[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]",
-                "Beispielname, Beispielstraße 1, kontakt@example.invalid",
-            ),
-            encoding="utf-8",
+
+        mutated = original.replace(
+            "Lowgiga</b>, New York 11354 USA. Kontakt: "
+            "<a href=\"mailto:Vid80gmx@gmail.com\">Vid80gmx@gmail.com</a>",
+            "<i>[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]</i>",
         )
+        self.assertNotEqual(mutated, original)
+        html.write_text(mutated, encoding="utf-8")
+        status, failure = self.run_check(name)
+        self.assertEqual(status, 1)
+        self.assertIsNotNone(failure)
+
+        html.write_text(original, encoding="utf-8")
+        impressum = self.root / "IMPRESSUM.md"
+        mutated_markdown = impressum.read_text(encoding="utf-8").replace(
+            "Vid80gmx@gmail.com", "kontakt@example.invalid"
+        )
+        self.assertNotEqual(mutated_markdown, impressum.read_text(encoding="utf-8"))
+        impressum.write_text(mutated_markdown, encoding="utf-8")
         status, failure = self.run_check(name)
         self.assertEqual(status, 1)
         self.assertIsNotNone(failure)
