@@ -1,4 +1,5 @@
 from pathlib import Path
+from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import re
@@ -41,6 +42,95 @@ SERVICE_WORKER_BUILD = "web-pwa-2.9.5-legal.1"
 PLACEHOLDER = "[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]"
 JS = (ROOT / "algorithm" / "robot-navigation.js").read_text(encoding="utf-8").strip()
 ARCHITECTURE = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
+
+class _ContactAnchorParser(HTMLParser):
+    def __init__(self, email):
+        super().__init__(convert_charrefs=True)
+        self.email = email
+        self.found = False
+        self._anchors = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag.lower() == "a":
+            self._anchors.append({"href": dict(attrs).get("href"), "text": []})
+
+    def handle_data(self, data):
+        for anchor in self._anchors:
+            anchor["text"].append(data)
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "a" and self._anchors:
+            anchor = self._anchors.pop()
+            visible_text = " ".join("".join(anchor["text"]).split())
+            if (
+                anchor["href"] == f"mailto:{self.email}"
+                and visible_text == self.email
+            ):
+                self.found = True
+
+
+def has_html_contact_link(fragment, email):
+    parser = _ContactAnchorParser(email)
+    parser.feed(fragment)
+    parser.close()
+    return parser.found
+
+
+def strip_markdown_code_and_comments(markdown):
+    lines = []
+    fence = None
+    for line in markdown.splitlines():
+        marker = re.match(r"^[ \t]{0,3}(`{3,}|~{3,})", line)
+        if fence:
+            if (
+                marker
+                and marker.group(1)[0] == fence[0]
+                and len(marker.group(1)) >= fence[1]
+            ):
+                fence = None
+            continue
+        if marker:
+            fence = (marker.group(1)[0], len(marker.group(1)))
+            continue
+        lines.append(line)
+    text = "\n".join(lines)
+    text = re.sub(r"<!--[\s\S]*?-->", "", text)
+    text = re.sub(
+        r"<(?:pre|code)\b[^>]*>[\s\S]*?</(?:pre|code)\s*>",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
+    return re.sub(r"(?<!`)(`+)(?!`)(.*?)(?<!`)\1(?!`)", "", text, flags=re.S)
+
+
+def plain_markdown_label(label):
+    label = re.sub(r"\\([\\`*{}\[\]()#+\-.!_>~|])", r"\1", label)
+    label = re.sub(r"<[^>]+>", "", label)
+    label = re.sub(r"[*_`]+", "", label)
+    return " ".join(label.split())
+
+
+def has_markdown_contact_link(markdown, email):
+    source = strip_markdown_code_and_comments(markdown)
+    links = re.finditer(
+        r"(?<![\\!])\[(?P<label>[^\]\n]+)\]\(\s*"
+        r"(?P<destination><[^>\n]+>|[^)\s]+)"
+        r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^()]*\)))?\s*\)",
+        source,
+    )
+    expected_destination = f"mailto:{email}"
+    for link in links:
+        destination = link.group("destination")
+        if destination.startswith("<") and destination.endswith(">"):
+            destination = destination[1:-1]
+        if (
+            destination.casefold() == expected_destination.casefold()
+            and plain_markdown_label(link.group("label")) == email
+        ):
+            return True
+    return False
+
 
 checks = []
 
@@ -249,20 +339,18 @@ check(
 impressum = re.search(r'id="imp-h"[\s\S]*?</section>', HTML)
 impressum_text = impressum.group(0) if impressum else ""
 required_provider_details = (PROVIDER_NAME, PROVIDER_ADDRESS, CONTACT_EMAIL)
-html_contact_link = f'<a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a>'
-markdown_contact_link = f"[{CONTACT_EMAIL}](mailto:{CONTACT_EMAIL})"
 html_has_provider_details = (
     "v2.9.5" in impressum_text
     and "v2.7.0" not in impressum_text
     and "§ 5 DDG" in impressum_text
     and all(detail in impressum_text for detail in required_provider_details)
-    and html_contact_link in impressum_text
+    and has_html_contact_link(impressum_text, CONTACT_EMAIL)
     and PLACEHOLDER not in impressum_text
 )
 markdown_has_provider_details = (
     "§ 5 DDG" in IMPRESSUM_MD
     and all(detail in IMPRESSUM_MD for detail in required_provider_details)
-    and markdown_contact_link in IMPRESSUM_MD
+    and has_markdown_contact_link(IMPRESSUM_MD, CONTACT_EMAIL)
     and PLACEHOLDER not in IMPRESSUM_MD
 )
 check(

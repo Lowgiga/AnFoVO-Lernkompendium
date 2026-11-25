@@ -9,9 +9,9 @@ Details in [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
   in `IMPRESSUM.md` und in der Fußzeile der Web-App; der frühere Veröffentlichungs-Platzhalter ist
   entfernt. Der Kontakt ist als nativer `mailto:`-Link erreichbar.
 - **Gate automatisiert abgesichert:** Der statische Verifier und sein Regressionstest verlangen
-  dieselben Anbieterangaben sowie echte HTML- und Markdown-Kontaktlinks in beiden Dokumenten.
-  `index.html` und die Android-Asset-Kopie bleiben byte-identisch; der In-App-Selbsttest prüft die
-  sichtbaren Angaben und den Kontakt-Link.
+  dieselben Anbieterangaben sowie echte, gerenderte HTML- und Markdown-Kontaktlinks; Markup in
+  Kommentaren oder Codeblöcken zählt nicht. `index.html` und die Android-Asset-Kopie bleiben
+  byte-identisch; der In-App-Selbsttest prüft die sichtbaren Angaben und den Kontakt-Link.
 - **PWA-Test robuster:** Die Subpath-Prüfung wartet nun gezielt auf den projekteigenen
   Service Worker und den vollständigen Cache, statt einen einmaligen `ready`-Snapshot mit
   Erweiterungs-Caches zu verwechseln.

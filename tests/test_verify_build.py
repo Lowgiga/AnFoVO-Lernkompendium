@@ -106,9 +106,32 @@ class VerifyBuildTests(unittest.TestCase):
     def test_impressum_requires_provider_details(self):
         name = "Impressum contains the required DDG provider details"
         html = self.root / "index.html"
+        android_html = self.root / ASSET / "index.html"
         original = html.read_text(encoding="utf-8")
+        android_original = android_html.read_text(encoding="utf-8")
+        self.assertEqual(original, android_original)
         impressum = self.root / "IMPRESSUM.md"
         original_markdown = impressum.read_text(encoding="utf-8")
+        self.assertEqual(self.run_check(name), (0, None))
+
+        canonical_html_link = '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>'
+        equivalent_html_link = (
+            "<a class='contact' href='mailto:Vid80gmx@gmail.com'>"
+            "<span>Vid80gmx@gmail.com</span></a>"
+        )
+        equivalent_html = original.replace(canonical_html_link, equivalent_html_link)
+        self.assertNotEqual(equivalent_html, original)
+        html.write_text(equivalent_html, encoding="utf-8")
+        android_html.write_text(equivalent_html, encoding="utf-8")
+        self.assertEqual(self.run_check(name), (0, None))
+
+        canonical_markdown_link = "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)"
+        equivalent_markdown_link = "[Vid80gmx@gmail.com](<mailto:Vid80gmx@gmail.com>)"
+        equivalent_markdown = original_markdown.replace(
+            canonical_markdown_link, equivalent_markdown_link
+        )
+        self.assertNotEqual(equivalent_markdown, original_markdown)
+        impressum.write_text(equivalent_markdown, encoding="utf-8")
         self.assertEqual(self.run_check(name), (0, None))
 
         html_mutations = {
@@ -126,18 +149,27 @@ class VerifyBuildTests(unittest.TestCase):
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)",
             ),
+            "comment-hidden contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com) "
+                "<!-- <a href=\"mailto:Vid80gmx@gmail.com\">"
+                "Vid80gmx@gmail.com</a> -->",
+            ),
         }
         for field, (old, new) in html_mutations.items():
             with self.subTest(document="HTML", field=field):
                 html.write_text(original, encoding="utf-8")
+                android_html.write_text(android_original, encoding="utf-8")
                 mutated = original.replace(old, new)
                 self.assertNotEqual(mutated, original)
                 html.write_text(mutated, encoding="utf-8")
+                android_html.write_text(mutated, encoding="utf-8")
                 status, failure = self.run_check(name)
                 self.assertEqual(status, 1)
                 self.assertIsNotNone(failure)
 
         html.write_text(original, encoding="utf-8")
+        android_html.write_text(android_original, encoding="utf-8")
         markdown_mutations = {
             "placeholder": (
                 "**Diensteanbieter:** Lowgiga",
@@ -158,6 +190,11 @@ class VerifyBuildTests(unittest.TestCase):
             "contact link markup": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)",
+            ),
+            "code-fence-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "```markdown\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n```",
             ),
         }
         for field, (old, new) in markdown_mutations.items():
