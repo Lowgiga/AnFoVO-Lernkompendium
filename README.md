@@ -41,8 +41,8 @@
 | Browser- & RobotNav-Harness | ✅ grün (lokal, Chromium/Playwright) | `npm run test:all` |
 | PWA/Offline (Subpath) | ✅ lokal getestet (Manifest, Worker, Cache, Offline-Ladevorgang) | `tests/pwa-subpath.cjs` |
 | Android-Build (Quellstand) | ✅ Version `2.9.5`, Version Code `295` | `android/app/build.gradle` |
-| GitHub-Actions-CI | ✅ Main-Lauf und Pages-Deployment erfolgreich (25.11.2026) | [Main-CI](https://github.com/Lowgiga/AnFoVO-Lernkompendium/actions/runs/45576060676) · [Pages](https://github.com/Lowgiga/AnFoVO-Lernkompendium/actions/runs/45576058286) |
-| Veröffentlichungsgate (Impressum) | ✅ erfüllt — reale §-5-DDG-Anbieterangaben inklusive Kontakt-Link; der frühere Platzhalter ist entfernt | `IMPRESSUM.md` · `docs/GITHUB_PAGES.md` |
+| GitHub-Actions-CI | ✅ Main-Lauf und Pages-Deployment erfolgreich (25.11.2026, Commit `7820a49`) | [Main-CI](https://github.com/Lowgiga/AnFoVO-Lernkompendium/actions/runs/45629742055) · [Pages](https://github.com/Lowgiga/AnFoVO-Lernkompendium/actions/runs/45629740818) |
+| Veröffentlichungsgate (Impressum) | ✅ erfüllt und live geprüft — konfigurierte §-5-DDG-Anbieterangaben inklusive Kontakt-Link; der sichtbare Platzhalter ist entfernt | `IMPRESSUM.md` · `docs/GITHUB_PAGES.md` |
 | Release-Signing | ✅ lokal konfiguriert und nachgewiesen; CI validiert die Debug-APK-Signaturen | `docs/RELEASE_PROCESS.md` |
 | Geräteinstallation (Galaxy S25) | ✅ Release v2.9.3 verifiziert; ✅ v2.9.5-Debug-App parallel installiert und Kaltstart geprüft; ⏳ interaktive 7-Punkte-Checkliste offen | `PROJECT_MANIFEST.json` |
 
@@ -137,7 +137,7 @@ flowchart LR
 - Service Worker registriert sich nur unter `http(s)`; `file://` und `android_asset` bleiben voll nutzbar
 - Lokale Web-Oberfläche erzeugbar mit `bash scripts/prepare-pages-surface.sh` → `dist/pages/`
 - **GitHub Pages aktiv und öffentlich erreichbar:** https://lowgiga.github.io/AnFoVO-Lernkompendium/ (PWA installierbar, Offline-fähig)
-- ✅ **Veröffentlichungsgate erfüllt:** Die Web-App und `IMPRESSUM.md` enthalten die realen §-5-DDG-Anbieterangaben; der frühere Platzhalter ist entfernt. `tests/verify-build.py`, der Regressionstest und beide byte-paritären `index.html`-Kopien prüfen den neuen Stand gemeinsam — Details in [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md)
+- ✅ **Veröffentlichungsgate erfüllt und live geprüft:** Die Web-App und `IMPRESSUM.md` enthalten die konfigurierten §-5-DDG-Anbieterangaben; der sichtbare Platzhalter ist entfernt. `tests/verify-build.py`, der Regressionstest und beide byte-paritären `index.html`-Kopien prüfen den Stand gemeinsam; der direkte Live-Abruf bestätigt die Details und den `mailto:`-Link — Details in [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md)
 
 </details>
 
@@ -230,7 +230,8 @@ npm run test:all
 - ✅ Statische Projektprüfung: **33/33 Checks bestanden** (25.11.2026; die CI-Fixture kopiert `tests/package.json` vollständig)
 - ✅ Browser- und RobotNav-Harness grün; 70 Lernseiten im Smoke-Test erkannt; keine Seiten- oder Konsolenfehler in den geprüften Läufen
 - ✅ PWA-Subpath (Manifest, Worker, Icons, Hintergrundframes, Offline-Ladevorgang) lokal grün
-- ✅ GitHub-Actions-CI: Main-Validierung `45576060676` und Pages-Deployment `45576058286` am 25.11.2026 erfolgreich; der Debug-APK-Build, die Signaturprüfung und der Artifact-Upload sind im Main-Lauf enthalten.
+- ✅ GitHub-Actions-CI: Main-Validierung `45629742055` und Pages-Deployment `45629740818` für Commit `7820a49` am 25.11.2026 erfolgreich; der Debug-APK-Build, die Signaturprüfung und der Artifact-Upload sind im Main-Lauf enthalten.
+- ✅ Live-Verifikation: Die öffentliche `index.html` antwortet mit HTTP 200 und exakt dem kanonischen Commit-Hash; im Browser sind 70 Lernseiten, die konfigurierten Impressumsangaben, der native `mailto:`-Link und kein sichtbarer Veröffentlichungs-Platzhalter bestätigt.
 - ✅ App-Selbsttest automatisiert: `tests/selftest-app.cjs` fährt die 100 In-App-Prüfungen (`?test=1`) headless und ist in `npm run test:all` sowie CI eingebunden — am 17.11.2026 **100/100 bestanden, 0 übersprungen, 0 Seitenfehler**.
 - ✅ Release-Signing konfiguriert (Keystore in `AnFoeVO-Release-Keystore/`, nicht im Repo) — siehe [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)
 - ✅ Galaxy S25: Release v2.9.3 verifiziert und unverändert installiert; ein lokal gebautes v2.9.5-Debug-APK wurde mit eigener Application-ID parallel installiert, Kaltstart und Offline-Asset-Rendering wurden erfolgreich geprüft. Die interaktive 7-Punkte-Checkliste (LED, Shake, Konfetti, Rotation, SVG-Ringe, Präsentation, Antwort-Routing) ist noch offen.

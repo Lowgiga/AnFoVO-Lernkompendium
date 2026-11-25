@@ -17,6 +17,10 @@ Details in [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
 - **Veröffentlichungsgate geschlossen:** GitHub Pages kann mit den konfigurierten Anbieterangaben
   öffentlich bleiben. Repository-Dokumentation, Manifest und Build-Report wurden auf den neuen
   Stand nachgezogen.
+- **Deployment live verifiziert:** Nach Merge von PR #10 (`7820a49`) liefen Projektvalidierung
+  (`45629742055`) und Pages-Deployment (`45629740818`) erfolgreich. Der direkte Live-Abruf bestätigt
+  HTTP 200, den exakten Index-Hash, die sichtbaren Anbieterangaben, den nativen `mailto:`-Link und
+  keinen sichtbaren Veröffentlichungs-Platzhalter.
 
 ## 18.11.2026 – Wartung und Verifikation (auf `main`)
 
