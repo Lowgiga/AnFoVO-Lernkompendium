@@ -15,7 +15,7 @@ Stand: 12. November 2026 | Prüfer: OpenCode Agent (Deep-Code-Audit)
 > | „29 WebP-Hintergrundbilder" | 58 Dateien (29 Frames × 2 Sets `bg/d` + `bg/m`) |
 > | RobotNav-Version 2.8.0 | 2.9.5 (Kopf + `inspect()`, 17.11.2026 angeglichen) |
 > | `DATA.version` | 2.9.5 (war 2.7.0 – floss in Export-Metadaten; jetzt versionskette-prüfung in `verify-build.py`: DATA = Manifest = sw.js = tests = Titel) |
-> | `index.html`-Hash 5461F6FE…/629.905 B | `2BD1DEC4…` / 630.032 B (Arbeitsbaum-SHA-256; Wurzel und Android-Assets identisch) |
+> | `index.html`-Hash 5461F6FE…/629.905 B | `826C85E9…` / 629.155 B (kanonischer Git/LF-Blob; identisch in CI, APK und Live-Pages, Stand 25.11.2026) |
 > | CI ohne Härtung | Path-Filter inkl. `robot-navigation.js`, Concurrency, Timeout, Gradle-Cache, Lizenz-Akzeptanz, versionsunabhäniger Artefaktname, Selbsttest-Automation (`tests/selftest-app.cjs`, 100 Prüfungen, in `test:all`) |
 >
 > **Offene Punkte (neu dokumentiert, kein Code-Defekt):**

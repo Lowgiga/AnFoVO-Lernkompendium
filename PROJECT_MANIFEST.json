@@ -41,13 +41,13 @@
             "release_app": "Galaxy S25 release v2.9.3 verified and left installed; the release-signed app was not uninstalled.",
             "debug_app": "A locally built v2.9.5 debug APK with applicationIdSuffix .debug was installed side-by-side; cold start and offline asset rendering succeeded. The seven-point interactive smoke checklist remains open in owner task wq8cx2."
         },
-        "debug_apk_file": "GitHub Actions artifact AnFoeVO-debug-apks/app-arm64-v8a-debug.apk (run 45576060676)",
-        "debug_apk_sha256": "f9e2102437c0ff42ed9fe1cb362606e0bdbae618a6f8109514611b1b9f0ba298",
+        "debug_apk_file": "GitHub Actions artifact AnFoeVO-debug-apks/app-arm64-v8a-debug.apk (run 45629742055)",
+        "debug_apk_sha256": "4f8e3ba2a18880c1917b1469b3fe9111d521d7836e41d9178d16db349ffd756a",
         "release_apk_sha256": "063FF7D92657C354C467931743D9C1B879EA0055B31FD0E3E6F4E217D69BA1FB",
-        "html_sha256": "89227b46f286485c45ccd1af84afb1bde8b177726fcb4149e6f850e70d1d3b9b",
-        "html_bytes": 631117,
-        "debug_apk_matches_current_html": false,
-        "debug_apk_matches_current_html_note": "CI run 45576060676 remains the documented historical debug artifact from main commit bc08f8965ac4; its assets/index.html is 628957 bytes with SHA-256 242e2822d64d85fa4b9fbdee11aac74c88350f65337b6492a6e9479e7d1740dd. The 25.11.2026 Impressum update changes the canonical HTML to 631117 bytes with SHA-256 89227b46f286485c45ccd1af84afb1bde8b177726fcb4149e6f850e70d1d3b9b, so the current CI run supplies the matching debug artifact.",
+        "html_sha256": "826c85e98ce08e070b15494318368999a111e58bc77777786fbaa146bdd371cb",
+        "html_bytes": 629155,
+        "debug_apk_matches_current_html": true,
+        "debug_apk_matches_current_html_note": "CI run 45629742055 built the current debug APKs from merged main commit 7820a492bc30fbb83e59bd2c1ea4cd321d232da2. The artifact's assets/index.html is 629155 bytes with SHA-256 826c85e98ce08e070b15494318368999a111e58bc77777786fbaa146bdd371cb, byte-identical to the canonical root index.html and the live GitHub Pages index.html.",
         "release_aab_sha256": "180D5E4F112F8A444FD259C173F2AFA7D8055286E915559CD34E1880BA04457A"
     },
     "pwa_shell": {
@@ -61,8 +61,8 @@
         "impressum_provider": "Lowgiga",
         "impressum_address": "New York 11354 USA",
         "impressum_contact": "Vid80gmx@gmail.com",
-        "current_index_sha256": "89227b46f286485c45ccd1af84afb1bde8b177726fcb4149e6f850e70d1d3b9b",
-        "note": "GitHub Pages is public at https://lowgiga.github.io/AnFoVO-Lernkompendium/ (installable PWA, offline-capable). The DDG Impressum placeholder was replaced with the configured provider name, postal address and email link in both index.html copies and IMPRESSUM.md. The static verifier and its regression test enforce these details, so the publication gate is met."
+        "current_index_sha256": "826c85e98ce08e070b15494318368999a111e58bc77777786fbaa146bdd371cb",
+        "note": "GitHub Pages is public at https://lowgiga.github.io/AnFoVO-Lernkompendium/ (installable PWA, offline-capable). After merged main commit 7820a492bc30fbb83e59bd2c1ea4cd321d232da2 and successful Pages run 45629740818, a direct live fetch returned HTTP 200 with 629155 index.html bytes and SHA-256 826c85e98ce08e070b15494318368999a111e58bc77777786fbaa146bdd371cb. Browser verification found no visible publication placeholder and confirmed the configured provider name, postal address, email text, and native mailto link. The static verifier and its regression test enforce the same details."
     },
     "browser_validation": {
         "engine": "Google Chrome",
