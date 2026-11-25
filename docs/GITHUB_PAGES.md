@@ -69,16 +69,19 @@ Pages-Quelle in den Repository-Einstellungen auf „GitHub Actions" und ergänzt
 Workflow (Skript → `actions/upload-pages-artifact` → `actions/deploy-pages`); dann fallen
 `android/`, `tests/`, Gradle-Wrapper und die Berichte aus dem öffentlichen Angebot heraus.
 
-## Veröffentlichungsgate – erfüllt (25.11.2026)
+## Technisches Veröffentlichungsgate – erfüllt; rechtliche Identität/Anschrift offen (25.11.2026)
 
-GitHub Pages bleibt öffentlich erreichbar. Das Impressum-Gate ist geschlossen und live geprüft:
+GitHub Pages bleibt öffentlich erreichbar. Das technische Impressum-Gate ist geschlossen und live
+geprüft. Die automatisierten Nachweise bestätigen Veröffentlichung und Konsistenz der gelieferten
+Angaben, nicht deren rechtliche Vollständigkeit:
 
 1. `index.html` enthält die konfigurierten Anbieterangaben direkt in der Fußzeile; `IMPRESSUM.md`
    dokumentiert dieselben Angaben als eigenständige Datei. Der frühere sichtbare
    Veröffentlichungs-Platzhalter wurde entfernt.
-2. `tests/verify-build.py` verlangt Name, Anschrift, Kontakt-E-Mail und `mailto:`-Link in beiden
-   Dokumenten und schlägt bei fehlenden oder Platzhalter-Angaben fehl. Der Regressionstest
-   `test_impressum_requires_provider_details` prüft beide Fehlerfälle.
+2. `tests/verify-build.py` verlangt Name, Anschrift, Kontakt-E-Mail sowie echte HTML- und
+   Markdown-Kontaktlinks in beiden Dokumenten und schlägt bei fehlenden oder Platzhalter-Angaben
+   fehl. Der Regressionstest `test_impressum_requires_provider_details` mutiert Platzhalter, Name,
+   Anschrift, Linkziel und Link-Markup unabhängig voneinander.
 3. Direkter Live-Abruf nach Pages-Lauf `45629740818`: `index.html` antwortet mit HTTP 200,
    629.155 Bytes und SHA-256
    `826c85e98ce08e070b15494318368999a111e58bc77777786fbaa146bdd371cb`; `IMPRESSUM.md` und `sw.js`
@@ -91,7 +94,10 @@ GitHub Pages bleibt öffentlich erreichbar. Das Impressum-Gate ist geschlossen u
    CI-Artefakt `AnFoeVO-debug-apks` verpackte `assets/index.html` und die Live-Datei haben denselben
    SHA-256-Wert. Der In-App-Selbsttest prüft die sichtbaren Angaben und den Kontakt-Link zusätzlich
    zur Laufzeit.
-6. Repository frei von Heft-Fotos, Heft-Wortlaut und persönlichen Notizen halten.
-7. Seiten-Cache-Hinweis: GitHub Pages erlaubt keine eigenen `Cache-Control`-Header. `sw.js`
+6. Die rechtliche Identität, Vollständigkeit der Anschrift sowie gegebenenfalls Rechtsform und
+   Vertretungsberechtigung bleiben eine separate Owner-Bestätigung; automatisierte String- und
+   Linkprüfungen können diese rechtliche Frage nicht ersetzen.
+7. Repository frei von Heft-Fotos, Heft-Wortlaut und persönlichen Notizen halten.
+8. Seiten-Cache-Hinweis: GitHub Pages erlaubt keine eigenen `Cache-Control`-Header. `sw.js`
    arbeitet cache-first; Rückkehrer können daher kurz einen alten Stand ziehen, bis der
    Worker aktualisiert.
