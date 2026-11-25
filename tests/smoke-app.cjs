@@ -9,16 +9,41 @@ const { pathToFileURL } = require('url');
   page.on('pageerror', error => errors.push(String(error)));
   await page.goto(pathToFileURL(path.resolve(__dirname, '..', 'index.html')).href, { waitUntil: 'load' });
   await page.waitForTimeout(1200);
-  const result = await page.evaluate(() => ({
-    title: document.title,
-    language: document.documentElement.lang,
-    pageCount: document.querySelectorAll('#pages article.page').length,
-    robotNavAvailable: typeof window.RobotNav !== 'undefined',
-    robotNavVersion: window.RobotNav && window.RobotNav.inspect ? window.RobotNav.inspect().version : null,
-    bookPresent: !!document.querySelector('.book3d'),
-    robotPresent: !!document.querySelector('.robot3d'),
-    backgroundCanvasPresent: !!document.querySelector('#bgc')
-  }));
+  const result = await page.evaluate(() => {
+    const contactEmail = 'Vid80gmx@gmail.com';
+    const contactLink = Array.from(document.querySelectorAll('#foot a[href]')).find(anchor => {
+      const href = (anchor.getAttribute('href') || '').trim();
+      return href.slice(0, 7).toLowerCase() === 'mailto:' && href.slice(7) === contactEmail;
+    });
+    let imprintContact = { found: false, visible: false };
+    if (contactLink) {
+      const style = getComputedStyle(contactLink);
+      const rect = contactLink.getBoundingClientRect();
+      const hiddenContext = contactLink.closest('[hidden], [aria-hidden="true"], [inert]');
+      imprintContact = {
+        found: true,
+        visible: !hiddenContext &&
+          style.display !== 'none' &&
+          style.visibility !== 'hidden' &&
+          Number(style.opacity) !== 0 &&
+          rect.width > 0 &&
+          rect.height > 0,
+        text: (contactLink.textContent || '').trim(),
+        href: contactLink.getAttribute('href')
+      };
+    }
+    return {
+      title: document.title,
+      language: document.documentElement.lang,
+      pageCount: document.querySelectorAll('#pages article.page').length,
+      robotNavAvailable: typeof window.RobotNav !== 'undefined',
+      robotNavVersion: window.RobotNav && window.RobotNav.inspect ? window.RobotNav.inspect().version : null,
+      bookPresent: !!document.querySelector('.book3d'),
+      robotPresent: !!document.querySelector('.robot3d'),
+      backgroundCanvasPresent: !!document.querySelector('#bgc'),
+      imprintContact
+    };
+  });
 
   const root = path.resolve(__dirname, '..');
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
@@ -161,6 +186,9 @@ const { pathToFileURL } = require('url');
     !result.robotPresent ||
     manifestLink !== './manifest.json' ||
     manifestIconsMissing.length > 0 ||
+    !result.imprintContact.found ||
+    !result.imprintContact.visible ||
+    result.imprintContact.text !== 'Vid80gmx@gmail.com' ||
     mobileRobotDisplay === 'none' ||
     progressChecks.rings !== progressChecks.rows ||
     progressChecks.countLabels !== progressChecks.rows ||

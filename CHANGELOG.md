@@ -9,12 +9,17 @@ Details in [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
   in `IMPRESSUM.md` und in der Fußzeile der Web-App; der frühere Veröffentlichungs-Platzhalter ist
   entfernt. Der Kontakt ist als nativer `mailto:`-Link erreichbar.
 - **Gate automatisiert abgesichert:** Der statische Verifier und sein Regressionstest verlangen
-  dieselben Anbieterangaben sowie unterstützte Inline-HTML- und Inline-Markdown-Kontaktlinks mit
-  exakt konfiguriertem `mailto:`-Ziel und whitespace-normalisiertem sichtbaren E-Mail-Label; Links in
-  Kommentaren, Codeblöcken, `<pre>`-, Script-, Template- oder Textarea-Inhalten sowie in
-  `hidden`-Elementen und deren Teilbäumen zählen nicht. GFM-Autolinks und Reference-Links sind nicht
-  Teil des unterstützten Scopes und zählen nicht. `index.html` und die Android-Asset-Kopie bleiben
-  byte-identisch; der In-App-Selftest prüft die sichtbaren Angaben und den Kontakt-Link.
+  dieselben Anbieterangaben, einen nativen HTML-`mailto:`-Anker mit genau einem `href`, exakt
+  konfigurierter E-Mail-Adresse, whitespace-normalisiertem sichtbaren E-Mail-Label und einem nicht
+  ausgeblendeten Kontext sowie einen top-level Inline-Markdown-Link mit literalem E-Mail-Label und
+  bloßem oder in spitzen Klammern umschlossenem `mailto:`-Ziel. Das Schema `mailto:` wird
+  case-insensitiv, die E-Mail-Adresse dagegen exakt geprüft. Kommentare, Code, Raw-HTML, Templates,
+  nicht gerendert behandelte Container, verschachtelte Anker sowie formatierte Labels, Autolinks und
+  Referenz-Markdown-Links zählen nicht. Das ist bewusst ein enger kanonischer Teilvertrag, kein
+  vollständiger Markdown-Renderer; der
+  Browser-Smoke-Test prüft zusätzlich den tatsächlich sichtbaren Kontakt-Link. `index.html` und die
+  Android-Asset-Kopie bleiben byte-identisch; der In-App-Selbsttest prüft die sichtbaren Angaben und
+  den Kontakt-Link.
 - **PWA-Test robuster:** Die Subpath-Prüfung wartet nun gezielt auf den projekteigenen
   Service Worker und den vollständigen Cache, statt einen einmaligen `ready`-Snapshot mit
   Erweiterungs-Caches zu verwechseln.
@@ -25,8 +30,8 @@ Details in [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
   Anbieterangaben öffentlich bleiben. Repository-Dokumentation, Manifest und Build-Report wurden
   auf den neuen Stand nachgezogen. Die rechtliche Vollständigkeit der Identität und Anschrift ist
   nicht durch automatisierte Prüfungen belegt und bleibt eine separate Owner-Bestätigung.
-- **Deployment live verifiziert:** Nach Merge von PR #10 (`7820a49`) liefen Projektvalidierung
-  (`45629742055`) und Pages-Deployment (`45629740818`) erfolgreich. Der direkte Live-Abruf bestätigt
+- **Deployment live verifiziert:** Nach Merge von PR #13 (`0902e45`) liefen Projektvalidierung
+  (`45653876811`) und Pages-Deployment (`45653872515`) erfolgreich. Der direkte Live-Abruf bestätigt
   HTTP 200, den exakten Index-Hash, die sichtbaren Anbieterangaben, den nativen `mailto:`-Link und
   keinen sichtbaren Veröffentlichungs-Platzhalter.
 

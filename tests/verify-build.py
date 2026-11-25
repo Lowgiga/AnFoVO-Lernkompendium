@@ -1,6 +1,6 @@
-from pathlib import Path
 from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 import json
 import re
 import subprocess
@@ -43,8 +43,24 @@ PLACEHOLDER = "[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]"
 JS = (ROOT / "algorithm" / "robot-navigation.js").read_text(encoding="utf-8").strip()
 ARCHITECTURE = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
 
-HTML_VOID_ELEMENTS = frozenset(
-    {
+
+def _trim_url_whitespace(value):
+    return value.strip(" \t\n\r\f\v")
+
+
+def _is_mailto_destination(destination, email):
+    scheme, separator, address = destination.partition(":")
+    return (
+        bool(separator)
+        and scheme.casefold() == "mailto"
+        and address == email
+    )
+
+
+class _ContactAnchorParser(HTMLParser):
+    """Collect only native, non-nested anchors from explicitly rendered HTML."""
+
+    VOID_ELEMENTS = {
         "area",
         "base",
         "br",
@@ -60,102 +76,142 @@ HTML_VOID_ELEMENTS = frozenset(
         "track",
         "wbr",
     }
-)
+    IGNORED_CONTAINERS = {
+        "datalist",
+        "details",
+        "dialog",
+        "head",
+        "iframe",
+        "math",
+        "noembed",
+        "noframes",
+        "noscript",
+        "object",
+        "optgroup",
+        "option",
+        "plaintext",
+        "script",
+        "select",
+        "style",
+        "svg",
+        "template",
+        "textarea",
+        "title",
+        "xmp",
+    }
+    HIDDEN_STYLE = re.compile(
+        r"(?:^|;)\s*(?:"
+        r"display\s*:\s*none(?![-\w])|"
+        r"visibility\s*:\s*hidden(?![-\w])|"
+        r"opacity\s*:\s*(?:0+(?:\.0+)?|\.0+)(?![0-9.])"
+        r")",
+        re.IGNORECASE,
+    )
 
-
-class _ContactAnchorParser(HTMLParser):
     def __init__(self, email):
         super().__init__(convert_charrefs=True)
         self.email = email
         self.found = False
-        self._elements = []
         self._anchors = []
-        self._script_depth = 0
-        self._template_depth = 0
-        self._textarea_depth = 0
+        self._hidden_tags = []
+        self._ignored_tag = None
+        self._ignored_depth = 0
 
-    def _finish_anchor(self):
-        if not self._anchors:
-            return
-        anchor = self._anchors.pop()
-        visible_text = " ".join("".join(anchor["text"]).split())
-        if (
-            anchor["href"] == f"mailto:{self.email}"
-            and visible_text == self.email
-        ):
-            self.found = True
+    @staticmethod
+    def _first_attr(attrs, name):
+        return next((value for key, value in attrs if key.lower() == name), None)
+
+    @staticmethod
+    def _has_attr(attrs, name):
+        return any(key.lower() == name for key, _ in attrs)
+
+    @classmethod
+    def _is_hidden(cls, attrs):
+        style = cls._first_attr(attrs, "style") or ""
+        aria_hidden = cls._first_attr(attrs, "aria-hidden") or ""
+        return (
+            cls._has_attr(attrs, "hidden")
+            or cls._has_attr(attrs, "inert")
+            or aria_hidden.strip().casefold() == "true"
+            or bool(cls.HIDDEN_STYLE.search(style))
+        )
 
     def handle_starttag(self, tag, attrs):
         tag = tag.lower()
-        parent = self._elements[-1] if self._elements else None
-        hidden = bool(parent and parent["hidden"]) or any(
-            name.lower() == "hidden" for name, _ in attrs
-        )
-        if tag not in HTML_VOID_ELEMENTS:
-            self._elements.append({"tag": tag, "hidden": hidden})
-        if tag == "script":
-            self._script_depth += 1
-        if tag == "template":
-            self._template_depth += 1
-        if tag == "textarea":
-            self._textarea_depth += 1
-        if self._script_depth or self._template_depth or self._textarea_depth:
+        attrs = list(attrs)
+        if self._ignored_tag:
+            if tag == self._ignored_tag:
+                self._ignored_depth += 1
             return
-        if tag == "a":
-            if self._anchors:
-                self._finish_anchor()
-            if hidden:
-                return
-            href = next(
-                (value for name, value in attrs if name.lower() == "href"),
-                None,
+        if tag in self.IGNORED_CONTAINERS:
+            renders_when_open = tag in {"details", "dialog"} and self._has_attr(
+                attrs, "open"
             )
-            self._anchors.append({"href": href, "text": []})
+            if not renders_when_open:
+                self._ignored_tag = tag
+                self._ignored_depth = 1
+                return
+
+        parent_hidden = bool(self._hidden_tags)
+        element_hidden = self._is_hidden(attrs)
+        if element_hidden and tag not in self.VOID_ELEMENTS:
+            self._hidden_tags.append(tag)
+        if tag == "a":
+            href_values = [value for key, value in attrs if key.lower() == "href"]
+            nested_anchor = bool(self._anchors)
+            if nested_anchor:
+                self._anchors[-1]["nested_anchor"] = True
+            self._anchors.append(
+                {
+                    "href": href_values[0] if href_values else None,
+                    "duplicate_href": len(href_values) > 1,
+                    "nested_anchor": nested_anchor,
+                    "text": [],
+                    "hidden": parent_hidden or element_hidden,
+                }
+            )
 
     def handle_startendtag(self, tag, attrs):
-        # HTML ignores the self-closing slash on non-void elements. Treat those
-        # tags as open until their matching end tag, matching browser parsing.
-        self.handle_starttag(tag.lower(), attrs)
+        tag = tag.lower()
+        if tag in self.VOID_ELEMENTS:
+            super().handle_startendtag(tag, attrs)
+            return
+        # HTML ignores the self-closing slash on non-void elements.
+        self.handle_starttag(tag, attrs)
 
     def handle_data(self, data):
-        if (
-            self._script_depth
-            or self._template_depth
-            or self._textarea_depth
-            or not self._anchors
-        ):
+        if self._ignored_tag:
             return
-        current = self._elements[-1] if self._elements else None
-        if current and current["hidden"]:
-            return
-        self._anchors[-1]["text"].append(data)
+        if self._anchors and not self._hidden_tags:
+            self._anchors[-1]["text"].append(data)
 
     def handle_endtag(self, tag):
         tag = tag.lower()
-        if tag == "script" and self._script_depth:
-            self._script_depth -= 1
-        if tag == "template" and self._template_depth:
-            self._template_depth -= 1
-        if tag == "textarea" and self._textarea_depth:
-            self._textarea_depth -= 1
-        matching_index = next(
-            (
-                index
-                for index in range(len(self._elements) - 1, -1, -1)
-                if self._elements[index]["tag"] == tag
-            ),
-            None,
-        )
-        if matching_index is not None:
-            del self._elements[matching_index:]
-        if self._script_depth or self._template_depth or self._textarea_depth:
+        if self._ignored_tag:
+            if tag == self._ignored_tag:
+                self._ignored_depth -= 1
+                if self._ignored_depth == 0:
+                    self._ignored_tag = None
             return
-        if tag == "a":
-            self._finish_anchor()
 
-    def close(self):
-        super().close()
-        self._finish_anchor()
+        for index in range(len(self._hidden_tags) - 1, -1, -1):
+            if self._hidden_tags[index] == tag:
+                del self._hidden_tags[index]
+                break
+
+        if tag == "a" and self._anchors:
+            anchor = self._anchors.pop()
+            visible_text = " ".join("".join(anchor["text"]).split())
+            href = _trim_url_whitespace(anchor["href"] or "")
+            if (
+                not anchor["hidden"]
+                and not anchor["duplicate_href"]
+                and not anchor["nested_anchor"]
+                and not self._hidden_tags
+                and _is_mailto_destination(href, self.email)
+                and visible_text == self.email
+            ):
+                self.found = True
 
 
 def has_html_contact_link(fragment, email):
@@ -165,28 +221,256 @@ def has_html_contact_link(fragment, email):
     return parser.found
 
 
-def _is_escaped(source, index):
+def _mask_source_range(masked, start, end):
+    for index in range(start, end):
+        if masked[index] not in "\r\n":
+            masked[index] = " "
+
+
+def _mask_markdown_comments(source):
+    masked = list(source)
+    for comment in re.finditer(r"<!--[\s\S]*?(?:-->|$)", source):
+        _mask_source_range(masked, comment.start(), comment.end())
+    return "".join(masked)
+
+
+def _markdown_blockquote_content(line):
+    candidate = line
+    quote_depth = 0
+    while True:
+        blockquote = re.match(r"^[ \t]{0,3}>[ \t]?", candidate)
+        if not blockquote:
+            break
+        candidate = candidate[blockquote.end() :]
+        quote_depth += 1
+    return candidate, quote_depth
+
+
+def _markdown_container_content(line):
+    candidate, quote_depth = _markdown_blockquote_content(line)
+    list_item = re.match(
+        r"^[ \t]{0,3}(?:[*+-]|\d{1,9}[.)])([ \t]+)(.*)$",
+        candidate,
+    )
+    if list_item:
+        indentation = list_item.group(1)
+        if not indentation.startswith("\t") and len(indentation.expandtabs(4)) < 4:
+            candidate = list_item.group(2)
+    return candidate, quote_depth
+
+
+def _markdown_indent(line):
+    expanded = line.expandtabs(4)
+    return len(expanded) - len(expanded.lstrip(" "))
+
+
+def _mask_markdown_code_blocks(source):
+    masked = list(source)
+    offset = 0
+    fence = None
+    previous_blank = True
+    indented_code = False
+
+    for raw_line in source.splitlines(keepends=True):
+        line = raw_line.rstrip("\r\n")
+        content, quote_depth = _markdown_container_content(line)
+        marker = re.match(r"^[ \t]{0,3}(`{3,}|~{3,})(.*)$", content)
+
+        if fence and quote_depth < fence[2]:
+            fence = None
+
+        if fence:
+            closes_fence = (
+                marker
+                and quote_depth == fence[2]
+                and marker.group(1)[0] == fence[0]
+                and len(marker.group(1)) >= fence[1]
+                and not marker.group(2).strip(" \t")
+            )
+            _mask_source_range(masked, offset, offset + len(raw_line))
+            if closes_fence:
+                fence = None
+            offset += len(raw_line)
+            continue
+
+        if marker:
+            fence = (marker.group(1)[0], len(marker.group(1)), quote_depth)
+            _mask_source_range(masked, offset, offset + len(raw_line))
+            offset += len(raw_line)
+            continue
+
+        code_content, _ = _markdown_blockquote_content(line)
+        list_item = re.match(
+            r"^[ \t]{0,3}(?:[*+-]|\d{1,9}[.)])([ \t]+)(.*)$",
+            code_content,
+        )
+        blank = not code_content.strip()
+        is_code = False
+
+        if list_item:
+            indentation = list_item.group(1)
+            is_code = indentation.startswith("\t") or len(indentation.expandtabs(4)) >= 4
+        else:
+            indent = _markdown_indent(code_content)
+            if indented_code:
+                is_code = blank or indent >= 4
+                if not is_code:
+                    indented_code = False
+            elif indent >= 4 and previous_blank:
+                indented_code = True
+                is_code = True
+
+        if is_code:
+            _mask_source_range(masked, offset, offset + len(raw_line))
+        else:
+            previous_blank = blank
+        offset += len(raw_line)
+
+    return "".join(masked)
+
+
+def _mask_markdown_reference_definitions(source):
+    masked = list(source)
+    definition = re.compile(
+        r"^[ \t]{0,3}(?:>[ \t]?)*\[[^\]\n]+\]:[^\n]*(?:\n|$)",
+        flags=re.MULTILINE,
+    )
+    for match in definition.finditer(source):
+        _mask_source_range(masked, match.start(), match.end())
+    return "".join(masked)
+
+
+def _markdown_html_tag_events(source):
+    events = []
+    index = 0
+    while index < len(source):
+        start = source.find("<", index)
+        if start == -1:
+            break
+        if source.startswith("<!--", start):
+            comment_end = source.find("-->", start + 4)
+            index = len(source) if comment_end == -1 else comment_end + 3
+            continue
+        if source.startswith("<![CDATA[", start):
+            cdata_end = source.find("]]>", start + 9)
+            end = len(source) if cdata_end == -1 else cdata_end + 3
+            events.append((start, end, "", False, True))
+            index = end
+            continue
+        if source.startswith("<?", start):
+            instruction_end = source.find("?>", start + 2)
+            end = len(source) if instruction_end == -1 else instruction_end + 2
+            events.append((start, end, "", False, True))
+            index = end
+            continue
+        if source.startswith("<!", start):
+            declaration_end = source.find(">", start + 2)
+            end = len(source) if declaration_end == -1 else declaration_end + 1
+            events.append((start, end, "", False, True))
+            index = end
+            continue
+
+        cursor = start + 1
+        closing = cursor < len(source) and source[cursor] == "/"
+        if closing:
+            cursor += 1
+        name_start = cursor
+        while cursor < len(source) and (
+            source[cursor].isalnum() or source[cursor] in "-_"
+        ):
+            cursor += 1
+        if cursor == name_start or (
+            cursor < len(source)
+            and source[cursor] not in " \t\r\n\f/>"
+        ):
+            index = start + 1
+            continue
+
+        name = source[name_start:cursor].lower()
+        quote = ""
+        while cursor < len(source):
+            character = source[cursor]
+            if quote:
+                if character == quote:
+                    quote = ""
+            elif character in "\"'":
+                quote = character
+            elif character == ">":
+                break
+            cursor += 1
+
+        if cursor >= len(source):
+            events.append((start, len(source), name, False, False))
+            break
+
+        end = cursor + 1
+        self_closing = source[end - 2 : end] == "/>"
+        events.append((start, end, name, closing, self_closing))
+        index = end
+    return events
+
+
+def _mask_markdown_html(source):
+    masked = list(source)
+    events = _markdown_html_tag_events(source)
+    void_elements = {
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "param",
+        "source",
+        "track",
+        "wbr",
+    }
+    stack = []
+
+    for start, end, name, closing, self_closing in events:
+        _mask_source_range(masked, start, end)
+        if closing:
+            for stack_index in range(len(stack) - 1, -1, -1):
+                if stack[stack_index][0] == name:
+                    open_start = stack[stack_index][1]
+                    _mask_source_range(masked, open_start, end)
+                    del stack[stack_index:]
+                    break
+        elif name and name not in void_elements:
+            stack.append((name, start))
+
+    for _, start in stack:
+        _mask_source_range(masked, start, len(source))
+
+    return "".join(masked)
+
+
+def _is_escaped(text, index):
     backslashes = 0
     index -= 1
-    while index >= 0 and source[index] == "\\":
+    while index >= 0 and text[index] == "\\":
         backslashes += 1
         index -= 1
     return backslashes % 2 == 1
 
 
-def markdown_code_span_ranges(source):
-    ranges = []
+def _mask_markdown_code_spans(source):
+    masked = list(source)
     index = 0
     while index < len(source):
         if source[index] != "`" or _is_escaped(source, index):
             index += 1
             continue
+
         opener_start = index
         while index < len(source) and source[index] == "`":
             index += 1
-        opener_end = index
-        opener_length = opener_end - opener_start
-        cursor = opener_end
+        opener_length = index - opener_start
+        cursor = index
         while cursor < len(source):
             if source[cursor] != "`":
                 cursor += 1
@@ -194,253 +478,72 @@ def markdown_code_span_ranges(source):
             closer_start = cursor
             while cursor < len(source) and source[cursor] == "`":
                 cursor += 1
-            closer_length = cursor - closer_start
-            if closer_length == opener_length:
-                ranges.append(
-                    (opener_start, cursor, source[opener_end:closer_start])
-                )
+            if cursor - closer_start == opener_length:
+                _mask_source_range(masked, opener_start, cursor)
                 index = cursor
                 break
         else:
-            index = opener_end
-    return ranges
-
-
-def mask_markdown_ranges(source, ranges):
-    masked = list(source)
-    for start, end, *_ in ranges:
-        for index in range(start, end):
-            if masked[index] not in "\r\n":
-                masked[index] = " "
+            index = opener_start + opener_length
     return "".join(masked)
-
-
-def mask_markdown_comments(source):
-    masked = list(source)
-    for match in re.finditer(r"<!--[\s\S]*?(?:-->|\Z)", source):
-        for index in range(match.start(), match.end()):
-            if masked[index] not in "\r\n":
-                masked[index] = " "
-    return "".join(masked)
-
-
-def markdown_image_label_ranges(source):
-    ranges = []
-    index = 0
-    while index < len(source) - 1:
-        if (
-            source[index] != "!"
-            or source[index + 1] != "["
-            or _is_escaped(source, index)
-        ):
-            index += 1
-            continue
-        depth = 1
-        cursor = index + 2
-        while cursor < len(source) and depth:
-            if source[cursor] == "\\":
-                cursor += 2
-                continue
-            if source[cursor] == "[":
-                depth += 1
-            elif source[cursor] == "]":
-                depth -= 1
-            cursor += 1
-        if depth == 0:
-            ranges.append((index, cursor))
-        index = max(cursor, index + 1)
-    return ranges
-
-
-def markdown_html_tag_ranges(source):
-    ranges = []
-    index = 0
-    while index < len(source):
-        if source[index] != "<" or _is_escaped(source, index):
-            index += 1
-            continue
-        cursor = index + 1
-        if cursor < len(source) and source[cursor] == "/":
-            cursor += 1
-        name = re.match(r"[A-Za-z][A-Za-z0-9-]*", source[cursor:])
-        if not name:
-            index += 1
-            continue
-        cursor += name.end()
-        if cursor >= len(source) or source[cursor] not in " \t\r\n/>":
-            index += 1
-            continue
-        quote = None
-        while cursor < len(source):
-            character = source[cursor]
-            if quote:
-                if character == quote:
-                    quote = None
-            elif character in "\"'":
-                quote = character
-            elif character == ">":
-                break
-            cursor += 1
-        if cursor < len(source) and source[cursor] == ">":
-            ranges.append((index, cursor + 1))
-            index = cursor + 1
-        else:
-            index += 1
-    return ranges
-
-
-def render_markdown_code_span(content):
-    rendered = re.sub(r"\r\n|\r|\n", " ", content)
-    if rendered.startswith(" ") and rendered.endswith(" ") and rendered.strip(" "):
-        rendered = rendered[1:-1]
-    return rendered
-
-
-def _markdown_blockquote_content(line):
-    candidate = line
-    depth = 0
-    while True:
-        marker = re.match(r"^[ \t]{0,3}>[ \t]?", candidate)
-        if not marker:
-            break
-        candidate = candidate[marker.end() :]
-        depth += 1
-    return candidate, depth
 
 
 def strip_markdown_code_and_comments(markdown):
-    text = mask_markdown_comments(markdown)
-    text = re.sub(
-        r"<(pre|code|script|style|template|textarea|xmp)\b[^>]*>"
-        r"[\s\S]*?(?:</\1\s*>|\Z)",
-        "",
-        text,
-        flags=re.IGNORECASE,
+    """Mask non-rendered Markdown/HTML contexts without changing source offsets.
+
+    This supports the deliberately narrow publication contract: one top-level
+    inline link with the exact label. It is not intended to implement CommonMark.
+    """
+    source = _mask_markdown_comments(markdown)
+    source = _mask_markdown_code_blocks(source)
+    source = _mask_markdown_reference_definitions(source)
+    source = _mask_markdown_html(source)
+    return _mask_markdown_code_spans(source)
+
+
+def _markdown_delimiter_context(source, stop):
+    bracket_depth = 0
+    parenthesis_stack = []
+    index = 0
+    while index < stop:
+        character = source[index]
+        if character == "\\":
+            index += 2
+            continue
+        if character == "[":
+            bracket_depth += 1
+        elif character == "]" and bracket_depth:
+            bracket_depth -= 1
+        elif character == "(":
+            parenthesis_stack.append(index)
+        elif character == ")" and parenthesis_stack:
+            parenthesis_stack.pop()
+        index += 1
+
+    inside_link_destination = any(
+        position > 0 and source[position - 1] == "]"
+        for position in parenthesis_stack
     )
-
-    lines = []
-    fence = None
-    previous_blank = True
-    indented_code = False
-    for line in text.splitlines():
-        content, quote_depth = _markdown_blockquote_content(line)
-        marker_match = re.match(r"^[ \t]{0,3}(`{3,}|~{3,})(.*)$", content)
-        marker = marker_match.group(1) if marker_match else None
-        if fence and quote_depth < fence[2]:
-            # A fenced block inside a block quote ends when that quote ends.
-            fence = None
-        if fence:
-            if marker:
-                suffix = marker_match.group(2)
-                if (
-                    marker[0] == fence[0]
-                    and len(marker) >= fence[1]
-                    and quote_depth == fence[2]
-                    and not suffix.strip(" \t")
-                ):
-                    fence = None
-                    previous_blank = True
-            continue
-        if marker:
-            fence = (marker[0], len(marker), quote_depth)
-            previous_blank = True
-            continue
-
-        expanded = line.expandtabs(4)
-        indent = len(expanded) - len(expanded.lstrip(" "))
-        blank = not line.strip()
-        if indented_code:
-            if blank:
-                continue
-            if indent >= 4:
-                continue
-            indented_code = False
-        elif indent >= 4 and (previous_blank or not lines):
-            indented_code = True
-            continue
-        lines.append(line)
-        previous_blank = blank
-    return "\n".join(lines)
-
-
-def protect_markdown_code_spans(label):
-    ranges = markdown_code_span_ranges(label)
-    if not ranges:
-        return label, {}
-    parts = []
-    rendered_spans = {}
-    cursor = 0
-    for index, (start, end, content) in enumerate(ranges):
-        parts.append(label[cursor:start])
-        token = f"\ue000{index}\ue001"
-        rendered_spans[token] = render_markdown_code_span(content)
-        parts.append(token)
-        cursor = end
-    parts.append(label[cursor:])
-    return "".join(parts), rendered_spans
-
-
-def protect_markdown_escapes(label):
-    escaped = {}
-
-    def replace_escape(match):
-        token = f"\ue100{len(escaped)}\ue101"
-        escaped[token] = match.group(1)
-        return token
-
-    return re.sub(r"\\([\\`*{}\[\]()#+\-.!_>~|])", replace_escape, label), escaped
-
-
-def strip_balanced_markdown_emphasis(label):
-    for marker in ("***", "___", "**", "__", "~~", "~", "*", "_"):
-        escaped_marker = re.escape(marker)
-        delimiter = re.escape(marker[0])
-        pattern = re.compile(
-            rf"(?<!{delimiter}){escaped_marker}"
-            rf"(?P<body>\S(?:.*?\S)?)"
-            rf"(?<!{delimiter}){escaped_marker}(?!{delimiter})",
-            flags=re.S,
-        )
-        label = pattern.sub(lambda match: match.group("body"), label)
-    return label
-
-
-def plain_markdown_label(label):
-    label, rendered_spans = protect_markdown_code_spans(label)
-    label, escaped = protect_markdown_escapes(label)
-    label = re.sub(r"</?[A-Za-z][^<>]*>", "", label)
-    label = strip_balanced_markdown_emphasis(label)
-    for token, character in escaped.items():
-        label = label.replace(token, character)
-    for token, rendered in rendered_spans.items():
-        label = label.replace(token, rendered)
-    return " ".join(label.split())
+    return bracket_depth, inside_link_destination
 
 
 def has_markdown_contact_link(markdown, email):
     source = strip_markdown_code_and_comments(markdown)
-    masked = mask_markdown_ranges(
-        source,
-        markdown_code_span_ranges(source)
-        + markdown_image_label_ranges(source)
-        + markdown_html_tag_ranges(source),
+    escaped_email = re.escape(email)
+    contact_link = re.compile(
+        rf"\[{escaped_email}\]\([ \t]*"
+        rf"(?:(?i:mailto):{escaped_email}|<(?i:mailto):{escaped_email}>)[ \t]*\)"
     )
-    links = re.finditer(
-        r"(?<![\\!])\[(?P<label>[^\]\n]+)\]\(\s*"
-        r"(?P<destination><[^>\n]+>|[^)\s]+)"
-        r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^()]*\)))?\s*\)",
-        masked,
-    )
-    expected_destination = f"mailto:{email}"
-    for link in links:
-        destination = link.group("destination")
-        if destination.startswith("<") and destination.endswith(">"):
-            destination = destination[1:-1]
-        label = source[link.start("label") : link.end("label")]
-        if (
-            destination == expected_destination
-            and plain_markdown_label(label) == email
-        ):
+
+    for match in contact_link.finditer(source):
+        if _is_escaped(source, match.start()):
+            continue
+        if match.start() > 0 and source[match.start() - 1] == "!":
+            if not _is_escaped(source, match.start() - 1):
+                continue
+        bracket_depth, inside_link_destination = _markdown_delimiter_context(
+            source, match.start()
+        )
+        if bracket_depth == 0 and not inside_link_destination:
             return True
     return False
 
