@@ -149,7 +149,11 @@ class VerifyBuildTests(unittest.TestCase):
             ),
             "> [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
             (
-                "> ~~~\n> example\n\n"
+                # Start the quoted fence on its own line. Without the leading
+                # newline, this replacement becomes
+                # "**Kontakt:** > ~~~", so the fence never starts and the case
+                # does not exercise quoted-fence handling.
+                "\n\n> ~~~\n> example\n\n"
                 f"{canonical_markdown_link}"
             ),
             (
