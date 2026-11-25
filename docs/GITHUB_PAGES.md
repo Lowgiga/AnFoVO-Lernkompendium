@@ -78,10 +78,12 @@ Angaben, nicht deren rechtliche Vollständigkeit:
 1. `index.html` enthält die konfigurierten Anbieterangaben direkt in der Fußzeile; `IMPRESSUM.md`
    dokumentiert dieselben Angaben als eigenständige Datei. Der frühere sichtbare
    Veröffentlichungs-Platzhalter wurde entfernt.
-2. `tests/verify-build.py` verlangt Name, Anschrift, Kontakt-E-Mail sowie echte, gerenderte HTML-
-   und Markdown-Kontaktlinks in beiden Dokumenten; Markup in Kommentaren oder Codeblöcken zählt
-   nicht. Der Regressionstest `test_impressum_requires_provider_details` mutiert Platzhalter, Name,
-   Anschrift, Linkziel, Link-Markup und verborgene Linkquellen unabhängig voneinander.
+2. `tests/verify-build.py` verlangt Name, Anschrift, Kontakt-E-Mail sowie unterstützte semantisch
+   gleichwertige HTML- und Markdown-Kontaktlinks in beiden Dokumenten. Das `mailto:`-Ziel muss exakt
+   dem konfigurierten Ziel entsprechen, und das sichtbare E-Mail-Label wird whitespace-normalisiert
+   geprüft; Links in Kommentaren, Codeblöcken oder Script-Daten zählen nicht. Der Regressionstest
+   `test_impressum_requires_provider_details` mutiert Platzhalter, Name, Anschrift, Linkziel,
+   Link-Markup und verborgene Linkquellen unabhängig voneinander.
 3. Direkter Live-Abruf nach Pages-Lauf `45629740818`: `index.html` antwortet mit HTTP 200,
    629.155 Bytes und SHA-256
    `826c85e98ce08e070b15494318368999a111e58bc77777786fbaa146bdd371cb`; `IMPRESSUM.md` und `sw.js`

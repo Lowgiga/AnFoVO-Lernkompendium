@@ -138,6 +138,14 @@ class VerifyBuildTests(unittest.TestCase):
             "[**Vid80gmx@gmail.com**](mailto:Vid80gmx@gmail.com)",
             "[*Vid80gmx@gmail.com*](mailto:Vid80gmx@gmail.com)",
             r"[Vid80gmx@gmail\.com](mailto:Vid80gmx@gmail.com)",
+            (
+                f"```markdown\n{canonical_markdown_link}\n``` \n\n"
+                f"{canonical_markdown_link}"
+            ),
+            (
+                f"```markdown\n{canonical_markdown_link}\n```\t\n\n"
+                f"{canonical_markdown_link}"
+            ),
         )
         for accepted_markdown_link in accepted_markdown_links:
             with self.subTest(markdown=accepted_markdown_link):
@@ -181,6 +189,11 @@ class VerifyBuildTests(unittest.TestCase):
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
                 '<a href="mailto:Vid80gmx@gmail.com">'
                 '<script type="text/plain">Vid80gmx@gmail.com</script></a>',
+            ),
+            "self-closing-script-hidden contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<a href="mailto:Vid80gmx@gmail.com">'
+                '<script/>Vid80gmx@gmail.com</script></a>',
             ),
             "duplicate href with wrong first target": (
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
@@ -254,6 +267,10 @@ class VerifyBuildTests(unittest.TestCase):
             "unmatched-emphasis-label": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "[*Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "triple-tilde-label": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "[~~~Vid80gmx@gmail.com~~~](mailto:Vid80gmx@gmail.com)",
             ),
             "escaped-extra-label": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",

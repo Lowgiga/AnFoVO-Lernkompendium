@@ -62,6 +62,13 @@ class _ContactAnchorParser(HTMLParser):
             )
             self._anchors.append({"href": href, "text": []})
 
+    def handle_startendtag(self, tag, attrs):
+        tag = tag.lower()
+        if tag == "script":
+            self._script_depth += 1
+            return
+        super().handle_startendtag(tag, attrs)
+
     def handle_data(self, data):
         if self._script_depth:
             return
@@ -215,7 +222,7 @@ def protect_markdown_escapes(label):
 
 
 def strip_balanced_markdown_emphasis(label):
-    for marker in ("***", "___", "~~~", "**", "__", "~~", "*", "_"):
+    for marker in ("***", "___", "**", "__", "~~", "*", "_"):
         escaped_marker = re.escape(marker)
         delimiter = re.escape(marker[0])
         pattern = re.compile(
