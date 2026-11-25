@@ -49,17 +49,26 @@ class _ContactAnchorParser(HTMLParser):
         self.email = email
         self.found = False
         self._anchors = []
+        self._script_depth = 0
 
     def handle_starttag(self, tag, attrs):
-        if tag.lower() == "a":
+        tag = tag.lower()
+        if tag == "script":
+            self._script_depth += 1
+        if tag == "a":
             self._anchors.append({"href": dict(attrs).get("href"), "text": []})
 
     def handle_data(self, data):
+        if self._script_depth:
+            return
         for anchor in self._anchors:
             anchor["text"].append(data)
 
     def handle_endtag(self, tag):
-        if tag.lower() == "a" and self._anchors:
+        tag = tag.lower()
+        if tag == "script" and self._script_depth:
+            self._script_depth -= 1
+        if tag == "a" and self._anchors:
             anchor = self._anchors.pop()
             visible_text = " ".join("".join(anchor["text"]).split())
             if (
@@ -76,57 +85,177 @@ def has_html_contact_link(fragment, email):
     return parser.found
 
 
+def markdown_code_span_ranges(source):
+    ranges = []
+    index = 0
+    while index < len(source):
+        if source[index] != "`":
+            index += 1
+            continue
+        opener_start = index
+        while index < len(source) and source[index] == "`":
+            index += 1
+        opener_end = index
+        opener_length = opener_end - opener_start
+        cursor = opener_end
+        while cursor < len(source):
+            if source[cursor] != "`":
+                cursor += 1
+                continue
+            closer_start = cursor
+            while cursor < len(source) and source[cursor] == "`":
+                cursor += 1
+            closer_length = cursor - closer_start
+            if closer_length == opener_length:
+                ranges.append(
+                    (opener_start, cursor, source[opener_end:closer_start])
+                )
+                index = cursor
+                break
+        else:
+            index = opener_end
+    return ranges
+
+
+def mask_markdown_code_spans(source, ranges):
+    masked = list(source)
+    for start, end, _ in ranges:
+        for index in range(start, end):
+            if masked[index] not in "\r\n":
+                masked[index] = " "
+    return "".join(masked)
+
+
+def render_markdown_code_span(content):
+    rendered = re.sub(r"\r\n|\r|\n", " ", content)
+    if rendered.startswith(" ") and rendered.endswith(" ") and rendered.strip(" "):
+        rendered = rendered[1:-1]
+    return rendered
+
+
 def strip_markdown_code_and_comments(markdown):
-    lines = []
-    fence = None
-    for line in markdown.splitlines():
-        marker = re.match(r"^[ \t]{0,3}(`{3,}|~{3,})", line)
-        if fence:
-            if (
-                marker
-                and marker.group(1)[0] == fence[0]
-                and len(marker.group(1)) >= fence[1]
-            ):
-                fence = None
-            continue
-        if marker:
-            fence = (marker.group(1)[0], len(marker.group(1)))
-            continue
-        lines.append(line)
-    text = "\n".join(lines)
-    text = re.sub(r"<!--[\s\S]*?-->", "", text)
+    text = re.sub(r"<!--[\s\S]*?-->", "", markdown)
     text = re.sub(
-        r"<(?:pre|code)\b[^>]*>[\s\S]*?</(?:pre|code)\s*>",
+        r"<(pre|code)\b[^>]*>[\s\S]*?</\1\s*>",
         "",
         text,
         flags=re.IGNORECASE,
     )
-    return re.sub(r"(?<!`)(`+)(?!`)(.*?)(?<!`)\1(?!`)", "", text, flags=re.S)
+
+    lines = []
+    fence = None
+    previous_blank = True
+    indented_code = False
+    for line in text.splitlines():
+        marker_match = re.match(r"^[ \t]{0,3}(`{3,}|~{3,})(.*)$", line)
+        marker = marker_match.group(1) if marker_match else None
+        if fence:
+            if marker:
+                suffix = marker_match.group(2)
+                if (
+                    marker[0] == fence[0]
+                    and len(marker) >= fence[1]
+                    and not suffix.strip(" \t")
+                ):
+                    fence = None
+                    previous_blank = True
+            continue
+        if marker:
+            fence = (marker[0], len(marker))
+            previous_blank = True
+            continue
+
+        expanded = line.expandtabs(4)
+        indent = len(expanded) - len(expanded.lstrip(" "))
+        blank = not line.strip()
+        if indented_code:
+            if blank:
+                continue
+            if indent >= 4:
+                continue
+            indented_code = False
+        elif indent >= 4 and (previous_blank or not lines):
+            indented_code = True
+            continue
+        lines.append(line)
+        previous_blank = blank
+    return "\n".join(lines)
+
+
+def protect_markdown_code_spans(label):
+    ranges = markdown_code_span_ranges(label)
+    if not ranges:
+        return label, {}
+    parts = []
+    rendered_spans = {}
+    cursor = 0
+    for index, (start, end, content) in enumerate(ranges):
+        parts.append(label[cursor:start])
+        token = f"\ue000{index}\ue001"
+        rendered_spans[token] = render_markdown_code_span(content)
+        parts.append(token)
+        cursor = end
+    parts.append(label[cursor:])
+    return "".join(parts), rendered_spans
+
+
+def protect_markdown_escapes(label):
+    escaped = {}
+
+    def replace_escape(match):
+        token = f"\ue100{len(escaped)}\ue101"
+        escaped[token] = match.group(1)
+        return token
+
+    return re.sub(r"\\([\\`*{}\[\]()#+\-.!_>~|])", replace_escape, label), escaped
+
+
+def strip_balanced_markdown_emphasis(label):
+    for marker in ("***", "___", "~~~", "**", "__", "~~", "*", "_"):
+        escaped_marker = re.escape(marker)
+        delimiter = re.escape(marker[0])
+        pattern = re.compile(
+            rf"(?<!{delimiter}){escaped_marker}"
+            rf"(?P<body>\S(?:.*?\S)?)"
+            rf"{escaped_marker}(?!{delimiter})",
+            flags=re.S,
+        )
+        label = pattern.sub(lambda match: match.group("body"), label)
+    return label
 
 
 def plain_markdown_label(label):
-    label = re.sub(r"\\([\\`*{}\[\]()#+\-.!_>~|])", r"\1", label)
-    label = re.sub(r"<[^>]+>", "", label)
-    label = re.sub(r"[*_`]+", "", label)
+    label, rendered_spans = protect_markdown_code_spans(label)
+    label, escaped = protect_markdown_escapes(label)
+    label = re.sub(r"</?[A-Za-z][^<>]*>", "", label)
+    label = strip_balanced_markdown_emphasis(label)
+    for token, character in escaped.items():
+        label = label.replace(token, character)
+    for token, rendered in rendered_spans.items():
+        label = label.replace(token, rendered)
     return " ".join(label.split())
 
 
 def has_markdown_contact_link(markdown, email):
     source = strip_markdown_code_and_comments(markdown)
+    masked = mask_markdown_code_spans(
+        source, markdown_code_span_ranges(source)
+    )
     links = re.finditer(
         r"(?<![\\!])\[(?P<label>[^\]\n]+)\]\(\s*"
         r"(?P<destination><[^>\n]+>|[^)\s]+)"
         r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^()]*\)))?\s*\)",
-        source,
+        masked,
     )
     expected_destination = f"mailto:{email}"
     for link in links:
         destination = link.group("destination")
         if destination.startswith("<") and destination.endswith(">"):
             destination = destination[1:-1]
+        label = source[link.start("label") : link.end("label")]
         if (
             destination.casefold() == expected_destination.casefold()
-            and plain_markdown_label(link.group("label")) == email
+            and plain_markdown_label(label) == email
         ):
             return True
     return False

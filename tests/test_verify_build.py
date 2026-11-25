@@ -126,12 +126,28 @@ class VerifyBuildTests(unittest.TestCase):
         self.assertEqual(self.run_check(name), (0, None))
 
         canonical_markdown_link = "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)"
-        equivalent_markdown_link = "[Vid80gmx@gmail.com](<mailto:Vid80gmx@gmail.com>)"
-        equivalent_markdown = original_markdown.replace(
-            canonical_markdown_link, equivalent_markdown_link
+        accepted_markdown_links = (
+            "[Vid80gmx@gmail.com](<mailto:Vid80gmx@gmail.com>)",
+            "[`Vid80gmx@gmail.com`](mailto:Vid80gmx@gmail.com)",
+            "[**Vid80gmx@gmail.com**](mailto:Vid80gmx@gmail.com)",
+            "[*Vid80gmx@gmail.com*](mailto:Vid80gmx@gmail.com)",
+            r"[Vid80gmx@gmail\.com](mailto:Vid80gmx@gmail.com)",
         )
-        self.assertNotEqual(equivalent_markdown, original_markdown)
-        impressum.write_text(equivalent_markdown, encoding="utf-8")
+        for accepted_markdown_link in accepted_markdown_links:
+            with self.subTest(markdown=accepted_markdown_link):
+                equivalent_markdown = original_markdown.replace(
+                    canonical_markdown_link, accepted_markdown_link
+                )
+                self.assertNotEqual(equivalent_markdown, original_markdown)
+                impressum.write_text(equivalent_markdown, encoding="utf-8")
+                self.assertEqual(self.run_check(name), (0, None))
+
+        paragraph_continuation = original_markdown.replace(
+            "**Kontakt:** " + canonical_markdown_link,
+            "**Kontakt:**\n    " + canonical_markdown_link,
+        )
+        self.assertNotEqual(paragraph_continuation, original_markdown)
+        impressum.write_text(paragraph_continuation, encoding="utf-8")
         self.assertEqual(self.run_check(name), (0, None))
 
         html_mutations = {
@@ -154,6 +170,11 @@ class VerifyBuildTests(unittest.TestCase):
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com) "
                 "<!-- <a href=\"mailto:Vid80gmx@gmail.com\">"
                 "Vid80gmx@gmail.com</a> -->",
+            ),
+            "script-hidden contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<a href="mailto:Vid80gmx@gmail.com">'
+                '<script type="text/plain">Vid80gmx@gmail.com</script></a>',
             ),
         }
         for field, (old, new) in html_mutations.items():
@@ -195,6 +216,33 @@ class VerifyBuildTests(unittest.TestCase):
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
                 "```markdown\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n```",
+            ),
+            "invalid-fence-close-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "~~~markdown\n~~~not-a-close\n"
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n~~~",
+            ),
+            "indented-code-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "    [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "inline-code-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "`[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)`",
+            ),
+            "code-span-label-with-extra-text": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "[`Vid80gmx@gmail.com`extra](mailto:Vid80gmx@gmail.com)",
+            ),
+            "unmatched-emphasis-label": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "[*Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "escaped-extra-label": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                r"[Vid80gmx@gmail.com\*](mailto:Vid80gmx@gmail.com)",
             ),
         }
         for field, (old, new) in markdown_mutations.items():
