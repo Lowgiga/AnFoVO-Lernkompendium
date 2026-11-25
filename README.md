@@ -42,6 +42,7 @@
 | PWA/Offline (Subpath) | ✅ lokal getestet (Manifest, Worker, Cache, Offline-Ladevorgang) | `tests/pwa-subpath.cjs` |
 | Android-Build (Quellstand) | ✅ Version `2.9.5`, Version Code `295` | `android/app/build.gradle` |
 | GitHub-Actions-CI | ✅ Main-Lauf und Pages-Deployment erfolgreich (25.11.2026) | [Main-CI](https://github.com/Lowgiga/AnFoVO-Lernkompendium/actions/runs/45576060676) · [Pages](https://github.com/Lowgiga/AnFoVO-Lernkompendium/actions/runs/45576058286) |
+| Veröffentlichungsgate (Impressum) | ⚠️ offen — GitHub Pages ist öffentlich erreichbar; der Impressum-Platzhalter ist im live ausgelieferten Stand weiterhin enthalten | `docs/GITHUB_PAGES.md` |
 | Release-Signing | ✅ lokal konfiguriert und nachgewiesen; CI validiert die Debug-APK-Signaturen | `docs/RELEASE_PROCESS.md` |
 | Geräteinstallation (Galaxy S25) | ✅ Release v2.9.3 verifiziert; ✅ v2.9.5-Debug-App parallel installiert und Kaltstart geprüft; ⏳ interaktive 7-Punkte-Checkliste offen | `PROJECT_MANIFEST.json` |
 
@@ -61,7 +62,7 @@ flowchart LR
         AST["assets/<br/>bytegleiche Web-Dateien"]
     end
     subgraph QA["🧪 Qualitätssicherung"]
-        ST["verify-build.py · 32 Checks"]
+        ST["verify-build.py · 33 Checks"]
         PW["Playwright · Chromium"]
     end
     CI["⚙️ GitHub Actions<br/>Validate + Debug-Build"]
@@ -134,8 +135,8 @@ flowchart LR
 - Installierbar unter `/AnFoVO-Lernkompendium/` — **alle Pfade relativ**, Manifest + Service Worker + Icons
 - Service Worker registriert sich nur unter `http(s)`; `file://` und `android_asset` bleiben voll nutzbar
 - Lokale Web-Oberfläche erzeugbar mit `bash scripts/prepare-pages-surface.sh` → `dist/pages/`
-- **GitHub Pages aktiv:** https://lowgiga.github.io/AnFoVO-Lernkompendium/ (PWA installierbar, Offline-fähig)
-- ⚠️ Vor öffentlicher Freigabe: Impressum-Platzhalter `[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]` durch echte Angaben nach § 5 DDG ersetzen — Schritte in [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md)
+- **GitHub Pages aktiv und öffentlich erreichbar:** https://lowgiga.github.io/AnFoVO-Lernkompendium/ (PWA installierbar, Offline-fähig)
+- ⚠️ **Veröffentlichungsgate derzeit nicht erfüllt:** Der live ausgelieferte Stand enthält weiterhin den Impressum-Platzhalter `[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]`. Bis zur Entscheidung muss entweder der Platzhalter durch echte Angaben nach § 5 DDG ersetzt oder GitHub Pages deaktiviert werden — Schritte in [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md)
 
 </details>
 
@@ -342,7 +343,7 @@ Beiträge sind willkommen — bitte die folgenden Grundsätze beachten:
 - Repository: [Lowgiga/AnFoVO-Lernkompendium](https://github.com/Lowgiga/AnFoVO-Lernkompendium) · Stand: `main` · Quellstand **v2.9.5**
 - Änderungsübersicht: [CHANGELOG.md](CHANGELOG.md)
 - Produktspezifikation: [PRODUKT_SPEZIFIKATION.md](PRODUKT_SPEZIFIKATION.md)
-- Build-Nachweis: [BUILD-REPORT-v2.9.1.md](BUILD-REPORT-v2.9.1.md)
+- Build-Nachweis: [BUILD-REPORT-v2.9.5.md](BUILD-REPORT-v2.9.5.md)
 - Technischer Audit: [docs/TECHNICAL_AUDIT.md](docs/TECHNICAL_AUDIT.md)
 - Architektur: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Design: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) · Inhaltserhaltung: [docs/CONTENT_PRESERVATION.md](docs/CONTENT_PRESERVATION.md)
 - GitHub Pages: [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md) · Release-Prozess: [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)

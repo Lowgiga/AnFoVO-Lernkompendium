@@ -63,11 +63,15 @@ Pages-Quelle in den Repository-Einstellungen auf „GitHub Actions" und ergänzt
 Workflow (Skript → `actions/upload-pages-artifact` → `actions/deploy-pages`); dann fallen
 `android/`, `tests/`, Gradle-Wrapper und die Berichte aus dem öffentlichen Angebot heraus.
 
-## Vor einer beworbenen ffntlichkeit
+## Veröffentlichungsgate – derzeit offen
+
+GitHub Pages ist bereits öffentlich erreichbar. Das erforderliche Gate ist deshalb **noch nicht
+erfüllt**: Bis zur Entscheidung muss entweder der Impressum-Platzhalter ersetzt oder GitHub Pages
+deaktiviert werden.
 
 1. Das §-5-DDG-Impressum-Platzhalter (`[vor Veröffentlichung ergänzen: Name, Anschrift,
-   Kontakt]`) is **live** und wird von `tests/verify-build.py` erzwungen. Vor einer beworbenen
-   Verffentlichung ersetzen – eigene Angaben, nichts erfinden.
+   Kontakt]`) ist im live ausgelieferten Stand enthalten und wird von `tests/verify-build.py`
+   erzwungen. Eigene Angaben eintragen, nichts erfinden.
 2. Repository frei von Heft-Fotos, Heft-Wortlaut und persönlichen Notizen halten.
 3. Seiten-Cache-Hinweis: GitHub Pages erlaubt keine eigenen `Cache-Control`-Header. `sw.js`
    arbeitet cache-first; Rückkehrer können daher kurz einen alten Stand ziehen, bis der

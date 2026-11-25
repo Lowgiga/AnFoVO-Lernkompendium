@@ -4,7 +4,7 @@
 
 - Adopted the parallel wrapper workstream: `index.html` now loads the RobotNav engine via `<script src="robot-navigation.js">` instead of an inline embedded block; the engine file is a first-class asset.
 - `sw.js` precaches `./robot-navigation.js` and supports a `skip-waiting` message for faster service-worker updates.
-- Learning content unchanged: the embedded DATA blob is byte-identical between the previous embedded build and this build (SHA-256 match); the v2.9.4 animation overhaul (compositor-only transform/opacity, rAF-throttled parallax, reduced-motion aware) is carried over.
+- Learning content unchanged: the embedded `DATA` literal differs from v2.9.4 only in the `DATA.version` metadata (`2.7.0` → `2.9.5`). The raw literal SHA-256 values are `784d2d3325a0232b3fce12cdd7c597691a86ce0dcbbc95700ba028b0af958859` (v2.9.4) and `d20941f4fb08a573ad317191e45d113baea318d735bfd1a6969a65bffd9120ad` (v2.9.5); after normalizing only that version field, both literals are byte-identical and hash to the v2.9.5 value. The v2.9.4 animation overhaul (compositor-only transform/opacity, rAF-throttled parallax, reduced-motion aware) is carried over.
 - Byte parity restored across all surfaces: root `index.html` == repo Android assets; `robot-navigation.js` identical in root, `algorithm/`, Android assets, and (at v2.9.5 release time) wrapper assets.
   **Update 17.11.2026:** The wrapper workstream has since moved to v2.10.0 (modular style.css/app.js/assistent.js, versionCode 296), so its copies have diverged by design. Parity within THIS repository (root == algorithm == android assets) is enforced by CI; the wrapper branch is a separate product line.
 - Verification updated for the new architecture: `tests/verify-build.py` now checks the script reference and byte-parity of the engine copies (root ↔ `algorithm/` ↔ Android assets) instead of the embedded-block match; PWA precache expectation extended to 65 entries.
@@ -36,6 +36,7 @@
 - Service worker cache: `anfoevo_v2_cache_2.9.5-web-pwa-2.9.5`; `2.9.4` no longer present.
 - Galaxy S25 verification is current: release v2.9.3 remains installed; a separate v2.9.5 debug app was installed side-by-side and cold-started successfully. Only the interactive seven-point smoke checklist is still open.
 - GitHub Release v2.9.4 (animation update, embedded architecture) remains published; v2.9.5 is the canonical follow-up with the standalone-engine architecture.
+- GitHub Pages is public and the live `index.html` still contains the DDG Impressum placeholder; the documented publication gate is therefore not met. The placeholder must be replaced with real legal-contact details or Pages must be disabled.
 
 ## Rebuild
 
@@ -45,7 +46,8 @@ $env:KOMPENDIUM_KEYSTORE="C:\Users\doli\Downloads\AnFoeVO-Release-Keystore\anfoe
 $env:KOMPENDIUM_STORE_PASSWORD="<see AnFoeVO-Release-Keystore\CREDENTIALS.txt>"
 $env:KOMPENDIUM_KEY_PASSWORD="<see AnFoeVO-Release-Keystore\CREDENTIALS.txt>"
 $env:KOMPENDIUM_KEY_ALIAS="anfoevo-release"
+Set-Location android
 .\gradlew.bat --no-daemon clean :app:assembleDebug :app:assembleRelease :app:bundleRelease
 ```
 
-Repo checks: `python tests/verify-build.py`; `cd tests; npm run test:all`.
+Run the Gradle command from the repository's `android/` directory as shown above. Repo checks from the repository root: `python tests/verify-build.py`; `cd tests; npm run test:all`.

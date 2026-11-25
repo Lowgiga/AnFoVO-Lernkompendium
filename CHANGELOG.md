@@ -43,8 +43,9 @@ App-Code, Tests/CI, Dokumentation, Build/Deployment, Git).*
 - **Release-Tag nachgezogen:** `v2.9.5` liegt jetzt auf dem Release-Commit `dcc4388`
   (angelegt und gepuscht am 18.11.2026; die Vorgänger-Tags `v2.9.2`/`v2.9.4` hatten ihre
   Releases markiert, für 2.9.5 fehlte er).
-- **Offen (Dokumentiert, kein Code-Defekt):** Impressum-Platzhalter (§ 5 DDG) lebt und ist
-  vor öffentlicher Bewerbung zu ersetzen;
+- **Offen (Dokumentiert, kein Code-Defekt):** GitHub Pages ist bereits öffentlich erreichbar;
+  das Veröffentlichungsgate ist derzeit nicht erfüllt. Der Impressum-Platzhalter (§ 5 DDG)
+  muss durch echte Angaben ersetzt werden oder GitHub Pages muss deaktiviert werden;
   zwei konkurrierende Dark-Mode-Paletten (visueller Eingriff, daher nicht umgesetzt);
   Monster-Zeilen im HTML (Inhaltsdiff); Gerätetest v2.9.5 (Gerät offline).
 
@@ -52,7 +53,7 @@ App-Code, Tests/CI, Dokumentation, Build/Deployment, Git).*
 
 - Adopted the standalone RobotNav architecture from the wrapper workstream: `index.html` now loads `robot-navigation.js` via `<script src>` instead of an inline embedded block; the service worker precaches the engine file and supports `skip-waiting`.
 - Added byte-parity checks for the engine copies (root ↔ `algorithm/` ↔ Android assets) and extended the PWA precache expectation.
-- Learning content unchanged (embedded DATA blob byte-identical); animation overhaul from v2.9.4 carried over.
+- Learning content unchanged (the embedded `DATA` payload is byte-identical apart from the `DATA.version` metadata; raw and normalized hashes are documented in the v2.9.5 build report); animation overhaul from v2.9.4 carried over.
 - Bumped to v2.9.5 / versionCode 295.
 
 ## 2.9.4 – 2026-11-14
