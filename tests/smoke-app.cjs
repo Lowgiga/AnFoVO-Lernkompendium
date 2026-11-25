@@ -29,6 +29,61 @@ const { pathToFileURL } = require('url');
     document.querySelector('link[rel="manifest"]')?.getAttribute('href') || null
   );
 
+  const contactChecks = await page.evaluate(() => {
+    const expectedHref = 'mailto:Vid80gmx@gmail.com';
+    const expectedLabel = 'Vid80gmx@gmail.com';
+    const normalize = value => (value || '').replace(/\s+/g, ' ').trim();
+    const isRendered = element => {
+      for (let current = element; current; current = current.parentElement) {
+        const style = getComputedStyle(current);
+        if (
+          current.hidden ||
+          style.display === 'none' ||
+          style.visibility === 'hidden' ||
+          style.visibility === 'collapse' ||
+          Number(style.opacity) === 0 ||
+          style.contentVisibility === 'hidden'
+        ) return false;
+      }
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    };
+
+    const candidates = Array.from(document.querySelectorAll('a[href]'))
+      .filter(anchor => anchor.getAttribute('href') === expectedHref);
+    candidates.forEach(anchor => anchor.scrollIntoView({ block: 'center' }));
+    const exactLabels = candidates.filter(
+      anchor => normalize(anchor.innerText) === expectedLabel
+    );
+    const visible = exactLabels.filter(anchor => {
+      if (!isRendered(anchor)) return false;
+      const rect = anchor.getBoundingClientRect();
+      return rect.bottom > 0 && rect.right > 0 &&
+        rect.top < innerHeight && rect.left < innerWidth;
+    });
+
+    const probe = document.createElement('a');
+    probe.href = expectedHref;
+    probe.textContent = expectedLabel;
+    probe.className = 'contact-visibility-probe';
+    const probeStyle = document.createElement('style');
+    probeStyle.textContent = '.contact-visibility-probe{display:none!important}';
+    document.head.appendChild(probeStyle);
+    document.body.appendChild(probe);
+    const hiddenProbeRejected = !isRendered(probe);
+    probe.remove();
+    probeStyle.remove();
+
+    return {
+      expectedHref,
+      exactHrefCount: candidates.length,
+      exactLabelCount: exactLabels.length,
+      visibleCount: visible.length,
+      resolvedHref: visible[0]?.href || null,
+      hiddenProbeRejected
+    };
+  });
+
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileRobotDisplay = await page.locator('.robot3d').evaluate(el => getComputedStyle(el).display);
 
@@ -146,6 +201,7 @@ const { pathToFileURL } = require('url');
     ...result,
     manifestLink,
     manifestIconsMissing,
+    contactChecks,
     mobileRobotDisplay,
     progressChecks,
     accessibilityChecks,
@@ -161,6 +217,11 @@ const { pathToFileURL } = require('url');
     !result.robotPresent ||
     manifestLink !== './manifest.json' ||
     manifestIconsMissing.length > 0 ||
+    contactChecks.exactHrefCount < 1 ||
+    contactChecks.exactLabelCount < 1 ||
+    contactChecks.visibleCount < 1 ||
+    contactChecks.resolvedHref !== contactChecks.expectedHref ||
+    !contactChecks.hiddenProbeRejected ||
     mobileRobotDisplay === 'none' ||
     progressChecks.rings !== progressChecks.rows ||
     progressChecks.countLabels !== progressChecks.rows ||

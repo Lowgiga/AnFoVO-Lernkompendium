@@ -136,7 +136,8 @@ class VerifyBuildTests(unittest.TestCase):
             "[Vid80gmx@gmail.com](<mailto:Vid80gmx@gmail.com>)",
             "[`Vid80gmx@gmail.com`](mailto:Vid80gmx@gmail.com)",
             "[**Vid80gmx@gmail.com**](mailto:Vid80gmx@gmail.com)",
-            "[~Vid80gmx@gmail.com~](mailto:Vid80gmx@gmail.com)",
+            "[__Vid80gmx@gmail.com__](mailto:Vid80gmx@gmail.com)",
+            "[~~Vid80gmx@gmail.com~~](mailto:Vid80gmx@gmail.com)",
             "[*Vid80gmx@gmail.com*](mailto:Vid80gmx@gmail.com)",
             r"[Vid80gmx@gmail\.com](mailto:Vid80gmx@gmail.com)",
             (
@@ -147,16 +148,6 @@ class VerifyBuildTests(unittest.TestCase):
                 f"```markdown\n{canonical_markdown_link}\n```\t\n\n"
                 f"{canonical_markdown_link}"
             ),
-            "> [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
-            (
-                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
-                "<!-- hidden -->\n\n"
-                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)"
-            ),
-            (
-                "<span>[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)"
-                "</span>"
-            ),
         )
         for accepted_markdown_link in accepted_markdown_links:
             with self.subTest(markdown=accepted_markdown_link):
@@ -166,28 +157,6 @@ class VerifyBuildTests(unittest.TestCase):
                 self.assertNotEqual(equivalent_markdown, original_markdown)
                 impressum.write_text(equivalent_markdown, encoding="utf-8")
                 self.assertEqual(self.run_check(name), (0, None))
-
-        # Replace the complete contact line so the quoted fence really starts
-        # at the beginning of a line. Replacing only the canonical link would
-        # produce "**Kontakt:** > ~~~" and would never exercise quoted-fence
-        # handling.
-        quoted_fence_contact = (
-            "> ~~~markdown\n"
-            "> [hidden](mailto:hidden@example.invalid)\n\n"
-            "**Kontakt:** " + canonical_markdown_link
-        )
-        equivalent_markdown = original_markdown.replace(
-            "**Kontakt:** " + canonical_markdown_link,
-            quoted_fence_contact,
-        )
-        self.assertNotEqual(equivalent_markdown, original_markdown)
-        self.assertIn(
-            "\n> ~~~markdown\n> [hidden](mailto:hidden@example.invalid)\n\n"
-            "**Kontakt:** " + canonical_markdown_link + "\n",
-            equivalent_markdown,
-        )
-        impressum.write_text(equivalent_markdown, encoding="utf-8")
-        self.assertEqual(self.run_check(name), (0, None))
 
         paragraph_continuation = original_markdown.replace(
             "**Kontakt:** " + canonical_markdown_link,
@@ -228,36 +197,95 @@ class VerifyBuildTests(unittest.TestCase):
                 '<a href="mailto:Vid80gmx@gmail.com">'
                 '<script/>Vid80gmx@gmail.com</script></a>',
             ),
-            "textarea-hidden contact link": (
+            "hidden contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<a href="mailto:Vid80gmx@gmail.com" hidden>'
+                'Vid80gmx@gmail.com</a>',
+            ),
+            "display-none contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<a href="mailto:Vid80gmx@gmail.com" style="display:none">'
+                'Vid80gmx@gmail.com</a>',
+            ),
+            "template-hidden contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<a href="mailto:Vid80gmx@gmail.com"><template>'
+                'Vid80gmx@gmail.com</template></a>',
+            ),
+            "style-hidden contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<a href="mailto:Vid80gmx@gmail.com"><style>'
+                'Vid80gmx@gmail.com</style></a>',
+            ),
+            "noscript-hidden contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<a href="mailto:Vid80gmx@gmail.com"><noscript>'
+                'Vid80gmx@gmail.com</noscript></a>',
+            ),
+            "hidden-ancestor contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<div hidden><a href="mailto:Vid80gmx@gmail.com">'
+                'Vid80gmx@gmail.com</a></div>',
+            ),
+            "template-ancestor contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<template><a href="mailto:Vid80gmx@gmail.com">'
+                'Vid80gmx@gmail.com</a></template>',
+            ),
+            "textarea-ancestor contact link": (
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
                 '<textarea><a href="mailto:Vid80gmx@gmail.com">'
                 'Vid80gmx@gmail.com</a></textarea>',
             ),
-            "hidden-anchor contact link": (
+            "noscript-ancestor contact link": (
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
-                '<a hidden href="mailto:Vid80gmx@gmail.com">'
+                '<noscript><a href="mailto:Vid80gmx@gmail.com">'
+                'Vid80gmx@gmail.com</a></noscript>',
+            ),
+            "visibility-hidden contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<a href="mailto:Vid80gmx@gmail.com" style="visibility:hidden">'
                 'Vid80gmx@gmail.com</a>',
             ),
-            "hidden-descendant contact link": (
+            "opacity-zero contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<a href="mailto:Vid80gmx@gmail.com" style="opacity:0">'
+                'Vid80gmx@gmail.com</a>',
+            ),
+            "closed-details contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<details><a href="mailto:Vid80gmx@gmail.com">'
+                'Vid80gmx@gmail.com</a></details>',
+            ),
+            "closed-dialog contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<dialog><a href="mailto:Vid80gmx@gmail.com">'
+                'Vid80gmx@gmail.com</a></dialog>',
+            ),
+            "self-closing-hidden-ancestor contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<div hidden/><a href="mailto:Vid80gmx@gmail.com">'
+                'Vid80gmx@gmail.com</a>',
+            ),
+            "nested-anchor contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<a href="mailto:Vid80gmx@gmail.com">'
+                '<a href="mailto:kontakt@example.invalid">Vid80gmx@gmail.com</a>',
+            ),
+            "hidden-label contact link": (
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
                 '<a href="mailto:Vid80gmx@gmail.com">'
                 '<span hidden>Vid80gmx@gmail.com</span></a>',
             ),
-            "template-hidden contact link": (
+            "select-ancestor contact link": (
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
-                '<template><a href="mailto:Vid80gmx@gmail.com">'
-                'Vid80gmx@gmail.com</a></template>',
+                '<select><a href="mailto:Vid80gmx@gmail.com">'
+                'Vid80gmx@gmail.com</a></select>',
             ),
             "duplicate href with wrong first target": (
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
                 '<a href="mailto:kontakt@example.invalid" '
                 'href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
-            ),
-            "nested anchor contact link": (
-                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
-                '<a href="mailto:Vid80gmx@gmail.com">'
-                '<a href="mailto:kontakt@example.invalid">'
-                'Vid80gmx@gmail.com</a></a>',
             ),
         }
         for field, (old, new) in html_mutations.items():
@@ -299,15 +327,6 @@ class VerifyBuildTests(unittest.TestCase):
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)",
             ),
-            "autolink outside supported scope": (
-                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
-                "<Vid80gmx@gmail.com>",
-            ),
-            "reference link outside supported scope": (
-                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
-                "[Vid80gmx@gmail.com][contact]\n\n"
-                "[contact]: mailto:Vid80gmx@gmail.com",
-            ),
             "code-fence-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
@@ -324,10 +343,152 @@ class VerifyBuildTests(unittest.TestCase):
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
                 "    [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
             ),
-            "unclosed-pre-hidden contact link": (
+            "blockquote-indented-code-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
-                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n<pre>\n"
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                ">     [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "list-fence-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "- ```markdown\n"
+                "  [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n  ```",
+            ),
+            "blockquote-fence-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "> ```markdown\n"
+                "> [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n> ```",
+            ),
+            "top-level-fence-container-mismatch contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "```markdown\n> ```\n"
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n```",
+            ),
+            "blockquote-fence-container-mismatch contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "> ```markdown\n```\n"
+                "> [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n> ```",
+            ),
+            "list-fence-container-mismatch contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "- ```markdown\n```\n"
+                "  [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n  ```",
+            ),
+            "list-indented-code-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "-     [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "nested-list-indented-code-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "- -     [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "raw-script-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "<script>\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n"
+                "</script>",
+            ),
+            "raw-style-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "<style>\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n"
+                "</style>",
+            ),
+            "raw-pre-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "<pre>\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n"
+                "</pre>",
+            ),
+            "raw-code-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "<code>\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n"
+                "</code>",
+            ),
+            "raw-html-attribute-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                '<span title="[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)">'
+                "</span>",
+            ),
+            "raw-html-block-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "<div>[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)</div>",
+            ),
+            "raw-script-unclosed-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "<script>\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "raw-pre-unclosed-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "<pre>\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "raw-div-unclosed-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "<div>\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "raw-code-unclosed-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "<code>\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "unclosed-comment-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "<!--\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "image-description-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "![description [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)]"
+                "(image.png)",
+            ),
+            "direct-image-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "![Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "even-backslash-code-span-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "\\\\`[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)`",
+            ),
+            "inline-html-label-out-of-scope contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "[<span>Vid80gmx@gmail.com</span>](mailto:Vid80gmx@gmail.com)",
+            ),
+            "hidden-inline-html-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                '<span hidden>[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)</span>',
+            ),
+            "autolink-out-of-scope contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "<Vid80gmx@gmail.com>",
+            ),
+            "reference-link-out-of-scope contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "[Vid80gmx@gmail.com][contact]\n\n"
+                "[contact]: mailto:Vid80gmx@gmail.com",
+            ),
+            "raw-html-anchor-out-of-scope contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
             ),
             "inline-code-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
@@ -341,6 +502,10 @@ class VerifyBuildTests(unittest.TestCase):
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "[*Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
             ),
+            "intraword-underscore-label": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "[Vid80gmx_@gmail.com_](mailto:Vid80gmx@gmail.com)",
+            ),
             "triple-tilde-label": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "[~~~Vid80gmx@gmail.com~~~](mailto:Vid80gmx@gmail.com)",
@@ -348,37 +513,6 @@ class VerifyBuildTests(unittest.TestCase):
             "escaped-extra-label": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 r"[Vid80gmx@gmail.com\*](mailto:Vid80gmx@gmail.com)",
-            ),
-            "escaped-backtick-code-span-hidden contact link": (
-                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
-                r"\` `[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)`",
-            ),
-            "unclosed-comment-hidden contact link": (
-                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
-                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n<!--\n"
-                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
-            ),
-            "comment-separated contact link": (
-                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
-                "[Vid80gmx@gmail.com]<!-- separator -->"
-                "(mailto:Vid80gmx@gmail.com)",
-            ),
-            "blockquote-fence-hidden contact link": (
-                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
-                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
-                "> ~~~markdown\n"
-                "> [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n"
-                "> ~~~",
-            ),
-            "image-description-hidden contact link": (
-                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
-                "![Contact [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)]"
-                "(contact.png)",
-            ),
-            "raw-html-attribute-hidden contact link": (
-                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
-                '<span title="[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)">'
-                "No contact link</span>",
             ),
         }
         for field, (old, new) in markdown_mutations.items():

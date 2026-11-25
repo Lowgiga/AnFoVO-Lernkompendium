@@ -78,30 +78,34 @@ Angaben, nicht deren rechtliche Vollständigkeit:
 1. `index.html` enthält die konfigurierten Anbieterangaben direkt in der Fußzeile; `IMPRESSUM.md`
    dokumentiert dieselben Angaben als eigenständige Datei. Der frühere sichtbare
    Veröffentlichungs-Platzhalter wurde entfernt.
-2. `tests/verify-build.py` verlangt Name, Anschrift, Kontakt-E-Mail sowie unterstützte Inline-HTML-
-   und Inline-Markdown-Kontaktlinks in beiden Dokumenten. Das `mailto:`-Ziel muss exakt dem konfigurierten
-   Ziel entsprechen, und das sichtbare E-Mail-Label wird whitespace-normalisiert geprüft; Links in
-   Kommentaren, Codeblöcken, `<pre>`-, Script-, Template- oder Textarea-Inhalten sowie in
-   `hidden`-Elementen und deren Teilbäumen zählen nicht. GFM-Autolinks und Reference-Links sind bewusst
-   nicht Teil des unterstützten Scopes und zählen nicht. Der Regressionstest
+2. `tests/verify-build.py` verlangt Name, Anschrift, Kontakt-E-Mail sowie einen HTML-Anker oder
+   einen Markdown-Inline-Link `[Label](mailto:…)` in beiden Dokumenten. Das `mailto:`-Ziel muss
+   exakt dem konfigurierten Ziel entsprechen, und das sichtbare E-Mail-Label wird
+   whitespace-normalisiert geprüft. Kommentare, Code-/Raw-HTML-Blöcke, Bildbeschreibungen und
+   bekannte nicht gerenderte HTML-Kontexte zählen nicht. Der Regressionstest
    `test_impressum_requires_provider_details` mutiert Platzhalter, Name, Anschrift, Linkziel,
    Link-Markup und verborgene Linkquellen unabhängig voneinander.
-3. Direkter Live-Abruf nach Pages-Lauf `45629740818`: `index.html` antwortet mit HTTP 200,
+3. Der Markdown-Scope ist bewusst konservativ: unterstützt sind Inline-Links mit exaktem
+   Quelltext-Ziel und einfachen, vollständig umschlossenen Formatierungen; GFM-Autolinks,
+   Referenzlinks und rohe HTML-Anker im Markdown werden nicht als Ersatz akzeptiert. Der
+   Browser-Smoke-Test prüft separat am ausgelieferten HTML, dass der kanonische Kontaktlink
+   tatsächlich sichtbar gerendert wird; CSS-Klassen-Visibility wird nicht statisch ausgewertet.
+4. Direkter Live-Abruf nach Pages-Lauf `45629740818`: `index.html` antwortet mit HTTP 200,
    629.155 Bytes und SHA-256
    `826c85e98ce08e070b15494318368999a111e58bc77777786fbaa146bdd371cb`; `IMPRESSUM.md` und `sw.js`
    antworten ebenfalls mit HTTP 200 und enthalten dieselben Angaben bzw. den Cache-Namen
    `web-pwa-2.9.5-legal.1`.
-4. Browser-Prüfung der Live-Seite: 70 Lernseiten, kein sichtbarer Veröffentlichungs-Platzhalter,
+5. Browser-Prüfung der Live-Seite: 70 Lernseiten, kein sichtbarer Veröffentlichungs-Platzhalter,
    sichtbare Angaben „Lowgiga“, „New York 11354 USA“ und „Vid80gmx@gmail.com“ sowie ein funktionierendes
    natives `mailto:`-Ziel.
-5. `index.html` und `android/app/src/main/assets/index.html` bleiben byte-identisch; auch die im
+6. `index.html` und `android/app/src/main/assets/index.html` bleiben byte-identisch; auch die im
    CI-Artefakt `AnFoeVO-debug-apks` verpackte `assets/index.html` und die Live-Datei haben denselben
    SHA-256-Wert. Der In-App-Selbsttest prüft die sichtbaren Angaben und den Kontakt-Link zusätzlich
    zur Laufzeit.
-6. Die rechtliche Identität, Vollständigkeit der Anschrift sowie gegebenenfalls Rechtsform und
+7. Die rechtliche Identität, Vollständigkeit der Anschrift sowie gegebenenfalls Rechtsform und
    Vertretungsberechtigung bleiben eine separate Owner-Bestätigung; automatisierte String- und
    Linkprüfungen können diese rechtliche Frage nicht ersetzen.
-7. Repository frei von Heft-Fotos, Heft-Wortlaut und persönlichen Notizen halten.
-8. Seiten-Cache-Hinweis: GitHub Pages erlaubt keine eigenen `Cache-Control`-Header. `sw.js`
+8. Repository frei von Heft-Fotos, Heft-Wortlaut und persönlichen Notizen halten.
+9. Seiten-Cache-Hinweis: GitHub Pages erlaubt keine eigenen `Cache-Control`-Header. `sw.js`
    arbeitet cache-first; Rückkehrer können daher kurz einen alten Stand ziehen, bis der
    Worker aktualisiert.
