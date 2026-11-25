@@ -769,7 +769,6 @@ def markdown_has_hidden_html_context(source):
 
 
 def strip_markdown_code_and_comments(markdown):
-    raw_text_tags = {"script", "pre", "style", "textarea", "xmp"}
     raw_block_tags = {
         "address",
         "article",
