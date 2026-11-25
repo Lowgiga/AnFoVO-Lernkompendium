@@ -82,8 +82,8 @@ Angaben, nicht deren rechtliche Vollständigkeit:
    und Inline-Markdown-Kontaktlinks in beiden Dokumenten. Das `mailto:`-Ziel muss exakt dem konfigurierten
    Ziel entsprechen, und das sichtbare E-Mail-Label wird whitespace-normalisiert geprüft; Links in
    Kommentaren, Codeblöcken, `<pre>`-, Script-, Template- oder Textarea-Inhalten sowie in
-   `hidden`-Anchors zählen nicht. GFM-Autolinks und Reference-Links sind bewusst nicht Teil des
-   unterstützten Scopes und zählen nicht. Der Regressionstest
+   `hidden`-Elementen und deren Teilbäumen zählen nicht. GFM-Autolinks und Reference-Links sind bewusst
+   nicht Teil des unterstützten Scopes und zählen nicht. Der Regressionstest
    `test_impressum_requires_provider_details` mutiert Platzhalter, Name, Anschrift, Linkziel,
    Link-Markup und verborgene Linkquellen unabhängig voneinander.
 3. Direkter Live-Abruf nach Pages-Lauf `45629740818`: `index.html` antwortet mit HTTP 200,

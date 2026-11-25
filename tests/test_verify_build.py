@@ -149,6 +149,10 @@ class VerifyBuildTests(unittest.TestCase):
             ),
             "> [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
             (
+                "> ~~~\n> example\n\n"
+                f"{canonical_markdown_link}"
+            ),
+            (
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
                 "<!-- hidden -->\n\n"
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)"
@@ -215,6 +219,11 @@ class VerifyBuildTests(unittest.TestCase):
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
                 '<a hidden href="mailto:Vid80gmx@gmail.com">'
                 'Vid80gmx@gmail.com</a>',
+            ),
+            "hidden-descendant contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<a href="mailto:Vid80gmx@gmail.com">'
+                '<span hidden>Vid80gmx@gmail.com</span></a>',
             ),
             "template-hidden contact link": (
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
@@ -330,6 +339,11 @@ class VerifyBuildTests(unittest.TestCase):
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n<!--\n"
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "comment-separated contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "[Vid80gmx@gmail.com]<!-- separator -->"
+                "(mailto:Vid80gmx@gmail.com)",
             ),
             "blockquote-fence-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",

@@ -43,11 +43,32 @@ PLACEHOLDER = "[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]"
 JS = (ROOT / "algorithm" / "robot-navigation.js").read_text(encoding="utf-8").strip()
 ARCHITECTURE = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
 
+HTML_VOID_ELEMENTS = frozenset(
+    {
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "param",
+        "source",
+        "track",
+        "wbr",
+    }
+)
+
+
 class _ContactAnchorParser(HTMLParser):
     def __init__(self, email):
         super().__init__(convert_charrefs=True)
         self.email = email
         self.found = False
+        self._elements = []
         self._anchors = []
         self._script_depth = 0
         self._template_depth = 0
@@ -66,6 +87,12 @@ class _ContactAnchorParser(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         tag = tag.lower()
+        parent = self._elements[-1] if self._elements else None
+        hidden = bool(parent and parent["hidden"]) or any(
+            name.lower() == "hidden" for name, _ in attrs
+        )
+        if tag not in HTML_VOID_ELEMENTS:
+            self._elements.append({"tag": tag, "hidden": hidden})
         if tag == "script":
             self._script_depth += 1
         if tag == "template":
@@ -77,7 +104,7 @@ class _ContactAnchorParser(HTMLParser):
         if tag == "a":
             if self._anchors:
                 self._finish_anchor()
-            if any(name.lower() == "hidden" for name, _ in attrs):
+            if hidden:
                 return
             href = next(
                 (value for name, value in attrs if name.lower() == "href"),
@@ -86,20 +113,9 @@ class _ContactAnchorParser(HTMLParser):
             self._anchors.append({"href": href, "text": []})
 
     def handle_startendtag(self, tag, attrs):
-        tag = tag.lower()
-        if tag == "script":
-            self._script_depth += 1
-            return
-        if tag == "template":
-            self._template_depth += 1
-            return
-        if tag == "textarea":
-            self._textarea_depth += 1
-            return
-        if tag == "a":
-            self.handle_starttag(tag, attrs)
-            return
-        super().handle_startendtag(tag, attrs)
+        # HTML ignores the self-closing slash on non-void elements. Treat those
+        # tags as open until their matching end tag, matching browser parsing.
+        self.handle_starttag(tag.lower(), attrs)
 
     def handle_data(self, data):
         if (
@@ -108,6 +124,9 @@ class _ContactAnchorParser(HTMLParser):
             or self._textarea_depth
             or not self._anchors
         ):
+            return
+        current = self._elements[-1] if self._elements else None
+        if current and current["hidden"]:
             return
         self._anchors[-1]["text"].append(data)
 
@@ -119,6 +138,16 @@ class _ContactAnchorParser(HTMLParser):
             self._template_depth -= 1
         if tag == "textarea" and self._textarea_depth:
             self._textarea_depth -= 1
+        matching_index = next(
+            (
+                index
+                for index in range(len(self._elements) - 1, -1, -1)
+                if self._elements[index]["tag"] == tag
+            ),
+            None,
+        )
+        if matching_index is not None:
+            del self._elements[matching_index:]
         if self._script_depth or self._template_depth or self._textarea_depth:
             return
         if tag == "a":
@@ -181,6 +210,15 @@ def mask_markdown_ranges(source, ranges):
     masked = list(source)
     for start, end, *_ in ranges:
         for index in range(start, end):
+            if masked[index] not in "\r\n":
+                masked[index] = " "
+    return "".join(masked)
+
+
+def mask_markdown_comments(source):
+    masked = list(source)
+    for match in re.finditer(r"<!--[\s\S]*?(?:-->|\Z)", source):
+        for index in range(match.start(), match.end()):
             if masked[index] not in "\r\n":
                 masked[index] = " "
     return "".join(masked)
@@ -271,7 +309,7 @@ def _markdown_blockquote_content(line):
 
 
 def strip_markdown_code_and_comments(markdown):
-    text = re.sub(r"<!--[\s\S]*?(?:-->|\Z)", "", markdown)
+    text = mask_markdown_comments(markdown)
     text = re.sub(
         r"<(pre|code|script|style|template|textarea|xmp)\b[^>]*>"
         r"[\s\S]*?(?:</\1\s*>|\Z)",
@@ -288,6 +326,9 @@ def strip_markdown_code_and_comments(markdown):
         content, quote_depth = _markdown_blockquote_content(line)
         marker_match = re.match(r"^[ \t]{0,3}(`{3,}|~{3,})(.*)$", content)
         marker = marker_match.group(1) if marker_match else None
+        if fence and quote_depth < fence[2]:
+            # A fenced block inside a block quote ends when that quote ends.
+            fence = None
         if fence:
             if marker:
                 suffix = marker_match.group(2)
