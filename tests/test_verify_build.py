@@ -149,14 +149,6 @@ class VerifyBuildTests(unittest.TestCase):
             ),
             "> [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
             (
-                # Start the quoted fence on its own line. Without the leading
-                # newline, this replacement becomes
-                # "**Kontakt:** > ~~~", so the fence never starts and the case
-                # does not exercise quoted-fence handling.
-                "\n\n> ~~~\n> example\n\n"
-                f"{canonical_markdown_link}"
-            ),
-            (
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
                 "<!-- hidden -->\n\n"
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)"
@@ -174,6 +166,28 @@ class VerifyBuildTests(unittest.TestCase):
                 self.assertNotEqual(equivalent_markdown, original_markdown)
                 impressum.write_text(equivalent_markdown, encoding="utf-8")
                 self.assertEqual(self.run_check(name), (0, None))
+
+        # Replace the complete contact line so the quoted fence really starts
+        # at the beginning of a line. Replacing only the canonical link would
+        # produce "**Kontakt:** > ~~~" and would never exercise quoted-fence
+        # handling.
+        quoted_fence_contact = (
+            "> ~~~markdown\n"
+            "> [hidden](mailto:hidden@example.invalid)\n\n"
+            "**Kontakt:** " + canonical_markdown_link
+        )
+        equivalent_markdown = original_markdown.replace(
+            "**Kontakt:** " + canonical_markdown_link,
+            quoted_fence_contact,
+        )
+        self.assertNotEqual(equivalent_markdown, original_markdown)
+        self.assertIn(
+            "\n> ~~~markdown\n> [hidden](mailto:hidden@example.invalid)\n\n"
+            "**Kontakt:** " + canonical_markdown_link + "\n",
+            equivalent_markdown,
+        )
+        impressum.write_text(equivalent_markdown, encoding="utf-8")
+        self.assertEqual(self.run_check(name), (0, None))
 
         paragraph_continuation = original_markdown.replace(
             "**Kontakt:** " + canonical_markdown_link,
