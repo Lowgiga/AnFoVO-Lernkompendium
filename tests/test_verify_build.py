@@ -465,6 +465,13 @@ class VerifyBuildTests(unittest.TestCase):
                 "- ```markdown\n"
                 "  [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n  ```",
             ),
+            "blockquote-list-fence-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "> - ```markdown\n"
+                ">   [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n"
+                ">   ```",
+            ),
             "new-list-item-fence-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
