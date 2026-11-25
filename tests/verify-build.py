@@ -56,7 +56,11 @@ class _ContactAnchorParser(HTMLParser):
         if tag == "script":
             self._script_depth += 1
         if tag == "a":
-            self._anchors.append({"href": dict(attrs).get("href"), "text": []})
+            href = next(
+                (value for name, value in attrs if name.lower() == "href"),
+                None,
+            )
+            self._anchors.append({"href": href, "text": []})
 
     def handle_data(self, data):
         if self._script_depth:
@@ -254,7 +258,7 @@ def has_markdown_contact_link(markdown, email):
             destination = destination[1:-1]
         label = source[link.start("label") : link.end("label")]
         if (
-            destination.casefold() == expected_destination.casefold()
+            destination == expected_destination
             and plain_markdown_label(label) == email
         ):
             return True

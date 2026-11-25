@@ -115,15 +115,21 @@ class VerifyBuildTests(unittest.TestCase):
         self.assertEqual(self.run_check(name), (0, None))
 
         canonical_html_link = '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>'
-        equivalent_html_link = (
+        accepted_html_links = (
             "<a class='contact' href='mailto:Vid80gmx@gmail.com'>"
-            "<span>Vid80gmx@gmail.com</span></a>"
+            "<span>Vid80gmx@gmail.com</span></a>",
+            '<a href="mailto:Vid80gmx@gmail.com" '
+            'href="mailto:kontakt@example.invalid">Vid80gmx@gmail.com</a>',
         )
-        equivalent_html = original.replace(canonical_html_link, equivalent_html_link)
-        self.assertNotEqual(equivalent_html, original)
-        html.write_text(equivalent_html, encoding="utf-8")
-        android_html.write_text(equivalent_html, encoding="utf-8")
-        self.assertEqual(self.run_check(name), (0, None))
+        for accepted_html_link in accepted_html_links:
+            with self.subTest(html=accepted_html_link):
+                equivalent_html = original.replace(
+                    canonical_html_link, accepted_html_link
+                )
+                self.assertNotEqual(equivalent_html, original)
+                html.write_text(equivalent_html, encoding="utf-8")
+                android_html.write_text(equivalent_html, encoding="utf-8")
+                self.assertEqual(self.run_check(name), (0, None))
 
         canonical_markdown_link = "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)"
         accepted_markdown_links = (
@@ -176,6 +182,11 @@ class VerifyBuildTests(unittest.TestCase):
                 '<a href="mailto:Vid80gmx@gmail.com">'
                 '<script type="text/plain">Vid80gmx@gmail.com</script></a>',
             ),
+            "duplicate href with wrong first target": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<a href="mailto:kontakt@example.invalid" '
+                'href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+            ),
         }
         for field, (old, new) in html_mutations.items():
             with self.subTest(document="HTML", field=field):
@@ -207,6 +218,10 @@ class VerifyBuildTests(unittest.TestCase):
             "contact target": (
                 "(mailto:Vid80gmx@gmail.com)",
                 "(mailto:kontakt@example.invalid)",
+            ),
+            "case-folded contact target": (
+                "(mailto:Vid80gmx@gmail.com)",
+                "(mailto:VID80GMX@GMAIL.COM)",
             ),
             "contact link markup": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
