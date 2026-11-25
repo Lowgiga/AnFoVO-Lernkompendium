@@ -45,25 +45,39 @@ PLACEHOLDER = "[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]"
 JS = (ROOT / "algorithm" / "robot-navigation.js").read_text(encoding="utf-8").strip()
 ARCHITECTURE = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
 
+def css_opacity_is_zero(value):
+    value = value.strip().lower()
+    if value.endswith("!important"):
+        value = value[: -len("!important")].strip()
+    if value.endswith("%"):
+        value = value[:-1].strip()
+    try:
+        return float(value) == 0.0
+    except ValueError:
+        return False
+
+
 def style_hides_content(style):
     style = re.sub(r"/\*.*?\*/", "", style or "", flags=re.S)
     normalized = re.sub(r"\s+", "", style).lower()
-    return bool(
-        re.search(
-            r"(?:^|;)(?:display:none|visibility:(?:hidden|collapse)|"
-            r"opacity:(?:0(?:\.0+)?|0%)|content-visibility:hidden)"
-            r"(?:!important|;|$)",
-            normalized,
-        )
-    )
+    if re.search(
+        r"(?:^|;)(?:display:none|visibility:(?:hidden|collapse)|"
+        r"content-visibility:hidden)(?:!important|;|$)",
+        normalized,
+    ):
+        return True
+    opacity = re.search(r"(?:^|;)opacity:([^;]*)", normalized)
+    return bool(opacity and css_opacity_is_zero(opacity.group(1)))
 
 
 class _ContactAnchorParser(HTMLParser):
     NON_RENDERED_TAGS = {
+        "canvas",
         "datalist",
         "head",
         "iframe",
         "listing",
+        "math",
         "noembed",
         "noframes",
         "noscript",
@@ -73,6 +87,7 @@ class _ContactAnchorParser(HTMLParser):
         "script",
         "select",
         "style",
+        "svg",
         "template",
         "textarea",
         "title",
@@ -193,8 +208,11 @@ class _ContactAnchorParser(HTMLParser):
 
 def has_html_contact_link(fragment, email):
     parser = _ContactAnchorParser(email)
-    parser.feed(fragment)
-    parser.close()
+    try:
+        parser.feed(fragment)
+        parser.close()
+    except (AssertionError, ValueError):
+        return False
     return parser.found
 
 
@@ -250,7 +268,7 @@ def mask_markdown_code_spans(source, ranges):
     return "".join(masked)
 
 
-def mask_html_comments(source):
+def mask_html_comments(source, replacement=" "):
     masked = list(source)
     index = 0
     while index < len(source):
@@ -261,7 +279,7 @@ def mask_html_comments(source):
         end = len(source) if close < 0 else close + 3
         for position in range(start, end):
             if masked[position] not in "\r\n":
-                masked[position] = " "
+                masked[position] = replacement
         index = end
     return "".join(masked)
 
@@ -312,6 +330,42 @@ def markdown_closing_parenthesis(source, start):
                     return index + 1
         index += 1
     return None
+
+
+def markdown_unclosed_comment_start(source, ignored_ranges=()):
+    index = 0
+    while True:
+        start = source.find("<!--", index)
+        while start >= 0 and any(
+            range_start <= start < range_end
+            for range_start, range_end, _ in ignored_ranges
+        ):
+            start = source.find("<!--", start + 4)
+        if start < 0:
+            return None
+        close = source.find("-->", start + 4)
+        while close >= 0 and any(
+            range_start <= close < range_end
+            for range_start, range_end, _ in ignored_ranges
+        ):
+            close = source.find("-->", close + 3)
+        if close < 0:
+            return start
+        index = close + 3
+
+
+def mask_markdown_line(source):
+    return "".join(
+        character if character in "\r\n" else " " for character in source
+    )
+
+
+def markdown_has_comment_outside_code(source, code_ranges):
+    for match in re.finditer(r"<!--", source):
+        position = match.start()
+        if not any(start <= position < end for start, end, _ in code_ranges):
+            return True
+    return False
 
 
 def markdown_is_escaped(source, index):
@@ -558,11 +612,14 @@ def parse_markdown_container(line):
 
 
 def mask_markdown_definition_blocks(source):
-    footnote_definition = re.compile(r"^\[\^(?:\\.|[^\]\\])+\]:")
-    reference_definition = re.compile(r"^\[(?!\^)(?:\\.|[^\]\\])+\]:")
+    footnote_definition = re.compile(
+        r"^[ ]{0,3}\[\^(?:\\.|[^\]\\])+\]:"
+    )
+    reference_definition = re.compile(
+        r"^[ ]{0,3}\[(?!\^)(?:\\.|[^\]\\])+\]:"
+    )
     lines = []
-    in_footnote = False
-    reference_title_pending = False
+    in_definition = False
 
     for line in source.splitlines(keepends=True):
         body = line.rstrip("\r\n")
@@ -570,28 +627,17 @@ def mask_markdown_definition_blocks(source):
         parsed = parse_markdown_container(body)
         content = parsed["content"]
 
-        if in_footnote:
+        if in_definition:
             if not content.strip():
-                in_footnote = False
+                in_definition = False
                 lines.append(line)
             else:
                 lines.append(" " * len(body) + ending)
             continue
 
-        if reference_title_pending:
-            reference_title_pending = False
-            title = content.lstrip(" \t")
-            if title.startswith(("\"", "'", "(")):
-                lines.append(" " * len(body) + ending)
-                continue
-
-        if footnote_definition.match(content):
+        if footnote_definition.match(content) or reference_definition.match(content):
             lines.append(" " * len(body) + ending)
-            in_footnote = True
-            continue
-        if reference_definition.match(content):
-            lines.append(" " * len(body) + ending)
-            reference_title_pending = True
+            in_definition = True
             continue
 
         lines.append(line)
@@ -728,6 +774,8 @@ def strip_markdown_code_and_comments(markdown):
         "address",
         "article",
         "aside",
+        "base",
+        "basefont",
         "blockquote",
         "body",
         "caption",
@@ -765,6 +813,7 @@ def strip_markdown_code_and_comments(markdown):
         "link",
         "main",
         "menu",
+        "menuitem",
         "nav",
         "noframes",
         "noscript",
@@ -815,10 +864,15 @@ def strip_markdown_code_and_comments(markdown):
                 previous_blank = True
             continue
         if comment_until_close:
-            if "-->" in line:
-                comment_until_close = False
+            close = line.find("-->")
+            if close < 0:
+                lines.append(mask_markdown_line(line))
                 previous_blank = True
-            continue
+                continue
+            end = close + 3
+            line = mask_markdown_line(line[:end]) + line[end:]
+            comment_until_close = False
+            previous_blank = True
         if fence:
             fence_parsed = parse_markdown_container(line)
             if fence_parsed["blockquote_depth"] < fence["blockquote_depth"]:
@@ -839,7 +893,27 @@ def strip_markdown_code_and_comments(markdown):
 
         parsed = parse_markdown_container(line)
         content = parsed["content"]
-        blank = not content.strip()
+        if "<!--" in content:
+            code_ranges = markdown_code_span_ranges(content)
+            if markdown_has_comment_outside_code(content, code_ranges):
+                if (
+                    markdown_unclosed_comment_start(content, code_ranges)
+                    is not None
+                ):
+                    comment_until_close = True
+                    opener = line.find("<!--")
+                    if opener >= 0:
+                        line = line[:opener] + mask_markdown_line(line[opener:])
+                    else:
+                        line = mask_markdown_line(line)
+                    lines.append(line)
+                    previous_blank = True
+                    continue
+                line = mask_html_comments(line, "\ue102")
+                parsed = parse_markdown_container(line)
+                content = parsed["content"]
+
+        blank = not content.replace("\ue102", "").strip()
         leading = len(content) - len(content.lstrip(" "))
         if blank:
             if indented_code:
@@ -854,11 +928,6 @@ def strip_markdown_code_and_comments(markdown):
             indented_code = False
         elif leading >= 4 and (previous_blank or not lines):
             indented_code = True
-            continue
-
-        if "<!--" in content:
-            comment_until_close = "-->" not in content
-            previous_blank = True
             continue
 
         candidate = markdown_fence_candidate(line)
@@ -903,7 +972,7 @@ def strip_markdown_code_and_comments(markdown):
         lines.append(line)
         previous_blank = False
 
-    return mask_html_comments("\n".join(lines))
+    return "\n".join(lines)
 
 
 def protect_markdown_code_spans(label):
@@ -964,7 +1033,8 @@ def strip_balanced_markdown_emphasis(label):
 
 def commonmark_unescape(text):
     entity = re.compile(
-        r"&(?:#[xX]([0-9A-Fa-f]+)|#([0-9]+)|([A-Za-z][A-Za-z0-9]+));"
+        r"&(?:#[xX]([0-9A-Fa-f]{1,8})|#([0-9]{1,8})|"
+        r"([A-Za-z][A-Za-z0-9]+));"
     )
 
     def replace(match):
@@ -977,6 +1047,7 @@ def commonmark_unescape(text):
 
 def plain_markdown_label(label):
     label, rendered_spans = protect_markdown_code_spans(label)
+    label = label.replace("\ue102", "")
     label, escaped = protect_markdown_escapes(label)
     if re.search(r"</?[A-Za-z][^<>]*>", label):
         return None
