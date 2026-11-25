@@ -37,15 +37,16 @@
 
 | Bereich | Status | Nachweis |
 | --- | --- | --- |
-| Statische Projektprüfung | ✅ 32/32 Checks grün | `python tests/verify-build.py` |
+| Statische Projektprüfung | ✅ 33/33 Checks grün | `python tests/verify-build.py` |
 | Browser- & RobotNav-Harness | ✅ grün (lokal, Chromium/Playwright) | `npm run test:all` |
-| PWA/Offline (Subpath) | ✅ lokal getestet (Manifest, Worker, Cache, Offline-Ladevorgang) | `tests/verify-build.py` |
+| PWA/Offline (Subpath) | ✅ lokal getestet (Manifest, Worker, Cache, Offline-Ladevorgang) | `tests/pwa-subpath.cjs` |
 | Android-Build (Quellstand) | ✅ Version `2.9.5`, Version Code `295` | `android/app/build.gradle` |
-| GitHub-Actions-CI | ⚠️ Workflow definiert und gehärtet (17.11.2026); tatsächliche Läufe hängen an der Actions-Freigabe/Billing des Kontos | `.github/workflows/android-build.yml` |
-| Release-Signing | ✅ konfiguriert (Keystore lokal, nicht im Repo) | `docs/RELEASE_PROCESS.md` |
-| Geräteinstallation (Galaxy S25) | ✅ v2.9.3 verifiziert; v2.9.5-Reinstall nach Build | `PROJECT_MANIFEST.json` |
+| GitHub-Actions-CI | ✅ Main-Lauf und Pages-Deployment erfolgreich (25.11.2026) | [Main-CI](https://github.com/Lowgiga/AnFoVO-Lernkompendium/actions/runs/45576060676) · [Pages](https://github.com/Lowgiga/AnFoVO-Lernkompendium/actions/runs/45576058286) |
+| Veröffentlichungsgate (Impressum) | ⚠️ offen — GitHub Pages ist öffentlich erreichbar; der Impressum-Platzhalter ist im live ausgelieferten Stand weiterhin enthalten | `docs/GITHUB_PAGES.md` |
+| Release-Signing | ✅ lokal konfiguriert und nachgewiesen; CI validiert die Debug-APK-Signaturen | `docs/RELEASE_PROCESS.md` |
+| Geräteinstallation (Galaxy S25) | ✅ Release v2.9.3 verifiziert; ✅ v2.9.5-Debug-App parallel installiert und Kaltstart geprüft; ⏳ interaktive 7-Punkte-Checkliste offen | `PROJECT_MANIFEST.json` |
 
-> **Versionsstand (v2.9.5):** Alle Inhalte, Version Codes und Artefakte sind auf `2.9.5` angehoben. Die Buch-/Navigationsanimation wurde compositor-only überarbeitet (nur `transform`/`opacity`, rAF-gedrosselter Parallax, `prefers-reduced-motion` respektiert). RobotNav wird als eigenständige Datei (`robot-navigation.js`) geladen und vom Service-Worker vorgeladen (skip-waiting). Die Lerninhalte in `index.html` blieben unverändert. GitHub Pages sind aktiv unter `https://lowgiga.github.io/AnFoVO-Lernkompendium/`. Die Release-Signing wurde lokal konfiguriert und über CI validiert.
+> **Versionsstand (v2.9.5):** Alle Inhalte, Version Codes und Artefakte sind auf `2.9.5` angehoben. Die Buch-/Navigationsanimation wurde compositor-only überarbeitet (nur `transform`/`opacity`, rAF-gedrosselter Parallax, `prefers-reduced-motion` respektiert). RobotNav wird als eigenständige Datei (`robot-navigation.js`) geladen und vom Service-Worker vorgeladen (skip-waiting). Die Lerninhalte in `index.html` blieben unverändert. GitHub Pages sind aktiv unter `https://lowgiga.github.io/AnFoVO-Lernkompendium/`. Die Release-Signierung wurde lokal konfiguriert und nachgewiesen; die CI validiert zusätzlich die Signaturen der gebauten Debug-APKs.
 
 ## 🧠 Architektur
 
@@ -61,7 +62,7 @@ flowchart LR
         AST["assets/<br/>bytegleiche Web-Dateien"]
     end
     subgraph QA["🧪 Qualitätssicherung"]
-        ST["verify-build.py · 32 Checks"]
+        ST["verify-build.py · 33 Checks"]
         PW["Playwright · Chromium"]
     end
     CI["⚙️ GitHub Actions<br/>Validate + Debug-Build"]
@@ -134,8 +135,8 @@ flowchart LR
 - Installierbar unter `/AnFoVO-Lernkompendium/` — **alle Pfade relativ**, Manifest + Service Worker + Icons
 - Service Worker registriert sich nur unter `http(s)`; `file://` und `android_asset` bleiben voll nutzbar
 - Lokale Web-Oberfläche erzeugbar mit `bash scripts/prepare-pages-surface.sh` → `dist/pages/`
-- **GitHub Pages aktiv:** https://lowgiga.github.io/AnFoVO-Lernkompendium/ (PWA installierbar, Offline-fähig)
-- ⚠️ Vor öffentlicher Freigabe: Impressum-Platzhalter `[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]` durch echte Angaben nach § 5 DDG ersetzen — Schritte in [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md)
+- **GitHub Pages aktiv und öffentlich erreichbar:** https://lowgiga.github.io/AnFoVO-Lernkompendium/ (PWA installierbar, Offline-fähig)
+- ⚠️ **Veröffentlichungsgate derzeit nicht erfüllt:** Der live ausgelieferte Stand enthält weiterhin den Impressum-Platzhalter `[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]`. Bis zur Entscheidung muss entweder der Platzhalter durch echte Angaben nach § 5 DDG ersetzt oder GitHub Pages deaktiviert werden. Beim Ersetzen müssen im selben PR/Commit auch `tests/verify-build.py`, `tests/test_verify_build.py` und beide `index.html`-Kopien (Repository-Wurzel und Android-Assets) aktualisiert werden, damit die Prüfung reale Angaben akzeptiert und die Byte-Parität erhalten bleibt — Schritte in [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md)
 
 </details>
 
@@ -225,14 +226,14 @@ npm run test:all
 
 ### Verifizierter Stand (v2.9.5)
 
-- ✅ Statische Projektprüfung: **33/33 Checks bestanden** (17.11.2026; enthält die neue Versionsketten-Prüfung)
+- ✅ Statische Projektprüfung: **33/33 Checks bestanden** (25.11.2026; die CI-Fixture kopiert `tests/package.json` vollständig)
 - ✅ Browser- und RobotNav-Harness grün; 70 Lernseiten im Smoke-Test erkannt; keine Seiten- oder Konsolenfehler in den geprüften Läufen
 - ✅ PWA-Subpath (Manifest, Worker, Icons, Hintergrundframes, Offline-Ladevorgang) lokal grün
-- ✅ GitHub-Actions-CI: Workflow `android-build.yml` definiert und am 17.11.2026 gehärtet (Path-Filter, Concurrency, Timeout, Gradle-Cache, Lizenz-Akzeptanz, Selbsttest-Automation). **Lauf-Status:** auf `main` wurden grüne Läufe aufgezeichnet; ob Läufe aktuell erfolgen, hängt an der Actions-Freigabe/Billing des Kontos (Entscheid des Kontoinhabers, nicht des Repos).
+- ✅ GitHub-Actions-CI: Main-Validierung `45576060676` und Pages-Deployment `45576058286` am 25.11.2026 erfolgreich; der Debug-APK-Build, die Signaturprüfung und der Artifact-Upload sind im Main-Lauf enthalten.
 - ✅ App-Selbsttest automatisiert: `tests/selftest-app.cjs` fährt die 100 In-App-Prüfungen (`?test=1`) headless und ist in `npm run test:all` sowie CI eingebunden — am 17.11.2026 **100/100 bestanden, 0 übersprungen, 0 Seitenfehler**.
 - ✅ Release-Signing konfiguriert (Keystore in `AnFoeVO-Release-Keystore/`, nicht im Repo) — siehe [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)
-- ✅ Geräteinstallation (Galaxy S25) verifiziert: v2.9.3 installiert, App startet, Fortschritt bleibt erhalten (v2.9.5-Reinstall nach Build)
-- ✅ Visueller Pixelvergleich: 0 Pixel Diff im App-Inhalt (v2.9.2 vs. v2.9.3)
+- ✅ Galaxy S25: Release v2.9.3 verifiziert und unverändert installiert; ein lokal gebautes v2.9.5-Debug-APK wurde mit eigener Application-ID parallel installiert, Kaltstart und Offline-Asset-Rendering wurden erfolgreich geprüft. Die interaktive 7-Punkte-Checkliste (LED, Shake, Konfetti, Rotation, SVG-Ringe, Präsentation, Antwort-Routing) ist noch offen.
+- ✅ Visueller Pixelvergleich: 0 Pixel Diff im App-Inhalt (v2.9.2 vs. v2.9.3); der Statusleisten-Diff ist außerhalb des App-Inhalts
 - ⏳ Play-Store-Veröffentlichung: Release-AAB + Store-Listing vorbereitet
 
 Details zum Build-Weg: [BUILD-REPORT-v2.9.5.md](BUILD-REPORT-v2.9.5.md).
@@ -329,7 +330,7 @@ Beiträge sind willkommen — bitte die folgenden Grundsätze beachten:
 
 - **Fehler melden:** [GitHub Issues](https://github.com/Lowgiga/AnFoVO-Lernkompendium/issues)
 - **Fragen zur Nutzung:** über Issues oder die Projektdokumentation unter `docs/`
-- **Sicherheitsrelevante Hinweise:** bitte nicht öffentlich posten; stattdessen ein Issue mit Label `security` (oder direkter Kontakt über das Profil) — Keystore/Secrets niemals committen.
+- **Sicherheitsrelevante Hinweise:** keine Details zu Sicherheitslücken öffentlich posten. Für Meldungen direkten Kontakt über das Profil nutzen; ein Issue mit Label `security` darf nur für eine Kontaktanfrage ohne Details verwendet werden. Keystore/Secrets niemals committen.
 
 ## ⚖️ Lizenz & Grundsätze
 
@@ -342,7 +343,7 @@ Beiträge sind willkommen — bitte die folgenden Grundsätze beachten:
 - Repository: [Lowgiga/AnFoVO-Lernkompendium](https://github.com/Lowgiga/AnFoVO-Lernkompendium) · Stand: `main` · Quellstand **v2.9.5**
 - Änderungsübersicht: [CHANGELOG.md](CHANGELOG.md)
 - Produktspezifikation: [PRODUKT_SPEZIFIKATION.md](PRODUKT_SPEZIFIKATION.md)
-- Build-Nachweis: [BUILD-REPORT-v2.9.1.md](BUILD-REPORT-v2.9.1.md)
+- Build-Nachweis: [BUILD-REPORT-v2.9.5.md](BUILD-REPORT-v2.9.5.md)
 - Technischer Audit: [docs/TECHNICAL_AUDIT.md](docs/TECHNICAL_AUDIT.md)
 - Architektur: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Design: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) · Inhaltserhaltung: [docs/CONTENT_PRESERVATION.md](docs/CONTENT_PRESERVATION.md)
 - GitHub Pages: [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md) · Release-Prozess: [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)
