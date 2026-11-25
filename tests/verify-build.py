@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 import threading
+import time
 import urllib.error
 import urllib.request
 
@@ -29,6 +30,13 @@ PWA_FILES = (
     "icon-512.png",
     "icon-512-maskable.png",
 )
+IMPRESSUM_FILE = ROOT / "IMPRESSUM.md"
+IMPRESSUM_MD = (
+    IMPRESSUM_FILE.read_text(encoding="utf-8") if IMPRESSUM_FILE.is_file() else ""
+)
+PROVIDER_NAME = "Lowgiga"
+PROVIDER_ADDRESS = "New York 11354 USA"
+CONTACT_EMAIL = "Vid80gmx@gmail.com"
 PLACEHOLDER = "[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]"
 JS = (ROOT / "algorithm" / "robot-navigation.js").read_text(encoding="utf-8").strip()
 ARCHITECTURE = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
@@ -239,12 +247,24 @@ check(
 )
 impressum = re.search(r'id="imp-h"[\s\S]*?</section>', HTML)
 impressum_text = impressum.group(0) if impressum else ""
-check(
-    "Impressum shows v2.9.5 and keeps the required DDG placeholder",
+required_provider_details = (PROVIDER_NAME, PROVIDER_ADDRESS, CONTACT_EMAIL)
+html_has_provider_details = (
     "v2.9.5" in impressum_text
     and "v2.7.0" not in impressum_text
     and "§ 5 DDG" in impressum_text
-    and PLACEHOLDER in impressum_text,
+    and all(detail in impressum_text for detail in required_provider_details)
+    and f"mailto:{CONTACT_EMAIL}" in impressum_text
+    and PLACEHOLDER not in impressum_text
+)
+markdown_has_provider_details = (
+    "§ 5 DDG" in IMPRESSUM_MD
+    and all(detail in IMPRESSUM_MD for detail in required_provider_details)
+    and f"mailto:{CONTACT_EMAIL}" in IMPRESSUM_MD
+    and PLACEHOLDER not in IMPRESSUM_MD
+)
+check(
+    "Impressum contains the required DDG provider details",
+    html_has_provider_details and markdown_has_provider_details,
 )
 prepare_script = ROOT / "scripts" / "prepare-pages-surface.sh"
 prepare_text = prepare_script.read_text(encoding="utf-8") if prepare_script.is_file() else ""
@@ -270,7 +290,9 @@ class _SubpathHandler(BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0].split("#", 1)[0]
         prefix = "/AnFoVO-Lernkompendium"
         if path != prefix and not path.startswith(prefix + "/"):
-            self.send_error(404)
+            self.send_response(404)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
             return
         relative = path[len(prefix):].lstrip("/")
         if relative == "":
@@ -283,7 +305,9 @@ class _SubpathHandler(BaseHTTPRequestHandler):
         if candidate.is_dir():
             candidate = candidate / "index.html"
         if not candidate.is_file():
-            self.send_error(404)
+            self.send_response(404)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
             return
         payload = candidate.read_bytes()
         content_type = {
@@ -301,17 +325,25 @@ class _SubpathHandler(BaseHTTPRequestHandler):
 
 
 def fetch(url):
-    try:
-        with urllib.request.urlopen(url, timeout=5) as response:
-            return response.status, response.read(), response.headers.get_content_type()
-    except urllib.error.HTTPError as error:
-        return error.code, error.read(), ""
+    last_error = ""
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(url, timeout=5) as response:
+                return response.status, response.read(), response.headers.get_content_type()
+        except urllib.error.HTTPError as error:
+            return error.code, error.read(), ""
+        except (OSError, urllib.error.URLError) as error:
+            last_error = f"{url}: {error!r}"
+            if attempt < 4:
+                time.sleep(0.05)
+    return 0, b"", last_error
 
 
 def pages_subpath_detail():
     server = ThreadingHTTPServer(("127.0.0.1", 0), _SubpathHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
+    time.sleep(0.05)
     port = server.server_address[1]
     base = f"http://127.0.0.1:{port}/AnFoVO-Lernkompendium"
     try:

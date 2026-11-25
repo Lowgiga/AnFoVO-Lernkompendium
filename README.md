@@ -42,7 +42,7 @@
 | PWA/Offline (Subpath) | ✅ lokal getestet (Manifest, Worker, Cache, Offline-Ladevorgang) | `tests/pwa-subpath.cjs` |
 | Android-Build (Quellstand) | ✅ Version `2.9.5`, Version Code `295` | `android/app/build.gradle` |
 | GitHub-Actions-CI | ✅ Main-Lauf und Pages-Deployment erfolgreich (25.11.2026) | [Main-CI](https://github.com/Lowgiga/AnFoVO-Lernkompendium/actions/runs/45576060676) · [Pages](https://github.com/Lowgiga/AnFoVO-Lernkompendium/actions/runs/45576058286) |
-| Veröffentlichungsgate (Impressum) | ⚠️ offen — GitHub Pages ist öffentlich erreichbar; der Impressum-Platzhalter ist im live ausgelieferten Stand weiterhin enthalten | `docs/GITHUB_PAGES.md` |
+| Veröffentlichungsgate (Impressum) | ✅ erfüllt — reale §-5-DDG-Anbieterangaben inklusive Kontakt-Link; der frühere Platzhalter ist entfernt | `IMPRESSUM.md` · `docs/GITHUB_PAGES.md` |
 | Release-Signing | ✅ lokal konfiguriert und nachgewiesen; CI validiert die Debug-APK-Signaturen | `docs/RELEASE_PROCESS.md` |
 | Geräteinstallation (Galaxy S25) | ✅ Release v2.9.3 verifiziert; ✅ v2.9.5-Debug-App parallel installiert und Kaltstart geprüft; ⏳ interaktive 7-Punkte-Checkliste offen | `PROJECT_MANIFEST.json` |
 
@@ -78,6 +78,7 @@ flowchart LR
 | Pfad | Zweck |
 | --- | --- |
 | `index.html` | Eigenständige Web-Anwendung und Einstiegspunkt |
+| `IMPRESSUM.md` | Anbieterangaben gemäß § 5 DDG |
 | `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png` | Web-App-Manifest, Service Worker und Installationsicons |
 | `bg/` | Hintergrund- und Animationsbilder der Web-Anwendung |
 | `.nojekyll` | Hält Jekyll bei einer späteren GitHub-Pages-Veröffentlichung aus |
@@ -136,7 +137,7 @@ flowchart LR
 - Service Worker registriert sich nur unter `http(s)`; `file://` und `android_asset` bleiben voll nutzbar
 - Lokale Web-Oberfläche erzeugbar mit `bash scripts/prepare-pages-surface.sh` → `dist/pages/`
 - **GitHub Pages aktiv und öffentlich erreichbar:** https://lowgiga.github.io/AnFoVO-Lernkompendium/ (PWA installierbar, Offline-fähig)
-- ⚠️ **Veröffentlichungsgate derzeit nicht erfüllt:** Der live ausgelieferte Stand enthält weiterhin den Impressum-Platzhalter `[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]`. Bis zur Entscheidung muss entweder der Platzhalter durch echte Angaben nach § 5 DDG ersetzt oder GitHub Pages deaktiviert werden. Beim Ersetzen müssen im selben PR/Commit auch `tests/verify-build.py`, `tests/test_verify_build.py` und beide `index.html`-Kopien (Repository-Wurzel und Android-Assets) aktualisiert werden, damit die Prüfung reale Angaben akzeptiert und die Byte-Parität erhalten bleibt — Schritte in [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md)
+- ✅ **Veröffentlichungsgate erfüllt:** Die Web-App und `IMPRESSUM.md` enthalten die realen §-5-DDG-Anbieterangaben; der frühere Platzhalter ist entfernt. `tests/verify-build.py`, der Regressionstest und beide byte-paritären `index.html`-Kopien prüfen den neuen Stand gemeinsam — Details in [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md)
 
 </details>
 

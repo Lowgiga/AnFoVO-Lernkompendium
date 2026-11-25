@@ -1,7 +1,7 @@
 {
   "version": "2.9.5",
-  "static_checks": 32,
-  "passed": 32,
+  "static_checks": 33,
+  "passed": 33,
   "failed": 0,
   "checks": [
     {
@@ -38,6 +38,11 @@
       "name": "Standalone engine has no fetch/XHR/WebSocket",
       "ok": true,
       "detail": ""
+    },
+    {
+      "name": "Version chain is consistent (DATA, title, manifest, sw.js, package)",
+      "ok": true,
+      "detail": "DATA=2.9.5; manifest=2.9.5; sw=2.9.5; tests=2.9.5; title='Lern-Kompendium § 8 AnFöVO NRW – v2.9.5'"
     },
     {
       "name": "No polling interval used",
@@ -150,7 +155,7 @@
       "detail": ""
     },
     {
-      "name": "Impressum shows v2.9.5 and keeps the required DDG placeholder",
+      "name": "Impressum contains the required DDG provider details",
       "ok": true,
       "detail": ""
     },

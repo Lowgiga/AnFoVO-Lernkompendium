@@ -44,10 +44,10 @@
         "debug_apk_file": "GitHub Actions artifact AnFoeVO-debug-apks/app-arm64-v8a-debug.apk (run 45576060676)",
         "debug_apk_sha256": "f9e2102437c0ff42ed9fe1cb362606e0bdbae618a6f8109514611b1b9f0ba298",
         "release_apk_sha256": "063FF7D92657C354C467931743D9C1B879EA0055B31FD0E3E6F4E217D69BA1FB",
-        "html_sha256": "242e2822d64d85fa4b9fbdee11aac74c88350f65337b6492a6e9479e7d1740dd",
-        "html_bytes": 628957,
-        "debug_apk_matches_current_html": true,
-        "debug_apk_matches_current_html_note": "CI run 45576060676 built the debug APK from main commit bc08f8965ac4. Its assets/index.html is 628957 bytes with SHA-256 242e2822d64d85fa4b9fbdee11aac74c88350f65337b6492a6e9479e7d1740dd, matching the canonical repository blob. The device-tested side-by-side app was a separate locally built APK with applicationIdSuffix .debug.",
+        "html_sha256": "89227b46f286485c45ccd1af84afb1bde8b177726fcb4149e6f850e70d1d3b9b",
+        "html_bytes": 631117,
+        "debug_apk_matches_current_html": false,
+        "debug_apk_matches_current_html_note": "CI run 45576060676 remains the documented historical debug artifact from main commit bc08f8965ac4; its assets/index.html is 628957 bytes with SHA-256 242e2822d64d85fa4b9fbdee11aac74c88350f65337b6492a6e9479e7d1740dd. The 25.11.2026 Impressum update changes the canonical HTML to 631117 bytes with SHA-256 89227b46f286485c45ccd1af84afb1bde8b177726fcb4149e6f850e70d1d3b9b, so the current CI run supplies the matching debug artifact.",
         "release_aab_sha256": "180D5E4F112F8A444FD259C173F2AFA7D8055286E915559CD34E1880BA04457A"
     },
     "pwa_shell": {
@@ -55,11 +55,14 @@
         "pages_enabled": true,
         "project_subpath": "/AnFoVO-Lernkompendium/",
         "service_worker_cache": "anfoevo_v2_cache_2.9.5-web-pwa-2.9.5",
-        "impressum_placeholder_required": true,
-        "impressum_placeholder_present_in_live_site": true,
-        "public_release_gate_met": false,
-        "current_index_sha256": "242e2822d64d85fa4b9fbdee11aac74c88350f65337b6492a6e9479e7d1740dd",
-        "note": "GitHub Pages is public at https://lowgiga.github.io/AnFoVO-Lernkompendium/ (installable PWA, offline-capable). The live published index.html still contains the required DDG Impressum placeholder, so the documented publication gate is not met. Replace the placeholder with real legal-contact details or disable GitHub Pages. A placeholder replacement must update tests/verify-build.py, tests/test_verify_build.py, and both index.html copies (repository root and Android assets) in the same change so the verifier accepts real details and byte parity is retained."
+        "impressum_placeholder_required": false,
+        "impressum_placeholder_present_in_live_site": false,
+        "public_release_gate_met": true,
+        "impressum_provider": "Lowgiga",
+        "impressum_address": "New York 11354 USA",
+        "impressum_contact": "Vid80gmx@gmail.com",
+        "current_index_sha256": "89227b46f286485c45ccd1af84afb1bde8b177726fcb4149e6f850e70d1d3b9b",
+        "note": "GitHub Pages is public at https://lowgiga.github.io/AnFoVO-Lernkompendium/ (installable PWA, offline-capable). The DDG Impressum placeholder was replaced with the configured provider name, postal address and email link in both index.html copies and IMPRESSUM.md. The static verifier and its regression test enforce these details, so the publication gate is met."
     },
     "browser_validation": {
         "engine": "Google Chrome",

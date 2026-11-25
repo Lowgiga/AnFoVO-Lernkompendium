@@ -3,6 +3,18 @@
 Format: Keep a Changelog. Versionierung `X.Y.Z` ↔ `versionCode = X*100 + Y*10 + Z` (295 ↔ 2.9.5) –
 Details in [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
 
+## 25.11.2026 – Impressum und Veröffentlichungsgate
+
+- **§-5-DDG-Impressum vervollständigt:** Name, Anschrift und Kontakt-E-Mail stehen jetzt in
+  `IMPRESSUM.md` und in der Fußzeile der Web-App; der frühere Veröffentlichungs-Platzhalter ist
+  entfernt. Der Kontakt ist als nativer `mailto:`-Link erreichbar.
+- **Gate automatisiert abgesichert:** Der statische Verifier und sein Regressionstest verlangen
+  dieselben Anbieterangaben in beiden Dokumenten. `index.html` und die Android-Asset-Kopie bleiben
+  byte-identisch; der In-App-Selbsttest prüft die sichtbaren Angaben und den Kontakt-Link.
+- **Veröffentlichungsgate geschlossen:** GitHub Pages kann mit den konfigurierten Anbieterangaben
+  öffentlich bleiben. Repository-Dokumentation, Manifest und Build-Report wurden auf den neuen
+  Stand nachgezogen.
+
 ## 18.11.2026 – Wartung und Verifikation (auf `main`)
 
 *Vollständige Nachprüfung aller Aussagen im Repository gegen den Code (fünf Perspektiven:
@@ -43,12 +55,12 @@ App-Code, Tests/CI, Dokumentation, Build/Deployment, Git).*
 - **Release-Tag nachgezogen:** `v2.9.5` liegt jetzt auf dem Release-Commit `dcc4388`
   (angelegt und gepuscht am 18.11.2026; die Vorgänger-Tags `v2.9.2`/`v2.9.4` hatten ihre
   Releases markiert, für 2.9.5 fehlte er).
-- **Offen (Dokumentiert, kein Code-Defekt):** GitHub Pages ist bereits öffentlich erreichbar;
-  das Veröffentlichungsgate ist derzeit nicht erfüllt. Der Impressum-Platzhalter (§ 5 DDG)
-  muss durch echte Angaben ersetzt werden (dabei Verifier, Regressionstest und beide
-  `index.html`-Kopien gemeinsam aktualisieren) oder GitHub Pages muss deaktiviert werden;
-  zwei konkurrierende Dark-Mode-Paletten (visueller Eingriff, daher nicht umgesetzt);
-  Monster-Zeilen im HTML (Inhaltsdiff); Gerätetest v2.9.5 (Gerät offline).
+- **Damals offen, inzwischen erledigt:** GitHub Pages war bereits öffentlich erreichbar; das
+  Veröffentlichungsgate war am 18.11.2026 noch nicht erfüllt. Der Impressum-Platzhalter (§ 5 DDG)
+  wurde am 25.11.2026 durch echte Angaben ersetzt; Verifier, Regressionstest und beide
+  `index.html`-Kopien wurden gemeinsam aktualisiert.
+- **Weiterhin offen:** zwei konkurrierende Dark-Mode-Paletten (visueller Eingriff, daher nicht
+  umgesetzt); Monster-Zeilen im HTML (Inhaltsdiff); Gerätetest v2.9.5 (Gerät offline).
 
 ## 2.9.5 – 2026-11-14
 

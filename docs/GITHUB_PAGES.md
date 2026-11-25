@@ -63,22 +63,19 @@ Pages-Quelle in den Repository-Einstellungen auf „GitHub Actions" und ergänzt
 Workflow (Skript → `actions/upload-pages-artifact` → `actions/deploy-pages`); dann fallen
 `android/`, `tests/`, Gradle-Wrapper und die Berichte aus dem öffentlichen Angebot heraus.
 
-## Veröffentlichungsgate – derzeit offen
+## Veröffentlichungsgate – erfüllt (25.11.2026)
 
-GitHub Pages ist bereits öffentlich erreichbar. Das erforderliche Gate ist deshalb **noch nicht
-erfüllt**: Bis zur Entscheidung muss entweder der Impressum-Platzhalter ersetzt oder GitHub Pages
-deaktiviert werden.
+GitHub Pages bleibt öffentlich erreichbar. Das Impressum-Gate ist geschlossen:
 
-1. Das §-5-DDG-Impressum-Platzhalter (`[vor Veröffentlichung ergänzen: Name, Anschrift,
-   Kontakt]`) ist im live ausgelieferten Stand enthalten und wird von `tests/verify-build.py`
-   derzeit absichtlich erzwungen. Eigene Angaben eintragen, nichts erfinden. Beim Ersetzen des
-   Platzhalters müssen im selben PR/Commit `tests/verify-build.py`,
-   `tests/test_verify_build.py` (Test `test_impressum_placeholder_is_required`) sowie beide
-   `index.html`-Kopien in `index.html` und `android/app/src/main/assets/index.html` aktualisiert
-   werden: Die statische Prüfung muss reale Angaben akzeptieren, und die Byte-Parität muss
-   erhalten bleiben.
-2. Repository frei von Heft-Fotos, Heft-Wortlaut und persönlichen Notizen halten.
-3. Seiten-Cache-Hinweis: GitHub Pages erlaubt keine eigenen `Cache-Control`-Header. `sw.js`
+1. `index.html` enthält die Anbieterangaben nach § 5 DDG direkt in der Fußzeile; `IMPRESSUM.md`
+   dokumentiert dieselben Angaben als eigenständige Datei. Der frühere
+   `[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]`-Platzhalter wurde entfernt.
+2. `tests/verify-build.py` verlangt Name, Anschrift, Kontakt-E-Mail und `mailto:`-Link in beiden
+   Dokumenten und schlägt bei fehlenden oder Platzhalter-Angaben fehl. Der Regressionstest
+   `test_impressum_requires_provider_details` prüft beide Fehlerfälle.
+3. `index.html` und `android/app/src/main/assets/index.html` bleiben byte-identisch; der In-App-
+   Selbsttest prüft die sichtbaren Anbieterangaben und den Kontakt-Link zusätzlich zur Laufzeit.
+4. Repository frei von Heft-Fotos, Heft-Wortlaut und persönlichen Notizen halten.
+5. Seiten-Cache-Hinweis: GitHub Pages erlaubt keine eigenen `Cache-Control`-Header. `sw.js`
    arbeitet cache-first; Rückkehrer können daher kurz einen alten Stand ziehen, bis der
    Worker aktualisiert.
-4. Merge/Release nur, wenn du es willst – dieses Dokument ändert keine Einstellungen.
