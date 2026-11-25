@@ -1,13 +1,13 @@
 # GitHub Pages
 
-**Stand: 25.11.2026 – verifiziert (Live-Abruf nach Deployment von `7820a49`).** GitHub Pages
+**Stand: 25.11.2026 – verifiziert (Live-Abruf nach Deployment von `0902e45`).** GitHub Pages
 ist für dieses Repository **aktiv** und liefert die Web-App aus:
 
 - Projekt-Site: `https://lowgiga.github.io/AnFoVO-Lernkompendium/` (Antwort 200, Titel
   „Lern-Kompendium § 8 AnFöVO NRW – v2.9.5", 70 Lernseiten, PWA installierbar).
 - Für den Impressum-Stand verifizierter Deployment-Commit:
-  `7820a492bc30fbb83e59bd2c1ea4cd321d232da2`; Pages-Lauf `45629740818` und
-  Projektvalidierung `45629742055` erfolgreich.
+  `0902e453839261ae14ed3d3478ba9702917dbf54`; Pages-Lauf `45653872515` und
+  Projektvalidierung `45653876811` erfolgreich.
 
 ## Was heute wirklich published wird (wichtig)
 
@@ -27,7 +27,7 @@ bereitet genau diese bereinigte Fläche (`dist/pages/`) vor – ihre Ausgabe wir
 **Live vs. Repository:** Der Drift vom 17.11.2026 ist behoben. Der direkte Abruf der Live-Seite
 liefert `index.html` mit 629.155 Bytes und SHA-256
 `826c85e98ce08e070b15494318368999a111e58bc77777786fbaa146bdd371cb`; das entspricht exakt dem
-kanonischen Git-Blob aus `main`-Commit `7820a49`. Ein Windows-Checkout mit
+kanonischen Git-Blob aus `main`-Commit `0902e45`. Ein Windows-Checkout mit
 `core.autocrlf=true` kann wegen CRLF größere lokale Bytezahlen anzeigen; Linux-CI, APK und
 GitHub Pages verwenden denselben LF-Blob.
 
@@ -80,10 +80,11 @@ Angaben, nicht deren rechtliche Vollständigkeit:
    Veröffentlichungs-Platzhalter wurde entfernt.
 2. `tests/verify-build.py` verlangt Name, Anschrift, Kontakt-E-Mail sowie einen HTML-Anker oder
    einen Markdown-Inline-Link `[Label](mailto:…)` in beiden Dokumenten. Das `mailto:`-Ziel muss
-   exakt dem konfigurierten Ziel entsprechen, und das sichtbare E-Mail-Label wird
-   whitespace-normalisiert geprüft. Kommentare, Code-/Raw-HTML-Blöcke sowie Link-Syntax in
-   Bild-/Linktiteln, HTML-Attributen oder Linkdefinitionen zählen nicht; ebenso bekannte nicht
-   gerenderte HTML-Kontexte. Der Regressionstest
+   exakt und case-sensitiv dem konfigurierten Ziel entsprechen; auch das sichtbare E-Mail-Label
+   wird nach Whitespace-Normalisierung exakt und case-sensitiv geprüft. Bei HTML-Ankern wird das
+   erste `href`-Attribut browser-kompatibel ausgewertet. Kommentare, Code-/Raw-HTML-Blöcke sowie
+   Link-Syntax in Bild-/Linktiteln, HTML-Attributen oder Linkdefinitionen zählen nicht; ebenso
+   bekannte nicht gerenderte HTML-Kontexte. Der Regressionstest
    `test_impressum_requires_provider_details` mutiert Platzhalter, Name, Anschrift, Linkziel,
    Link-Markup und verborgene Linkquellen unabhängig voneinander.
 3. Der Markdown-Scope ist bewusst konservativ: unterstützt sind Inline-Links mit exaktem
@@ -91,7 +92,7 @@ Angaben, nicht deren rechtliche Vollständigkeit:
    Referenzlinks und rohe HTML-Anker im Markdown werden nicht als Ersatz akzeptiert. Der
    Browser-Smoke-Test prüft separat am ausgelieferten HTML, dass der kanonische Kontaktlink
    tatsächlich sichtbar gerendert wird; CSS-Klassen-Visibility wird nicht statisch ausgewertet.
-4. Direkter Live-Abruf nach Pages-Lauf `45629740818`: `index.html` antwortet mit HTTP 200,
+4. Direkter Live-Abruf nach Pages-Lauf `45653872515`: `index.html` antwortet mit HTTP 200,
    629.155 Bytes und SHA-256
    `826c85e98ce08e070b15494318368999a111e58bc77777786fbaa146bdd371cb`; `IMPRESSUM.md` und `sw.js`
    antworten ebenfalls mit HTTP 200 und enthalten dieselben Angaben bzw. den Cache-Namen

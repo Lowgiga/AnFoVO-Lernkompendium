@@ -9,10 +9,11 @@ Details in [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
   in `IMPRESSUM.md` und in der Fußzeile der Web-App; der frühere Veröffentlichungs-Platzhalter ist
   entfernt. Der Kontakt ist als nativer `mailto:`-Link erreichbar.
 - **Gate automatisiert abgesichert:** Der statische Verifier und sein Regressionstest verlangen
-  dieselben Anbieterangaben sowie unterstützte HTML- und Markdown-Inline-Kontaktlinks mit exakt
-  konfiguriertem `mailto:`-Ziel und whitespace-normalisiertem sichtbaren E-Mail-Label; Links in
-  Kommentaren, Code-/Raw-HTML-Blöcken oder nicht gerenderten HTML-Kontexten sowie Link-Syntax in
-  Bild-/Linktiteln, HTML-Attributen oder Linkdefinitionen zählen nicht. Der
+  dieselben Anbieterangaben sowie einen HTML-Anker mit browser-kompatibler Auswertung des ersten
+  `href` oder einen unterstützten Markdown-Inline-Kontaktlink. In beiden Dokumenten müssen das
+  `mailto:`-Ziel und das sichtbare E-Mail-Label exakt und case-sensitiv dem konfigurierten Wert
+  entsprechen; Links in Kommentaren, Code-/Raw-HTML-Blöcken oder nicht gerenderten HTML-Kontexten
+  sowie Link-Syntax in Bild-/Linktiteln, HTML-Attributen oder Linkdefinitionen zählen nicht. Der
   Browser-Smoke-Test prüft zusätzlich, dass der HTML-Kontaktlink tatsächlich sichtbar gerendert
   wird. `index.html` und die Android-Asset-Kopie bleiben byte-identisch; der In-App-Selbsttest prüft
   die sichtbaren Angaben und den Kontakt-Link.
@@ -26,8 +27,8 @@ Details in [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
   Anbieterangaben öffentlich bleiben. Repository-Dokumentation, Manifest und Build-Report wurden
   auf den neuen Stand nachgezogen. Die rechtliche Vollständigkeit der Identität und Anschrift ist
   nicht durch automatisierte Prüfungen belegt und bleibt eine separate Owner-Bestätigung.
-- **Deployment live verifiziert:** Nach Merge von PR #10 (`7820a49`) liefen Projektvalidierung
-  (`45629742055`) und Pages-Deployment (`45629740818`) erfolgreich. Der direkte Live-Abruf bestätigt
+- **Deployment live verifiziert:** Nach Merge von PR #13 (`0902e45`) liefen Projektvalidierung
+  (`45653876811`) und Pages-Deployment (`45653872515`) erfolgreich. Der direkte Live-Abruf bestätigt
   HTTP 200, den exakten Index-Hash, die sichtbaren Anbieterangaben, den nativen `mailto:`-Link und
   keinen sichtbaren Veröffentlichungs-Platzhalter.
 
