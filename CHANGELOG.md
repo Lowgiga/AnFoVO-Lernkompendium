@@ -11,6 +11,9 @@ Details in [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
 - **Gate automatisiert abgesichert:** Der statische Verifier und sein Regressionstest verlangen
   dieselben Anbieterangaben in beiden Dokumenten. `index.html` und die Android-Asset-Kopie bleiben
   byte-identisch; der In-App-Selbsttest prüft die sichtbaren Angaben und den Kontakt-Link.
+- **Cache und Veröffentlichung aktualisiert:** Der Service-Worker-Cache wurde auf
+  `web-pwa-2.9.5-legal.1` erhöht, damit bestehende Installationen nicht im alten Platzhalter-Stand
+  verbleiben; `IMPRESSUM.md` ist auch in der optionalen bereinigten Pages-Surface enthalten.
 - **Veröffentlichungsgate geschlossen:** GitHub Pages kann mit den konfigurierten Anbieterangaben
   öffentlich bleiben. Repository-Dokumentation, Manifest und Build-Report wurden auf den neuen
   Stand nachgezogen.

@@ -54,7 +54,7 @@
         "prepared": true,
         "pages_enabled": true,
         "project_subpath": "/AnFoVO-Lernkompendium/",
-        "service_worker_cache": "anfoevo_v2_cache_2.9.5-web-pwa-2.9.5",
+        "service_worker_cache": "anfoevo_v2_cache_2.9.5-web-pwa-2.9.5-legal.1",
         "impressum_placeholder_required": false,
         "impressum_placeholder_present_in_live_site": false,
         "public_release_gate_met": true,

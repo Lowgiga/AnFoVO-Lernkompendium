@@ -37,6 +37,7 @@ IMPRESSUM_MD = (
 PROVIDER_NAME = "Lowgiga"
 PROVIDER_ADDRESS = "New York 11354 USA"
 CONTACT_EMAIL = "Vid80gmx@gmail.com"
+SERVICE_WORKER_BUILD = "web-pwa-2.9.5-legal.1"
 PLACEHOLDER = "[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]"
 JS = (ROOT / "algorithm" / "robot-navigation.js").read_text(encoding="utf-8").strip()
 ARCHITECTURE = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
@@ -208,7 +209,7 @@ except json.JSONDecodeError:
 check(
     "Service worker cache version is current",
     "var VERSION = '2.9.5';" in sw_text
-    and "var BUILD = 'web-pwa-2.9.5';" in sw_text
+    and f"var BUILD = '{SERVICE_WORKER_BUILD}';" in sw_text
     and "anfoevo_v2_cache_" in sw_text
     and "robotnav-v2.8.0" not in sw_text,
 )
@@ -271,6 +272,7 @@ prepare_text = prepare_script.read_text(encoding="utf-8") if prepare_script.is_f
 check(
     "Pages prepare script copies a web-only surface and does not publish",
     "dist/pages" in prepare_text
+    and "IMPRESSUM.md" in prepare_text
     and "android" in prepare_text
     and "tests" in prepare_text
     and "Gradle" in prepare_text
@@ -365,7 +367,7 @@ def pages_subpath_detail():
             and served_manifest.get("start_url") == "./"
             and served_manifest.get("scope") == "./"
             and worker_status == 200
-            and b"web-pwa-2.9.5" in worker_body
+            and SERVICE_WORKER_BUILD.encode("utf-8") in worker_body
             and icon_status == 200
             and icon_type == "image/png"
             and icon_body.startswith(b"\x89PNG")

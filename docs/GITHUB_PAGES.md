@@ -32,7 +32,7 @@ mit Pages-Quelle „Branch-Root" baut GitHub die Site automatisch neu.
 - `manifest.json` nutzt relative `start_url`/`scope` (`./`), die Installation bleibt im
   Projekt-Unterpfad.
 - `sw.js` precacht die Hlle, Icons, `robot-navigation.js` und beide `bg/d`- and `bg/m`-
-  Bildstze; Cache-Name `anfoevo_v2_cache_2.9.5-web-pwa-2.9.5`.
+  Bildstze; Cache-Name `anfoevo_v2_cache_2.9.5-web-pwa-2.9.5-legal.1`.
 - `.nojekyll` ist vorhanden, ein Pages-Bau läuft ohne Jekyll.
 - Die Service-Worker-Registrierung läuft nur bei `http:`/`https:`. **Korrektur zur früheren
   Doku:** Im WebView wird **nicht** registriert – `index.html` (Registrierungsblock,
@@ -52,6 +52,7 @@ mit Pages-Quelle „Branch-Root" baut GitHub die Site automatisch neu.
 - `bg/`
 - `.nojekyll`
 - `LICENSE`
+- `IMPRESSUM.md`
 
 (Die Liste war unvollstndig: `robot-navigation.js` wird seit dem Skript kopiert und von
 `sw.js` precached, war aber nicht dokumentiert.)

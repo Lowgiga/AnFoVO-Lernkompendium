@@ -33,7 +33,7 @@
 
 ## Status
 
-- Service worker cache: `anfoevo_v2_cache_2.9.5-web-pwa-2.9.5`; `2.9.4` no longer present.
+- Service worker cache: `anfoevo_v2_cache_2.9.5-web-pwa-2.9.5-legal.1`; `2.9.4` no longer present.
 - Galaxy S25 verification is current: release v2.9.3 remains installed; a separate v2.9.5 debug app was installed side-by-side and cold-started successfully. Only the interactive seven-point smoke checklist is still open.
 - GitHub Release v2.9.4 (animation update, embedded architecture) remains published; v2.9.5 is the canonical follow-up with the standalone-engine architecture.
 - GitHub Pages remains public and the DDG Impressum placeholder was replaced with the configured provider name, postal address and email link in both byte-parity copies of `index.html`; `IMPRESSUM.md` carries the same details. The static verifier and regression test enforce the new invariant, so the documented publication gate is met.

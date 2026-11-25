@@ -53,6 +53,7 @@ cp "$root/index.html" \
   "$root/icon-512-maskable.png" \
   "$root/.nojekyll" \
   "$root/LICENSE" \
+  "$root/IMPRESSUM.md" \
   "$dest/"
 cp -a "$root/bg/." "$dest/bg/"
 printf '%s\n' 'anfoevo-pages-surface' > "$dest/.pages-surface"
