@@ -9,11 +9,12 @@ Details in [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
   in `IMPRESSUM.md` und in der Fußzeile der Web-App; der frühere Veröffentlichungs-Platzhalter ist
   entfernt. Der Kontakt ist als nativer `mailto:`-Link erreichbar.
 - **Gate automatisiert abgesichert:** Der statische Verifier und sein Regressionstest verlangen
-  dieselben Anbieterangaben sowie unterstützte semantisch gleichwertige HTML- und
-  Markdown-Kontaktlinks mit exakt konfiguriertem `mailto:`-Ziel und whitespace-normalisiertem
-  sichtbaren E-Mail-Label; Links in Kommentaren, Codeblöcken oder Script-Daten zählen nicht.
-  `index.html` und die Android-Asset-Kopie bleiben byte-identisch; der In-App-Selbsttest prüft die
-  sichtbaren Angaben und den Kontakt-Link.
+  dieselben Anbieterangaben sowie unterstützte Inline-HTML- und Inline-Markdown-Kontaktlinks mit
+  exakt konfiguriertem `mailto:`-Ziel und whitespace-normalisiertem sichtbaren E-Mail-Label; Links in
+  Kommentaren, Codeblöcken, `<pre>`-, Script-, Template- oder Textarea-Inhalten sowie in
+  `hidden`-Anchors zählen nicht. GFM-Autolinks und Reference-Links sind nicht Teil des
+  unterstützten Scopes und zählen nicht. `index.html` und die Android-Asset-Kopie bleiben
+  byte-identisch; der In-App-Selftest prüft die sichtbaren Angaben und den Kontakt-Link.
 - **PWA-Test robuster:** Die Subpath-Prüfung wartet nun gezielt auf den projekteigenen
   Service Worker und den vollständigen Cache, statt einen einmaligen `ready`-Snapshot mit
   Erweiterungs-Caches zu verwechseln.

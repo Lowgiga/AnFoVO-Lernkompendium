@@ -136,6 +136,7 @@ class VerifyBuildTests(unittest.TestCase):
             "[Vid80gmx@gmail.com](<mailto:Vid80gmx@gmail.com>)",
             "[`Vid80gmx@gmail.com`](mailto:Vid80gmx@gmail.com)",
             "[**Vid80gmx@gmail.com**](mailto:Vid80gmx@gmail.com)",
+            "[~Vid80gmx@gmail.com~](mailto:Vid80gmx@gmail.com)",
             "[*Vid80gmx@gmail.com*](mailto:Vid80gmx@gmail.com)",
             r"[Vid80gmx@gmail\.com](mailto:Vid80gmx@gmail.com)",
             (
@@ -145,6 +146,16 @@ class VerifyBuildTests(unittest.TestCase):
             (
                 f"```markdown\n{canonical_markdown_link}\n```\t\n\n"
                 f"{canonical_markdown_link}"
+            ),
+            "> [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            (
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "<!-- hidden -->\n\n"
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)"
+            ),
+            (
+                "<span>[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)"
+                "</span>"
             ),
         )
         for accepted_markdown_link in accepted_markdown_links:
@@ -195,10 +206,31 @@ class VerifyBuildTests(unittest.TestCase):
                 '<a href="mailto:Vid80gmx@gmail.com">'
                 '<script/>Vid80gmx@gmail.com</script></a>',
             ),
+            "textarea-hidden contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<textarea><a href="mailto:Vid80gmx@gmail.com">'
+                'Vid80gmx@gmail.com</a></textarea>',
+            ),
+            "hidden-anchor contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<a hidden href="mailto:Vid80gmx@gmail.com">'
+                'Vid80gmx@gmail.com</a>',
+            ),
+            "template-hidden contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<template><a href="mailto:Vid80gmx@gmail.com">'
+                'Vid80gmx@gmail.com</a></template>',
+            ),
             "duplicate href with wrong first target": (
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
                 '<a href="mailto:kontakt@example.invalid" '
                 'href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+            ),
+            "nested anchor contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<a href="mailto:Vid80gmx@gmail.com">'
+                '<a href="mailto:kontakt@example.invalid">'
+                'Vid80gmx@gmail.com</a></a>',
             ),
         }
         for field, (old, new) in html_mutations.items():
@@ -240,6 +272,15 @@ class VerifyBuildTests(unittest.TestCase):
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)",
             ),
+            "autolink outside supported scope": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "<Vid80gmx@gmail.com>",
+            ),
+            "reference link outside supported scope": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "[Vid80gmx@gmail.com][contact]\n\n"
+                "[contact]: mailto:Vid80gmx@gmail.com",
+            ),
             "code-fence-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
@@ -255,6 +296,11 @@ class VerifyBuildTests(unittest.TestCase):
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
                 "    [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "unclosed-pre-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n<pre>\n"
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
             ),
             "inline-code-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
@@ -275,6 +321,32 @@ class VerifyBuildTests(unittest.TestCase):
             "escaped-extra-label": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 r"[Vid80gmx@gmail.com\*](mailto:Vid80gmx@gmail.com)",
+            ),
+            "escaped-backtick-code-span-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                r"\` `[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)`",
+            ),
+            "unclosed-comment-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n<!--\n"
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "blockquote-fence-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "> ~~~markdown\n"
+                "> [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n"
+                "> ~~~",
+            ),
+            "image-description-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "![Contact [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)]"
+                "(contact.png)",
+            ),
+            "raw-html-attribute-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                '<span title="[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)">'
+                "No contact link</span>",
             ),
         }
         for field, (old, new) in markdown_mutations.items():
