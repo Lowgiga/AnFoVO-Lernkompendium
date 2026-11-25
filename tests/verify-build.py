@@ -249,18 +249,20 @@ check(
 impressum = re.search(r'id="imp-h"[\s\S]*?</section>', HTML)
 impressum_text = impressum.group(0) if impressum else ""
 required_provider_details = (PROVIDER_NAME, PROVIDER_ADDRESS, CONTACT_EMAIL)
+html_contact_link = f'<a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a>'
+markdown_contact_link = f"[{CONTACT_EMAIL}](mailto:{CONTACT_EMAIL})"
 html_has_provider_details = (
     "v2.9.5" in impressum_text
     and "v2.7.0" not in impressum_text
     and "§ 5 DDG" in impressum_text
     and all(detail in impressum_text for detail in required_provider_details)
-    and f"mailto:{CONTACT_EMAIL}" in impressum_text
+    and html_contact_link in impressum_text
     and PLACEHOLDER not in impressum_text
 )
 markdown_has_provider_details = (
     "§ 5 DDG" in IMPRESSUM_MD
     and all(detail in IMPRESSUM_MD for detail in required_provider_details)
-    and f"mailto:{CONTACT_EMAIL}" in IMPRESSUM_MD
+    and markdown_contact_link in IMPRESSUM_MD
     and PLACEHOLDER not in IMPRESSUM_MD
 )
 check(

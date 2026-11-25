@@ -485,9 +485,11 @@ Android-WebView-Build und Gerätetest.
 1.  Ein Quellenlisteneintrag zum Kursheft besitzt `href=""`. Er muss
     entweder mit einem echten, zulässigen Ziel versehen oder als
     bibliografischer Text ohne Link ausgegeben werden.
-2.  Impressum-Anbieterkennzeichnung (erledigt am 25.11.2026): Die Web-App
-    und `IMPRESSUM.md` enthalten nun Name, Anschrift und Kontakt-E-Mail
-    gemäß § 5 DDG; der frühere Platzhalter ist entfernt.
+2.  Impressum-Anbieterkennzeichnung (technisch erledigt am 25.11.2026): Die
+    Web-App und `IMPRESSUM.md` enthalten nun die konfigurierten Angaben zu
+    Name, Anschrift und Kontakt-E-Mail; der frühere Platzhalter ist entfernt.
+    Die rechtliche Identität, Vollständigkeit der Anschrift und gegebenenfalls
+    Rechtsform/Vertretung sind davon unabhängig durch den Owner zu bestätigen.
 3.  32 Seiten haben keine numerische `data-le`-Zuordnung. Jede Seite
     muss fachlich klassifiziert werden.
 4.  Inhaltsabdeckung LE 1--11 ist nicht seitenweise gegen das
