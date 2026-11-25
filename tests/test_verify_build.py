@@ -164,6 +164,12 @@ class VerifyBuildTests(unittest.TestCase):
                 f"```markdown\n{canonical_markdown_link}\n```\t\n\n"
                 f"{canonical_markdown_link}"
             ),
+            "Example `\n\n" + canonical_markdown_link + "\n\n`",
+            "Example [unfinished\n\n" + canonical_markdown_link,
+            (
+                "\n~~~html\n<!--\n~~~\n\n"
+                + canonical_markdown_link
+            ),
         )
         for accepted_markdown_link in accepted_markdown_links:
             with self.subTest(markdown=accepted_markdown_link):
@@ -486,6 +492,11 @@ class VerifyBuildTests(unittest.TestCase):
                 "> ```markdown\n"
                 "> [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n> ```",
             ),
+            "blockquote-tilde-fence-hidden contact link": (
+                "**Kontakt:** [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "> ~~~markdown\n"
+                "> [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n> ~~~",
+            ),
             "top-level-fence-container-mismatch contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
@@ -622,6 +633,10 @@ class VerifyBuildTests(unittest.TestCase):
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
                 "\\\\`[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)`",
+            ),
+            "escaped-backtick-code-span-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                r"\` `[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)`",
             ),
             "code-span-entity-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",

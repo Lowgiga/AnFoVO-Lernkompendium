@@ -216,6 +216,13 @@ def has_html_contact_link(fragment, email):
     return parser.found
 
 
+def markdown_inline_block_end(source, start):
+    # A blank line ends the current Markdown paragraph. Delimiter state must
+    # not leak into the next inline block.
+    boundary = re.search(r"\r?\n[ \t]*\r?\n", source[start:])
+    return len(source) if boundary is None else start + boundary.start()
+
+
 def markdown_code_span_ranges(source):
     ranges = []
     index = 0
@@ -239,13 +246,14 @@ def markdown_code_span_ranges(source):
             index += 1
         opener_end = index
         opener_length = opener_end - opener_start
+        block_end = markdown_inline_block_end(source, opener_start)
         cursor = opener_end
-        while cursor < len(source):
+        while cursor < block_end:
             if source[cursor] != "`":
                 cursor += 1
                 continue
             closer_start = cursor
-            while cursor < len(source) and source[cursor] == "`":
+            while cursor < block_end and source[cursor] == "`":
                 cursor += 1
             closer_length = cursor - closer_start
             if closer_length == opener_length:
@@ -287,9 +295,10 @@ def mask_html_comments(source, replacement=" "):
 def markdown_closing_bracket(source, start):
     depth = 0
     index = start
-    while index < len(source):
+    block_end = markdown_inline_block_end(source, start)
+    while index < block_end:
         character = source[index]
-        if character == "\\" and index + 1 < len(source):
+        if character == "\\" and index + 1 < block_end:
             index += 2
             continue
         if character == "[":
@@ -307,9 +316,10 @@ def markdown_closing_parenthesis(source, start):
     quote = None
     angle = False
     index = start
-    while index < len(source):
+    block_end = markdown_inline_block_end(source, start)
+    while index < block_end:
         character = source[index]
-        if character == "\\" and index + 1 < len(source):
+        if character == "\\" and index + 1 < block_end:
             index += 2
             continue
         if quote:

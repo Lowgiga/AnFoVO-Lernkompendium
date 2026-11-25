@@ -74,13 +74,24 @@ const { pathToFileURL } = require('url');
     probe.remove();
     probeStyle.remove();
 
+    const opacityProbe = document.createElement('div');
+    opacityProbe.style.opacity = '0';
+    const opacityAnchor = document.createElement('a');
+    opacityAnchor.href = expectedHref;
+    opacityAnchor.textContent = expectedLabel;
+    opacityProbe.appendChild(opacityAnchor);
+    document.body.appendChild(opacityProbe);
+    const opacityProbeRejected = !isRendered(opacityAnchor);
+    opacityProbe.remove();
+
     return {
       expectedHref,
       exactHrefCount: candidates.length,
       exactLabelCount: exactLabels.length,
       visibleCount: visible.length,
       resolvedHref: visible[0]?.href || null,
-      hiddenProbeRejected
+      hiddenProbeRejected,
+      opacityProbeRejected
     };
   });
 
@@ -222,6 +233,7 @@ const { pathToFileURL } = require('url');
     contactChecks.visibleCount < 1 ||
     contactChecks.resolvedHref !== contactChecks.expectedHref ||
     !contactChecks.hiddenProbeRejected ||
+    !contactChecks.opacityProbeRejected ||
     mobileRobotDisplay === 'none' ||
     progressChecks.rings !== progressChecks.rows ||
     progressChecks.countLabels !== progressChecks.rows ||
