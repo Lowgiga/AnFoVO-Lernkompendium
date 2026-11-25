@@ -13,14 +13,14 @@
 
 - Android metadata: `de.omega.lernkompendium`, version `2.9.5`, version code `295`, min SDK 29, target SDK 36.
 - Main CI run `45576060676` (commit `bc08f8965ac4`) succeeded on 25.11.2026, including static verification, browser tests, debug APK build, APK signature verification and artifact upload. The Pages deployment run `45576058286` also succeeded.
-- The CI debug artifact `AnFoeVO-debug-apks/app-arm64-v8a-debug.apk` has SHA-256 `f9e2102437c0ff42ed9fe1cb362606e0bdbae618a6f8109514611b1b9f0ba298`. Its packaged `assets/index.html` is 628957 bytes with SHA-256 `242e2822d64d85fa4b9fbdee11aac74c88350f65337b6492a6e9479e7d1740dd`, matching the canonical repository blob.
+- The archived CI debug artifact `AnFoeVO-debug-apks/app-arm64-v8a-debug.apk` has SHA-256 `f9e2102437c0ff42ed9fe1cb362606e0bdbae618a6f8109514611b1b9f0ba298`. It predates the 25.11.2026 legal-imprint source update; the current canonical source hash is listed below.
 - A separate local debug build with `applicationIdSuffix ".debug"` was installed side-by-side on the Galaxy S25 as `de.omega.lernkompendium.debug`; the release-signed v2.9.3 app remained installed and untouched. Cold start succeeded (66-317 ms) and the v2.9.5 assets rendered offline without a fatal exception. The interactive seven-point smoke checklist remains open in owner task `wq8cx2`.
 - Clean local release build (Gradle 8.13, JDK 21, SDK 36, Build-Tools 36.0.0): `:app:assembleRelease` and `:app:bundleRelease` successful. `apksigner verify` passed; release certificate DN `CN=AnFoeVO Lernkompendium, OU=Development, O=Lowgiga, L=NRW, ST=NRW, C=DE`.
 - Canonical source asset hashes used by the current build:
-  - `assets/index.html` = `242E2822D64D85FA4B9FBDEE11AAC74C88350F65337B6492A6E9479E7D1740DD` (628957 B)
-  - `assets/sw.js` = `D2A9DCEE65DE82FED29CCD3BA4F1A8D9F8E3FBC45745DD6FEC564637D49894B6`
+  - `assets/index.html` = `3CF790AED65D55D092A983EA5E3018EC6B28D4DA05925F099F93659D220397AC` (630693 B)
+  - `assets/sw.js` = `885719469A735487750B2A7281DA6747D986EC3570BB18985F9AD4D4AA0A59BB`
   - `assets/robot-navigation.js` = `BC063B694F2C91EAD1995F0CE3B6894E81A15E2F7DE465232FB0BE5AC7FC5095` (21879 B)
-- Static verification: 33/33.
+- Static verification: 34/34.
 - Browser suite `npm run test:all` green: RobotNav harness, smoke (70 pages, 0 errors), PWA subpath (65 precached entries incl. the engine file) and the 100/100 in-app self-test.
 
 ## Historical local wrapper artifacts (17.11.2026)
@@ -33,10 +33,10 @@
 
 ## Status
 
-- Service worker cache: `anfoevo_v2_cache_2.9.5-web-pwa-2.9.5`; `2.9.4` no longer present.
+- Service worker cache: `anfoevo_v2_cache_2.9.5-web-pwa-2.9.5-legal.1`; the earlier `2.9.5` cache is removed when the updated worker activates.
 - Galaxy S25 verification is current: release v2.9.3 remains installed; a separate v2.9.5 debug app was installed side-by-side and cold-started successfully. Only the interactive seven-point smoke checklist is still open.
 - GitHub Release v2.9.4 (animation update, embedded architecture) remains published; v2.9.5 is the canonical follow-up with the standalone-engine architecture.
-- GitHub Pages is public and the live `index.html` still contains the DDG Impressum placeholder; the documented publication gate is therefore not met. The placeholder must be replaced with real legal-contact details or Pages must be disabled. A replacement must update the static verifier, its regression test, and both byte-parity copies of `index.html` in the same change.
+- GitHub Pages is public and the published `index.html` contains the supplied § 5 DDG provider details without the former publication placeholder. `IMPRESSUM.md`, both byte-parity copies of `index.html`, the static verifier, and its regression test are updated in the same change; the documented publication gate is met.
 
 ## Rebuild
 

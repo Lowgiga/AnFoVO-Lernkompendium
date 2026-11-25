@@ -11,11 +11,11 @@ Stand: 12. November 2026 | Prüfer: OpenCode Agent (Deep-Code-Audit)
 > | RobotNav-Engine „inline in index.html" | **Standalone** seit `dcc4388`: `<script src="robot-navigation.js">` (Z. 1587); Engine 22.263 B in `robot-navigation.js`, byte-identisch in Wurzel, `algorithm/` und Android-Assets (CI-Parity-Gate) |
 > | index.html „~2.200 Zeilen" | 1.959 Zeilen |
 > | `MainActivity.java` „132 Zeilen" | 143 Zeilen |
-> | verify-build „21 Prüfungen" | **32 Prüfungen** (u. a. Byte-Parität, Struktur, Manifest, SW-Version, Impressum-Platzhalter, Deploy-Pfad/Surface-Vertrag, lokaler HTTP-Server-Test) |
+> | verify-build „21 Prüfungen" | **34 Prüfungen** (u. a. Byte-Parität, Struktur, Manifest, SW-Version, vollständige §-5-DDG-Impressumsangaben, Deploy-Pfad/Surface-Vertrag, lokaler HTTP-Server-Test) |
 > | „29 WebP-Hintergrundbilder" | 58 Dateien (29 Frames × 2 Sets `bg/d` + `bg/m`) |
 > | RobotNav-Version 2.8.0 | 2.9.5 (Kopf + `inspect()`, 17.11.2026 angeglichen) |
 > | `DATA.version` | 2.9.5 (war 2.7.0 – floss in Export-Metadaten; jetzt versionskette-prüfung in `verify-build.py`: DATA = Manifest = sw.js = tests = Titel) |
-> | `index.html`-Hash 5461F6FE…/629.905 B | `2BD1DEC4…` / 630.032 B (Arbeitsbaum-SHA-256; Wurzel und Android-Assets identisch) |
+> | `index.html`-Hash 5461F6FE…/629.905 B | `3CF790AE…` / 630.693 B (Arbeitsbaum-SHA-256; Wurzel und Android-Assets identisch, Stand 25.11.2026) |
 > | CI ohne Härtung | Path-Filter inkl. `robot-navigation.js`, Concurrency, Timeout, Gradle-Cache, Lizenz-Akzeptanz, versionsunabhäniger Artefaktname, Selbsttest-Automation (`tests/selftest-app.cjs`, 100 Prüfungen, in `test:all`) |
 >
 > **Offene Punkte (neu dokumentiert, kein Code-Defekt):**

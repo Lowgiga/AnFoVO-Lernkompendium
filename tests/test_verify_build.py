@@ -30,6 +30,7 @@ class VerifyBuildTests(unittest.TestCase):
             Path("tests/verify-build.py"),
             Path("tests/package.json"),
             Path("index.html"),
+            Path("IMPRESSUM.md"),
             ENGINE,
             Path("robot-navigation.js"),
             Path("docs/ARCHITECTURE.md"),
@@ -102,16 +103,13 @@ class VerifyBuildTests(unittest.TestCase):
         self.assertEqual(status, 1)
         self.assertIsNotNone(failure)
 
-    def test_impressum_placeholder_is_required(self):
-        name = "Impressum shows v2.9.5 and keeps the required DDG placeholder"
+    def test_impressum_requires_complete_provider_details(self):
+        name = "Impressum shows v2.9.5 and complete DDG provider details"
         html = self.root / "index.html"
         original = html.read_text(encoding="utf-8")
         self.assertEqual(self.run_check(name), (0, None))
         html.write_text(
-            original.replace(
-                "[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]",
-                "Beispielname, Beispielstraße 1, kontakt@example.invalid",
-            ),
+            original.replace("Vid80gmx@gmail.com", "kontakt@example.invalid"),
             encoding="utf-8",
         )
         status, failure = self.run_check(name)

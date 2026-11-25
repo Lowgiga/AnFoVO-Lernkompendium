@@ -3,7 +3,7 @@
    /AnFoVO-Lernkompendium/ and under the Android asset-loader origin.
    VERSION/BUILD change when the cached shell changes. */
 var VERSION = '2.9.5';
-var BUILD = 'web-pwa-2.9.5';
+var BUILD = 'web-pwa-2.9.5-legal.1';
 var CACHE = 'anfoevo_v2_cache_' + VERSION + '-' + BUILD;
 /* Kern: muss vollständig sein (addAll) */
 var ASSETS = ['./', './index.html', './manifest.json', './robot-navigation.js', './icon-192.png', './icon-512.png', './icon-512-maskable.png'];

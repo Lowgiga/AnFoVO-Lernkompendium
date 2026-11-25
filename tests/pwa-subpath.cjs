@@ -5,7 +5,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const PREFIX = '/AnFoVO-Lernkompendium';
-const CACHE = 'anfoevo_v2_cache_2.9.5-web-pwa-2.9.5';
+const CACHE = 'anfoevo_v2_cache_2.9.5-web-pwa-2.9.5-legal.1';
 const FRAME_NAMES = ['d', 'm'].flatMap((size) =>
   fs.readdirSync(path.join(ROOT, 'bg', size))
     .filter((name) => name.endsWith('.webp'))

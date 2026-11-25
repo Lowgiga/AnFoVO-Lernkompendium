@@ -32,7 +32,7 @@ mit Pages-Quelle „Branch-Root" baut GitHub die Site automatisch neu.
 - `manifest.json` nutzt relative `start_url`/`scope` (`./`), die Installation bleibt im
   Projekt-Unterpfad.
 - `sw.js` precacht die Hlle, Icons, `robot-navigation.js` und beide `bg/d`- and `bg/m`-
-  Bildstze; Cache-Name `anfoevo_v2_cache_2.9.5-web-pwa-2.9.5`.
+  Bildstze; Cache-Name `anfoevo_v2_cache_2.9.5-web-pwa-2.9.5-legal.1`.
 - `.nojekyll` ist vorhanden, ein Pages-Bau läuft ohne Jekyll.
 - Die Service-Worker-Registrierung läuft nur bei `http:`/`https:`. **Korrektur zur früheren
   Doku:** Im WebView wird **nicht** registriert – `index.html` (Registrierungsblock,
@@ -52,6 +52,7 @@ mit Pages-Quelle „Branch-Root" baut GitHub die Site automatisch neu.
 - `bg/`
 - `.nojekyll`
 - `LICENSE`
+- `IMPRESSUM.md`
 
 (Die Liste war unvollstndig: `robot-navigation.js` wird seit dem Skript kopiert und von
 `sw.js` precached, war aber nicht dokumentiert.)
@@ -63,22 +64,17 @@ Pages-Quelle in den Repository-Einstellungen auf „GitHub Actions" und ergänzt
 Workflow (Skript → `actions/upload-pages-artifact` → `actions/deploy-pages`); dann fallen
 `android/`, `tests/`, Gradle-Wrapper und die Berichte aus dem öffentlichen Angebot heraus.
 
-## Veröffentlichungsgate – derzeit offen
+## Veröffentlichungsgate – erfüllt
 
-GitHub Pages ist bereits öffentlich erreichbar. Das erforderliche Gate ist deshalb **noch nicht
-erfüllt**: Bis zur Entscheidung muss entweder der Impressum-Platzhalter ersetzt oder GitHub Pages
-deaktiviert werden.
+GitHub Pages ist öffentlich erreichbar und enthält die bereitgestellten §-5-DDG-Anbieterangaben
+ohne den früheren Veröffentlichungs-Platzhalter.
 
-1. Das §-5-DDG-Impressum-Platzhalter (`[vor Veröffentlichung ergänzen: Name, Anschrift,
-   Kontakt]`) ist im live ausgelieferten Stand enthalten und wird von `tests/verify-build.py`
-   derzeit absichtlich erzwungen. Eigene Angaben eintragen, nichts erfinden. Beim Ersetzen des
-   Platzhalters müssen im selben PR/Commit `tests/verify-build.py`,
-   `tests/test_verify_build.py` (Test `test_impressum_placeholder_is_required`) sowie beide
-   `index.html`-Kopien in `index.html` und `android/app/src/main/assets/index.html` aktualisiert
-   werden: Die statische Prüfung muss reale Angaben akzeptieren, und die Byte-Parität muss
-   erhalten bleiben.
-2. Repository frei von Heft-Fotos, Heft-Wortlaut und persönlichen Notizen halten.
-3. Seiten-Cache-Hinweis: GitHub Pages erlaubt keine eigenen `Cache-Control`-Header. `sw.js`
-   arbeitet cache-first; Rückkehrer können daher kurz einen alten Stand ziehen, bis der
-   Worker aktualisiert.
-4. Merge/Release nur, wenn du es willst – dieses Dokument ändert keine Einstellungen.
+1. `IMPRESSUM.md` enthält Anbieter, Anschrift und Kontakt-E-Mail; dieselben Angaben stehen im
+   Impressum der Web-/Android-Oberfläche. `tests/verify-build.py` prüft nun beide Dokumente,
+   lehnt unvollständige Angaben und den alten Platzhalter ab; der Regressionstest
+   `test_impressum_requires_complete_provider_details` sichert diesen Vertrag ab.
+2. `index.html` und `android/app/src/main/assets/index.html` bleiben byte-identisch; der
+   Service-Worker-Cache wurde auf `web-pwa-2.9.5-legal.1` erhöht, damit Rückkehrer den neuen
+   Impressum-Stand nicht aus dem alten Cache-first-Bestand behalten.
+3. Repository frei von Heft-Fotos, Heft-Wortlaut und persönlichen Notizen halten.
+4. Merge/Release bleiben manuell; dieses Dokument ändert keine Repository-Einstellungen.

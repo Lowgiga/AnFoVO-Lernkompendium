@@ -485,9 +485,9 @@ Android-WebView-Build und Gerätetest.
 1.  Ein Quellenlisteneintrag zum Kursheft besitzt `href=""`. Er muss
     entweder mit einem echten, zulässigen Ziel versehen oder als
     bibliografischer Text ohne Link ausgegeben werden.
-2.  Impressum enthält bewusst einen Platzhalter („vor Veröffentlichung
-    ergänzen"). Vor öffentlicher Veröffentlichung muss die
-    Anbieterkennzeichnung geklärt sein.
+2.  Impressum-Anbieterkennzeichnung: seit 25.11.2026 mit den
+    bereitgestellten §-5-DDG-Angaben in `IMPRESSUM.md` und im
+    Live-Impressum umgesetzt; der frühere Platzhalter ist entfernt.
 3.  32 Seiten haben keine numerische `data-le`-Zuordnung. Jede Seite
     muss fachlich klassifiziert werden.
 4.  Inhaltsabdeckung LE 1--11 ist nicht seitenweise gegen das
@@ -743,8 +743,8 @@ einen Plan zurückgeben -- Änderungen in den Projektdateien durchführen.
 
 1.  Vollständige, verlässliche Seiten-/Abschnittszuordnung des
     Original-Kurshefts zu allen LE 1--11.
-2.  Anbieter-/Impressumsdaten für den tatsächlichen Verwendungszweck
-    (privat, intern oder öffentliche Veröffentlichung).
+2.  Anbieter-/Impressumsdaten: für die öffentliche Veröffentlichung
+    entschieden und seit 25.11.2026 umgesetzt (siehe `IMPRESSUM.md`).
 3.  Finale Auswahl und Rechte-/Verfügbarkeitsprüfung der ergänzenden
     Medien.
 4.  Ob Android-APK weiterhin ein verbindliches Releaseziel ist oder

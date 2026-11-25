@@ -3,6 +3,19 @@
 Format: Keep a Changelog. Versionierung `X.Y.Z` ↔ `versionCode = X*100 + Y*10 + Z` (295 ↔ 2.9.5) –
 Details in [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
 
+## 25.11.2026 – Veröffentlichungsgate erfüllt
+
+- **§-5-DDG-Impressum ergänzt:** Die bereitgestellten Anbieterangaben stehen jetzt in
+  `IMPRESSUM.md` und im Impressum der Web-/Android-Oberfläche; der frühere
+  Veröffentlichungs-Platzhalter ist entfernt.
+- **Verifikation angepasst:** Der statische Verifier und sein Regressionstest verlangen nun
+  die vollständigen Anbieterangaben in beiden Dokumenten und die Byte-Parität der beiden
+  `index.html`-Kopien.
+- **Service-Worker-Cache erhöht:** `web-pwa-2.9.5-legal.1` erzwingt bei Rückkehrern einen
+  frischen Impressum-Stand statt des bisherigen cache-first-Bestands.
+- **Veröffentlichungsdokumentation aktualisiert:** README, Pages-Dokumentation, Build-Report
+  und Projektmanifest wurden auf den erfüllten Veröffentlichungsstand gebracht.
+
 ## 18.11.2026 – Wartung und Verifikation (auf `main`)
 
 *Vollständige Nachprüfung aller Aussagen im Repository gegen den Code (fünf Perspektiven:
@@ -43,9 +56,9 @@ App-Code, Tests/CI, Dokumentation, Build/Deployment, Git).*
 - **Release-Tag nachgezogen:** `v2.9.5` liegt jetzt auf dem Release-Commit `dcc4388`
   (angelegt und gepuscht am 18.11.2026; die Vorgänger-Tags `v2.9.2`/`v2.9.4` hatten ihre
   Releases markiert, für 2.9.5 fehlte er).
-- **Offen (Dokumentiert, kein Code-Defekt):** GitHub Pages ist bereits öffentlich erreichbar;
-  das Veröffentlichungsgate ist derzeit nicht erfüllt. Der Impressum-Platzhalter (§ 5 DDG)
-  muss durch echte Angaben ersetzt werden (dabei Verifier, Regressionstest und beide
+- **Offen (Dokumentiert, kein Code-Defekt; Stand 18.11.2026):** GitHub Pages ist bereits öffentlich erreichbar;
+  das Veröffentlichungsgate war damals nicht erfüllt. Der Impressum-Platzhalter (§ 5 DDG)
+  musste durch echte Angaben ersetzt werden (dabei Verifier, Regressionstest und beide
   `index.html`-Kopien gemeinsam aktualisieren) oder GitHub Pages muss deaktiviert werden;
   zwei konkurrierende Dark-Mode-Paletten (visueller Eingriff, daher nicht umgesetzt);
   Monster-Zeilen im HTML (Inhaltsdiff); Gerätetest v2.9.5 (Gerät offline).

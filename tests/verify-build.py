@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 import threading
+import time
 import urllib.error
 import urllib.request
 
@@ -29,7 +30,9 @@ PWA_FILES = (
     "icon-512.png",
     "icon-512-maskable.png",
 )
-PLACEHOLDER = "[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]"
+SERVICE_WORKER_BUILD = "web-pwa-2.9.5-legal.1"
+IMPRESSUM_FIELDS = ("Lowgiga", "New York 11354, USA", "Vid80gmx@gmail.com")
+IMPRESSUM_PLACEHOLDER = "[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]"
 JS = (ROOT / "algorithm" / "robot-navigation.js").read_text(encoding="utf-8").strip()
 ARCHITECTURE = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
 
@@ -200,7 +203,7 @@ except json.JSONDecodeError:
 check(
     "Service worker cache version is current",
     "var VERSION = '2.9.5';" in sw_text
-    and "var BUILD = 'web-pwa-2.9.5';" in sw_text
+    and f"var BUILD = '{SERVICE_WORKER_BUILD}';" in sw_text
     and "anfoevo_v2_cache_" in sw_text
     and "robotnav-v2.8.0" not in sw_text,
 )
@@ -239,18 +242,33 @@ check(
 )
 impressum = re.search(r'id="imp-h"[\s\S]*?</section>', HTML)
 impressum_text = impressum.group(0) if impressum else ""
+impressum_markdown_path = ROOT / "IMPRESSUM.md"
+impressum_markdown = (
+    impressum_markdown_path.read_text(encoding="utf-8")
+    if impressum_markdown_path.is_file()
+    else ""
+)
 check(
-    "Impressum shows v2.9.5 and keeps the required DDG placeholder",
+    "Impressum shows v2.9.5 and complete DDG provider details",
     "v2.9.5" in impressum_text
     and "v2.7.0" not in impressum_text
     and "§ 5 DDG" in impressum_text
-    and PLACEHOLDER in impressum_text,
+    and all(field in impressum_text for field in IMPRESSUM_FIELDS)
+    and 'href="mailto:Vid80gmx@gmail.com"' in impressum_text
+    and IMPRESSUM_PLACEHOLDER not in impressum_text,
+)
+check(
+    "Standalone IMPRESSUM.md contains matching DDG provider details",
+    all(field in impressum_markdown for field in IMPRESSUM_FIELDS)
+    and "mailto:Vid80gmx@gmail.com" in impressum_markdown
+    and IMPRESSUM_PLACEHOLDER not in impressum_markdown,
 )
 prepare_script = ROOT / "scripts" / "prepare-pages-surface.sh"
 prepare_text = prepare_script.read_text(encoding="utf-8") if prepare_script.is_file() else ""
 check(
     "Pages prepare script copies a web-only surface and does not publish",
     "dist/pages" in prepare_text
+    and "IMPRESSUM.md" in prepare_text
     and "android" in prepare_text
     and "tests" in prepare_text
     and "Gradle" in prepare_text
@@ -301,11 +319,17 @@ class _SubpathHandler(BaseHTTPRequestHandler):
 
 
 def fetch(url):
-    try:
-        with urllib.request.urlopen(url, timeout=5) as response:
-            return response.status, response.read(), response.headers.get_content_type()
-    except urllib.error.HTTPError as error:
-        return error.code, error.read(), ""
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(url, timeout=5) as response:
+                return response.status, response.read(), response.headers.get_content_type()
+        except urllib.error.HTTPError as error:
+            return error.code, error.read(), ""
+        except (OSError, urllib.error.URLError):
+            if attempt == 2:
+                raise
+            time.sleep(0.05)
+    raise RuntimeError("unreachable retry state")
 
 
 def pages_subpath_detail():
@@ -333,7 +357,7 @@ def pages_subpath_detail():
             and served_manifest.get("start_url") == "./"
             and served_manifest.get("scope") == "./"
             and worker_status == 200
-            and b"web-pwa-2.9.5" in worker_body
+            and SERVICE_WORKER_BUILD.encode("utf-8") in worker_body
             and icon_status == 200
             and icon_type == "image/png"
             and icon_body.startswith(b"\x89PNG")
