@@ -107,29 +107,68 @@ class VerifyBuildTests(unittest.TestCase):
         name = "Impressum contains the required DDG provider details"
         html = self.root / "index.html"
         original = html.read_text(encoding="utf-8")
+        impressum = self.root / "IMPRESSUM.md"
+        original_markdown = impressum.read_text(encoding="utf-8")
         self.assertEqual(self.run_check(name), (0, None))
 
-        mutated = original.replace(
-            "Lowgiga</b>, New York 11354 USA. Kontakt: "
-            "<a href=\"mailto:Vid80gmx@gmail.com\">Vid80gmx@gmail.com</a>",
-            "<i>[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]</i>",
-        )
-        self.assertNotEqual(mutated, original)
-        html.write_text(mutated, encoding="utf-8")
-        status, failure = self.run_check(name)
-        self.assertEqual(status, 1)
-        self.assertIsNotNone(failure)
+        html_mutations = {
+            "placeholder": (
+                "<b>Lowgiga</b>",
+                "<i>[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]</i>",
+            ),
+            "provider name": ("<b>Lowgiga</b>", "<b>Example Provider</b>"),
+            "provider address": ("New York 11354 USA", "Berlin 10115 Germany"),
+            "contact target": (
+                'href="mailto:Vid80gmx@gmail.com"',
+                'href="mailto:kontakt@example.invalid"',
+            ),
+            "contact link markup": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                "Vid80gmx@gmail.com",
+            ),
+        }
+        for field, (old, new) in html_mutations.items():
+            with self.subTest(document="HTML", field=field):
+                html.write_text(original, encoding="utf-8")
+                mutated = original.replace(old, new)
+                self.assertNotEqual(mutated, original)
+                html.write_text(mutated, encoding="utf-8")
+                status, failure = self.run_check(name)
+                self.assertEqual(status, 1)
+                self.assertIsNotNone(failure)
 
         html.write_text(original, encoding="utf-8")
-        impressum = self.root / "IMPRESSUM.md"
-        mutated_markdown = impressum.read_text(encoding="utf-8").replace(
-            "Vid80gmx@gmail.com", "kontakt@example.invalid"
-        )
-        self.assertNotEqual(mutated_markdown, impressum.read_text(encoding="utf-8"))
-        impressum.write_text(mutated_markdown, encoding="utf-8")
-        status, failure = self.run_check(name)
-        self.assertEqual(status, 1)
-        self.assertIsNotNone(failure)
+        markdown_mutations = {
+            "placeholder": (
+                "**Diensteanbieter:** Lowgiga",
+                "**Diensteanbieter:** [vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]",
+            ),
+            "provider name": (
+                "**Diensteanbieter:** Lowgiga",
+                "**Diensteanbieter:** Example Provider",
+            ),
+            "provider address": (
+                "**Anschrift:** New York 11354 USA",
+                "**Anschrift:** Berlin 10115 Germany",
+            ),
+            "contact target": (
+                "(mailto:Vid80gmx@gmail.com)",
+                "(mailto:kontakt@example.invalid)",
+            ),
+            "contact link markup": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com",
+            ),
+        }
+        for field, (old, new) in markdown_mutations.items():
+            with self.subTest(document="Markdown", field=field):
+                impressum.write_text(original_markdown, encoding="utf-8")
+                mutated = original_markdown.replace(old, new)
+                self.assertNotEqual(mutated, original_markdown)
+                impressum.write_text(mutated, encoding="utf-8")
+                status, failure = self.run_check(name)
+                self.assertEqual(status, 1)
+                self.assertIsNotNone(failure)
 
     def test_relative_manifest_scope_is_required(self):
         name = "PWA manifest uses relative scope and start_url"

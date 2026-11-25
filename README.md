@@ -42,7 +42,7 @@
 | PWA/Offline (Subpath) | ✅ lokal getestet (Manifest, Worker, Cache, Offline-Ladevorgang) | `tests/pwa-subpath.cjs` |
 | Android-Build (Quellstand) | ✅ Version `2.9.5`, Version Code `295` | `android/app/build.gradle` |
 | GitHub-Actions-CI | ✅ Main-Lauf und Pages-Deployment erfolgreich (25.11.2026, Commit `7820a49`) | [Main-CI](https://github.com/Lowgiga/AnFoVO-Lernkompendium/actions/runs/45629742055) · [Pages](https://github.com/Lowgiga/AnFoVO-Lernkompendium/actions/runs/45629740818) |
-| Veröffentlichungsgate (Impressum) | ✅ erfüllt und live geprüft — konfigurierte §-5-DDG-Anbieterangaben inklusive Kontakt-Link; der sichtbare Platzhalter ist entfernt | `IMPRESSUM.md` · `docs/GITHUB_PAGES.md` |
+| Veröffentlichungsgate (Impressum) | ✅ technisch erfüllt und live geprüft — konfigurierte §-5-DDG-Anbieterangaben inklusive echtem Kontakt-Link; der sichtbare Platzhalter ist entfernt. Die rechtliche Identität/Anschrift ist separat durch den Owner zu bestätigen | `IMPRESSUM.md` · `docs/GITHUB_PAGES.md` |
 | Release-Signing | ✅ lokal konfiguriert und nachgewiesen; CI validiert die Debug-APK-Signaturen | `docs/RELEASE_PROCESS.md` |
 | Geräteinstallation (Galaxy S25) | ✅ Release v2.9.3 verifiziert; ✅ v2.9.5-Debug-App parallel installiert und Kaltstart geprüft; ⏳ interaktive 7-Punkte-Checkliste offen | `PROJECT_MANIFEST.json` |
 
@@ -137,7 +137,7 @@ flowchart LR
 - Service Worker registriert sich nur unter `http(s)`; `file://` und `android_asset` bleiben voll nutzbar
 - Lokale Web-Oberfläche erzeugbar mit `bash scripts/prepare-pages-surface.sh` → `dist/pages/`
 - **GitHub Pages aktiv und öffentlich erreichbar:** https://lowgiga.github.io/AnFoVO-Lernkompendium/ (PWA installierbar, Offline-fähig)
-- ✅ **Veröffentlichungsgate erfüllt und live geprüft:** Die Web-App und `IMPRESSUM.md` enthalten die konfigurierten §-5-DDG-Anbieterangaben; der sichtbare Platzhalter ist entfernt. `tests/verify-build.py`, der Regressionstest und beide byte-paritären `index.html`-Kopien prüfen den Stand gemeinsam; der direkte Live-Abruf bestätigt die Details und den `mailto:`-Link — Details in [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md)
+- ✅ **Technisches Veröffentlichungsgate erfüllt und live geprüft:** Die Web-App und `IMPRESSUM.md` enthalten die konfigurierten §-5-DDG-Anbieterangaben; der sichtbare Platzhalter ist entfernt. `tests/verify-build.py`, der Regressionstest und beide byte-paritären `index.html`-Kopien prüfen den Stand gemeinsam; der direkte Live-Abruf bestätigt die Details und den `mailto:`-Link. Die rechtliche Identität und Vollständigkeit der Anschrift bleiben separat durch den Owner zu bestätigen — Details in [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md)
 
 </details>
 

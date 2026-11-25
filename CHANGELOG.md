@@ -5,18 +5,23 @@ Details in [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
 
 ## 25.11.2026 – Impressum und Veröffentlichungsgate
 
-- **§-5-DDG-Impressum vervollständigt:** Name, Anschrift und Kontakt-E-Mail stehen jetzt in
-  `IMPRESSUM.md` und in der Fußzeile der Web-App; der frühere Veröffentlichungs-Platzhalter ist
+- **Konfigurierte Anbieterangaben veröffentlicht:** Name, Anschrift und Kontakt-E-Mail stehen jetzt
+  in `IMPRESSUM.md` und in der Fußzeile der Web-App; der frühere Veröffentlichungs-Platzhalter ist
   entfernt. Der Kontakt ist als nativer `mailto:`-Link erreichbar.
 - **Gate automatisiert abgesichert:** Der statische Verifier und sein Regressionstest verlangen
-  dieselben Anbieterangaben in beiden Dokumenten. `index.html` und die Android-Asset-Kopie bleiben
-  byte-identisch; der In-App-Selbsttest prüft die sichtbaren Angaben und den Kontakt-Link.
+  dieselben Anbieterangaben sowie echte HTML- und Markdown-Kontaktlinks in beiden Dokumenten.
+  `index.html` und die Android-Asset-Kopie bleiben byte-identisch; der In-App-Selbsttest prüft die
+  sichtbaren Angaben und den Kontakt-Link.
+- **PWA-Test robuster:** Die Subpath-Prüfung wartet nun gezielt auf den projekteigenen
+  Service Worker und den vollständigen Cache, statt einen einmaligen `ready`-Snapshot mit
+  Erweiterungs-Caches zu verwechseln.
 - **Cache und Veröffentlichung aktualisiert:** Der Service-Worker-Cache wurde auf
   `web-pwa-2.9.5-legal.1` erhöht, damit bestehende Installationen nicht im alten Platzhalter-Stand
   verbleiben; `IMPRESSUM.md` ist auch in der optionalen bereinigten Pages-Surface enthalten.
-- **Veröffentlichungsgate geschlossen:** GitHub Pages kann mit den konfigurierten Anbieterangaben
-  öffentlich bleiben. Repository-Dokumentation, Manifest und Build-Report wurden auf den neuen
-  Stand nachgezogen.
+- **Technisches Veröffentlichungsgate geschlossen:** GitHub Pages kann mit den konfigurierten
+  Anbieterangaben öffentlich bleiben. Repository-Dokumentation, Manifest und Build-Report wurden
+  auf den neuen Stand nachgezogen. Die rechtliche Vollständigkeit der Identität und Anschrift ist
+  nicht durch automatisierte Prüfungen belegt und bleibt eine separate Owner-Bestätigung.
 - **Deployment live verifiziert:** Nach Merge von PR #10 (`7820a49`) liefen Projektvalidierung
   (`45629742055`) und Pages-Deployment (`45629740818`) erfolgreich. Der direkte Live-Abruf bestätigt
   HTTP 200, den exakten Index-Hash, die sichtbaren Anbieterangaben, den nativen `mailto:`-Link und

@@ -101,21 +101,37 @@ function startServer() {
           return { ok: false, reason: 'icon URL ' + iconUrl.pathname };
         }
         const manifest = await (await fetch(manifestUrl)).json();
-        const registration = await new Promise((resolve, reject) => {
-          const timer = setTimeout(() => reject(new Error('service worker did not become active within 15 seconds')), 15000);
-          navigator.serviceWorker.ready.then((value) => {
-            clearTimeout(timer);
-            resolve(value);
-          }, (error) => {
-            clearTimeout(timer);
-            reject(error);
+        const expectedScriptSuffix = '/AnFoVO-Lernkompendium/sw.js';
+        const deadline = Date.now() + 12000;
+        let registration = null;
+        let names = [];
+        let urls = [];
+        let missing = expectedPaths.slice();
+        while (Date.now() < deadline) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          const candidate = registrations.find((item) => {
+            const worker = item.active || item.waiting || item.installing;
+            return worker && worker.scriptURL.endsWith(expectedScriptSuffix);
           });
-        });
-        const names = await caches.keys();
-        const cache = await caches.open(expectedCache);
-        const keys = await cache.keys();
-        const urls = keys.map((request) => new URL(request.url).pathname);
-        const missing = expectedPaths.filter((item) => !urls.includes(item));
+          if (candidate) {
+            const worker = candidate.active || candidate.waiting || candidate.installing;
+            if (worker && worker.state === 'activated') {
+              registration = candidate;
+              names = await caches.keys();
+              if (names.includes(expectedCache)) {
+                const cache = await caches.open(expectedCache);
+                const keys = await cache.keys();
+                urls = keys.map((request) => new URL(request.url).pathname);
+                missing = expectedPaths.filter((item) => !urls.includes(item));
+                if (missing.length === 0) break;
+              }
+            }
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+        if (!registration || !registration.active) {
+          return { ok: false, reason: 'application service worker did not activate within 12 seconds' };
+        }
         const frame = await fetch(new URL('bg/d/r00.webp', location.href));
         return {
           ok: true,
