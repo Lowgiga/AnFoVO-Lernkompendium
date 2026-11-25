@@ -171,16 +171,32 @@ class VerifyBuildTests(unittest.TestCase):
                 "**Kontakt:** " + canonical_markdown_link,
                 "- **Kontakt:** " + canonical_markdown_link,
             ),
-            original_markdown.replace(
-                "**Kontakt:** " + canonical_markdown_link,
-                "> ~~~\n> example\n\n**Kontakt:** " + canonical_markdown_link,
-            ),
         )
         for accepted_markdown in accepted_markdown_contexts:
             with self.subTest(markdown_context=accepted_markdown):
                 self.assertNotEqual(accepted_markdown, original_markdown)
                 impressum.write_text(accepted_markdown, encoding="utf-8")
                 self.assertEqual(self.run_check(name), (0, None))
+
+        # Replace the complete contact line so the quoted fence really starts
+        # at the beginning of a line and contains a non-contact link.
+        quoted_fence_contact = (
+            "> ~~~markdown\n"
+            "> [hidden](mailto:hidden@example.invalid)\n\n"
+            "**Kontakt:** " + canonical_markdown_link
+        )
+        equivalent_markdown = original_markdown.replace(
+            "**Kontakt:** " + canonical_markdown_link,
+            quoted_fence_contact,
+        )
+        self.assertNotEqual(equivalent_markdown, original_markdown)
+        self.assertIn(
+            "\n> ~~~markdown\n> [hidden](mailto:hidden@example.invalid)\n\n"
+            "**Kontakt:** " + canonical_markdown_link + "\n",
+            equivalent_markdown,
+        )
+        impressum.write_text(equivalent_markdown, encoding="utf-8")
+        self.assertEqual(self.run_check(name), (0, None))
 
         html_mutations = {
             "placeholder": (
