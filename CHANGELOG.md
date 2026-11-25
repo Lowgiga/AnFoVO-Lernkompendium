@@ -11,7 +11,8 @@ Details in [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
 - **Gate automatisiert abgesichert:** Der statische Verifier und sein Regressionstest verlangen
   dieselben Anbieterangaben sowie unterstützte HTML- und Markdown-Inline-Kontaktlinks mit exakt
   konfiguriertem `mailto:`-Ziel und whitespace-normalisiertem sichtbaren E-Mail-Label; Links in
-  Kommentaren, Code-/Raw-HTML-Blöcken und nicht gerenderten HTML-Kontexten zählen nicht. Der
+  Kommentaren, Code-/Raw-HTML-Blöcken oder nicht gerenderten HTML-Kontexten sowie Link-Syntax in
+  Bild-/Linktiteln, HTML-Attributen oder Linkdefinitionen zählen nicht. Der
   Browser-Smoke-Test prüft zusätzlich, dass der HTML-Kontaktlink tatsächlich sichtbar gerendert
   wird. `index.html` und die Android-Asset-Kopie bleiben byte-identisch; der In-App-Selbsttest prüft
   die sichtbaren Angaben und den Kontakt-Link.

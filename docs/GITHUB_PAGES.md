@@ -81,8 +81,9 @@ Angaben, nicht deren rechtliche Vollständigkeit:
 2. `tests/verify-build.py` verlangt Name, Anschrift, Kontakt-E-Mail sowie einen HTML-Anker oder
    einen Markdown-Inline-Link `[Label](mailto:…)` in beiden Dokumenten. Das `mailto:`-Ziel muss
    exakt dem konfigurierten Ziel entsprechen, und das sichtbare E-Mail-Label wird
-   whitespace-normalisiert geprüft. Kommentare, Code-/Raw-HTML-Blöcke, Bildbeschreibungen und
-   bekannte nicht gerenderte HTML-Kontexte zählen nicht. Der Regressionstest
+   whitespace-normalisiert geprüft. Kommentare, Code-/Raw-HTML-Blöcke sowie Link-Syntax in
+   Bild-/Linktiteln, HTML-Attributen oder Linkdefinitionen zählen nicht; ebenso bekannte nicht
+   gerenderte HTML-Kontexte. Der Regressionstest
    `test_impressum_requires_provider_details` mutiert Platzhalter, Name, Anschrift, Linkziel,
    Link-Markup und verborgene Linkquellen unabhängig voneinander.
 3. Der Markdown-Scope ist bewusst konservativ: unterstützt sind Inline-Links mit exaktem

@@ -1,5 +1,6 @@
 from pathlib import Path
 from html import unescape
+from html.entities import html5
 from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -151,6 +152,8 @@ class _ContactAnchorParser(HTMLParser):
             attrs, "open"
         ):
             hidden = True
+        if self._has_attribute(attrs, "popover"):
+            hidden = True
         renderable = not (
             self._nonrendered_tags or self._hidden_tags or hidden
         )
@@ -281,6 +284,159 @@ def markdown_closing_bracket(source, start):
     return None
 
 
+def markdown_closing_parenthesis(source, start):
+    depth = 0
+    quote = None
+    angle = False
+    index = start
+    while index < len(source):
+        character = source[index]
+        if character == "\\" and index + 1 < len(source):
+            index += 2
+            continue
+        if quote:
+            if character == quote:
+                quote = None
+        elif character in "\"'":
+            quote = character
+        elif character == "<" and depth == 0:
+            angle = True
+        elif character == ">" and angle:
+            angle = False
+        elif not angle:
+            if character == "(":
+                depth += 1
+            elif character == ")":
+                depth -= 1
+                if depth == 0:
+                    return index + 1
+        index += 1
+    return None
+
+
+def markdown_is_escaped(source, index):
+    backslashes = 0
+    cursor = index - 1
+    while cursor >= 0 and source[cursor] == "\\":
+        backslashes += 1
+        cursor -= 1
+    return backslashes % 2 == 1
+
+
+def markdown_title_end(source, start):
+    opener = source[start]
+    closer = opener if opener in "\"'" else ")"
+    cursor = start + 1
+    while cursor < len(source):
+        character = source[cursor]
+        if character == "\\" and cursor + 1 < len(source):
+            cursor += 2
+            continue
+        if character == closer:
+            return cursor
+        if opener == "(" and character == "(":
+            return None
+        cursor += 1
+    return None
+
+
+def parse_markdown_inline_link(source, closing_bracket):
+    if closing_bracket + 1 >= len(source) or source[closing_bracket + 1] != "(":
+        return None
+
+    cursor = closing_bracket + 2
+    while cursor < len(source) and source[cursor] in " \t\r\n":
+        cursor += 1
+    if cursor >= len(source):
+        return None
+
+    if source[cursor] == "<":
+        destination_start = cursor + 1
+        cursor = source.find(">", destination_start)
+        if cursor < 0 or "\n" in source[destination_start:cursor]:
+            return None
+        destination = source[destination_start:cursor]
+        cursor += 1
+    else:
+        destination_start = cursor
+        while cursor < len(source) and source[cursor] not in " \t\r\n)":
+            cursor += 1
+        if cursor == destination_start:
+            return None
+        destination = source[destination_start:cursor]
+
+    after_destination = cursor
+    while cursor < len(source) and source[cursor] in " \t\r\n":
+        cursor += 1
+    had_whitespace = cursor > after_destination
+
+    if cursor < len(source) and source[cursor] in "\"'(":
+        if not had_whitespace:
+            return None
+        title_end = markdown_title_end(source, cursor)
+        if title_end is None:
+            return None
+        cursor = title_end + 1
+        while cursor < len(source) and source[cursor] in " \t\r\n":
+            cursor += 1
+
+    if cursor >= len(source) or source[cursor] != ")":
+        return None
+    return {
+        "destination": destination,
+        "end": cursor + 1,
+    }
+
+
+def markdown_label_contains_inline_link(source, start, end):
+    index = start + 1
+    while index < end:
+        if source[index] != "[" or markdown_is_escaped(source, index):
+            index += 1
+            continue
+        closing_bracket = markdown_closing_bracket(source, index)
+        if closing_bracket is None or closing_bracket >= end:
+            index += 1
+            continue
+        if parse_markdown_inline_link(source, closing_bracket) is not None:
+            return True
+        index = closing_bracket + 1
+    return False
+
+
+def markdown_inline_links(source):
+    links = []
+    index = 0
+    while index < len(source):
+        if source[index] != "[" or markdown_is_escaped(source, index):
+            index += 1
+            continue
+        closing_bracket = markdown_closing_bracket(source, index)
+        if closing_bracket is None:
+            index += 1
+            continue
+        if markdown_label_contains_inline_link(source, index, closing_bracket):
+            # GitHub renders a link nested in another link label as its own
+            # anchor rather than as part of the outer link.
+            index += 1
+            continue
+        link = parse_markdown_inline_link(source, closing_bracket)
+        if link is None:
+            index += 1
+            continue
+        links.append(
+            {
+                "label_start": index + 1,
+                "label_end": closing_bracket,
+                "destination": link["destination"],
+            }
+        )
+        # Skip the complete construct so text in another link's label,
+        # destination, or title cannot be mistaken for a separate anchor.
+        index = link["end"]
+    return links
+
+
 def mask_markdown_image_descriptions(source):
     masked = list(source)
     index = 0
@@ -301,7 +457,13 @@ def mask_markdown_image_descriptions(source):
             end = len(source)
         else:
             end += 1
-        for position in range(index + 2, end):
+            destination = end
+            while destination < len(source) and source[destination] in " \t":
+                destination += 1
+            if destination < len(source) and source[destination] == "(":
+                close = markdown_closing_parenthesis(source, destination)
+                end = len(source) if close is None else close
+        for position in range(index + 1, end):
             if masked[position] not in "\r\n":
                 masked[position] = " "
         index = end
@@ -395,6 +557,48 @@ def parse_markdown_container(line):
     }
 
 
+def mask_markdown_definition_blocks(source):
+    footnote_definition = re.compile(r"^\[\^(?:\\.|[^\]\\])+\]:")
+    reference_definition = re.compile(r"^\[(?!\^)(?:\\.|[^\]\\])+\]:")
+    lines = []
+    in_footnote = False
+    reference_title_pending = False
+
+    for line in source.splitlines(keepends=True):
+        body = line.rstrip("\r\n")
+        ending = line[len(body) :]
+        parsed = parse_markdown_container(body)
+        content = parsed["content"]
+
+        if in_footnote:
+            if not content.strip():
+                in_footnote = False
+                lines.append(line)
+            else:
+                lines.append(" " * len(body) + ending)
+            continue
+
+        if reference_title_pending:
+            reference_title_pending = False
+            title = content.lstrip(" \t")
+            if title.startswith(("\"", "'", "(")):
+                lines.append(" " * len(body) + ending)
+                continue
+
+        if footnote_definition.match(content):
+            lines.append(" " * len(body) + ending)
+            in_footnote = True
+            continue
+        if reference_definition.match(content):
+            lines.append(" " * len(body) + ending)
+            reference_title_pending = True
+            continue
+
+        lines.append(line)
+
+    return "".join(lines)
+
+
 def markdown_fence_candidate(line, expected=None):
     parsed = parse_markdown_container(line)
     content = parsed["content"]
@@ -403,16 +607,13 @@ def markdown_fence_candidate(line, expected=None):
             return None
         if expected["list_markers"]:
             if parsed["list_markers"]:
-                if (
-                    parsed["list_markers"] != expected["list_markers"]
-                    or parsed["list_indent"] != expected["list_indent"]
-                ):
-                    return None
-            else:
-                leading = len(content) - len(content.lstrip(" "))
-                if leading < expected["list_indent"]:
-                    return None
-                content = content[expected["list_indent"] :]
+                # Repeating a list marker starts another item; it does not close
+                # a fence opened in the previous item.
+                return None
+            leading = len(content) - len(content.lstrip(" "))
+            if leading < expected["list_indent"]:
+                return None
+            content = content[expected["list_indent"] :]
         elif parsed["list_markers"]:
             return None
     marker = re.match(r"^[ ]{0,3}(`{3,}|~{3,})(.*)$", content)
@@ -493,8 +694,12 @@ def markdown_has_hidden_html_context(source):
             name = name_match.group(1).lower()
             if not tag.lstrip().startswith("</") and name in nonrendered:
                 return True
-            if name in {"details", "dialog", "popover"} and not re.search(
-                r"\bopen(?:\s|=|/?>)", tag, flags=re.IGNORECASE
+            if name in {"details", "dialog"} and not re.search(
+                r"(?:^|\s)open(?:\s|=|/?>)", tag, flags=re.IGNORECASE
+            ):
+                return True
+            if re.search(
+                r"(?:^|\s)popover(?=\s|=|/?>)", tag, flags=re.IGNORECASE
             ):
                 return True
             if re.search(
@@ -502,7 +707,7 @@ def markdown_has_hidden_html_context(source):
             ):
                 return True
             style = re.search(
-                r"\bstyle\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s>]+))",
+                r"(?:^|\s)style\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s>]+))",
                 tag,
                 flags=re.IGNORECASE,
             )
@@ -615,17 +820,22 @@ def strip_markdown_code_and_comments(markdown):
                 previous_blank = True
             continue
         if fence:
-            candidate = markdown_fence_candidate(line, fence)
-            if candidate:
-                _, marker, suffix = candidate
-                if (
-                    marker[0] == fence["marker"]
-                    and len(marker) >= fence["length"]
-                    and not suffix.strip(" \t")
-                ):
-                    fence = None
-                    previous_blank = True
-            continue
+            fence_parsed = parse_markdown_container(line)
+            if fence_parsed["blockquote_depth"] < fence["blockquote_depth"]:
+                # A quoted fenced block ends when its containing quote ends.
+                fence = None
+            else:
+                candidate = markdown_fence_candidate(line, fence)
+                if candidate:
+                    _, marker, suffix = candidate
+                    if (
+                        marker[0] == fence["marker"]
+                        and len(marker) >= fence["length"]
+                        and not suffix.strip(" \t")
+                    ):
+                        fence = None
+                        previous_blank = True
+                continue
 
         parsed = parse_markdown_container(line)
         content = parsed["content"]
@@ -752,6 +962,19 @@ def strip_balanced_markdown_emphasis(label):
     return label
 
 
+def commonmark_unescape(text):
+    entity = re.compile(
+        r"&(?:#[xX]([0-9A-Fa-f]+)|#([0-9]+)|([A-Za-z][A-Za-z0-9]+));"
+    )
+
+    def replace(match):
+        if match.group(3) is not None:
+            return html5.get(match.group(0)[1:], match.group(0))
+        return unescape(match.group(0))
+
+    return entity.sub(replace, text)
+
+
 def plain_markdown_label(label):
     label, rendered_spans = protect_markdown_code_spans(label)
     label, escaped = protect_markdown_escapes(label)
@@ -760,14 +983,16 @@ def plain_markdown_label(label):
     label = strip_balanced_markdown_emphasis(label)
     for token, character in escaped.items():
         label = label.replace(token, character)
+    label = commonmark_unescape(label)
     for token, rendered in rendered_spans.items():
         label = label.replace(token, rendered)
-    label = unescape(label)
     return " ".join(label.split())
 
 
 def has_markdown_contact_link(markdown, email):
-    source = strip_markdown_code_and_comments(markdown)
+    source = mask_markdown_definition_blocks(
+        strip_markdown_code_and_comments(markdown)
+    )
     if markdown_has_hidden_html_context(source):
         return False
     masked = mask_markdown_code_spans(
@@ -775,20 +1000,12 @@ def has_markdown_contact_link(markdown, email):
     )
     masked = mask_markdown_image_descriptions(masked)
     masked = mask_html_tags(masked)
-    links = re.finditer(
-        r"(?<![\\!])\[(?P<label>[^\]\n]+)\]\(\s*"
-        r"(?P<destination><[^>\n]+>|[^)\s]+)"
-        r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^()]*\)))?\s*\)",
-        masked,
-    )
+    links = markdown_inline_links(masked)
     expected_destination = f"mailto:{email}"
     for link in links:
-        destination = link.group("destination")
-        if destination.startswith("<") and destination.endswith(">"):
-            destination = destination[1:-1]
-        label = source[link.start("label") : link.end("label")]
+        label = source[link["label_start"] : link["label_end"]]
         if (
-            destination == expected_destination
+            link["destination"] == expected_destination
             and plain_markdown_label(label) == email
         ):
             return True

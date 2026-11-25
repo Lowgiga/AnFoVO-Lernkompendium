@@ -138,7 +138,14 @@ class VerifyBuildTests(unittest.TestCase):
             "[**Vid80gmx@gmail.com**](mailto:Vid80gmx@gmail.com)",
             "[__Vid80gmx@gmail.com__](mailto:Vid80gmx@gmail.com)",
             "[~~Vid80gmx@gmail.com~~](mailto:Vid80gmx@gmail.com)",
+            "[~Vid80gmx@gmail.com~](mailto:Vid80gmx@gmail.com)",
             "[*Vid80gmx@gmail.com*](mailto:Vid80gmx@gmail.com)",
+            "[Vid80gmx&commat;gmail.com](mailto:Vid80gmx@gmail.com)",
+            "[Vid80gmx&#64;gmail.com](mailto:Vid80gmx@gmail.com)",
+            (
+                "[outer [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)]"
+                "(https://example.com)"
+            ),
             r"[Vid80gmx@gmail\.com](mailto:Vid80gmx@gmail.com)",
             (
                 f"```markdown\n{canonical_markdown_link}\n``` \n\n"
@@ -147,6 +154,11 @@ class VerifyBuildTests(unittest.TestCase):
             (
                 f"```markdown\n{canonical_markdown_link}\n```\t\n\n"
                 f"{canonical_markdown_link}"
+            ),
+            (
+                "> ~~~markdown\n"
+                "> [hidden](mailto:hidden@example.invalid)\n\n"
+                f"**Kontakt:** {canonical_markdown_link}"
             ),
         )
         for accepted_markdown_link in accepted_markdown_links:
@@ -262,6 +274,11 @@ class VerifyBuildTests(unittest.TestCase):
                 '<dialog><a href="mailto:Vid80gmx@gmail.com">'
                 'Vid80gmx@gmail.com</a></dialog>',
             ),
+            "closed-popover contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<div popover><a href="mailto:Vid80gmx@gmail.com">'
+                'Vid80gmx@gmail.com</a></div>',
+            ),
             "self-closing-hidden-ancestor contact link": (
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
                 '<div hidden/><a href="mailto:Vid80gmx@gmail.com">'
@@ -354,6 +371,14 @@ class VerifyBuildTests(unittest.TestCase):
                 "- ```markdown\n"
                 "  [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n  ```",
             ),
+            "new-list-item-fence-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "- ```markdown\n"
+                "  code\n"
+                "- ```\n"
+                "  [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
             "blockquote-fence-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
@@ -418,6 +443,18 @@ class VerifyBuildTests(unittest.TestCase):
                 '<span title="[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)">'
                 "</span>",
             ),
+            "link-title-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                '[label](https://example.com '
+                '"[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)")',
+            ),
+            "link-destination-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "[label](https://example.com/"
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com))",
+            ),
             "raw-html-block-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
@@ -448,11 +485,22 @@ class VerifyBuildTests(unittest.TestCase):
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
                 "<!--\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
             ),
+            "comment-separated contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "[Vid80gmx@gmail.com]<!-- separator -->"
+                "(mailto:Vid80gmx@gmail.com)",
+            ),
             "image-description-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
                 "![description [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)]"
                 "(image.png)",
+            ),
+            "image-title-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                '![description](image.png '
+                '"[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)")',
             ),
             "direct-image-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
@@ -463,6 +511,39 @@ class VerifyBuildTests(unittest.TestCase):
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
                 "\\\\`[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)`",
+            ),
+            "code-span-entity-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "[`Vid80gmx&#64;gmail.com`](mailto:Vid80gmx@gmail.com)",
+            ),
+            "numeric-entity-without-semicolon-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "[Vid80gmx&#64gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "footnote-definition-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "[^note]: [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "footnote-continuation-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "[^note]: footnote\n"
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "reference-definition-title-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                '[unused]: mailto:Vid80gmx@gmail.com '
+                '"[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)"',
+            ),
+            "reference-definition-next-title-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "[unused]: mailto:Vid80gmx@gmail.com\n"
+                '"[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)"',
             ),
             "inline-html-label-out-of-scope contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
