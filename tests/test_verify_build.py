@@ -28,6 +28,7 @@ class VerifyBuildTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         relatives = [
             Path("tests/verify-build.py"),
+            Path("tests/package.json"),
             Path("index.html"),
             ENGINE,
             Path("robot-navigation.js"),
