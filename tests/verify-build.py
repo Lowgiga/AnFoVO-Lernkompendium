@@ -706,6 +706,7 @@ def html_tag_only(source):
 
 
 def markdown_has_hidden_html_context(source):
+    code_ranges = markdown_code_span_ranges(source)
     nonrendered = {
         "canvas",
         "datalist",
@@ -730,6 +731,13 @@ def markdown_has_hidden_html_context(source):
         start = source.find("<", index)
         if start < 0:
             break
+        # HTML-looking text inside a code span is literal, not a hidden context.
+        if any(
+            range_start <= start < range_end
+            for range_start, range_end, _ in code_ranges
+        ):
+            index = start + 1
+            continue
         end = html_tag_end(source, start)
         if end is None:
             index = start + 1

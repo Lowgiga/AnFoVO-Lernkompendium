@@ -200,6 +200,30 @@ class VerifyBuildTests(unittest.TestCase):
         impressum.write_text(paragraph_continuation, encoding="utf-8")
         self.assertEqual(self.run_check(name), (0, None))
 
+        accepted_markdown_contexts = (
+            (
+                "`<div>`\n\n"
+                "**Kontakt:** " + canonical_markdown_link
+            ),
+            (
+                "`<script>`\n\n"
+                "**Kontakt:** " + canonical_markdown_link
+            ),
+            (
+                "\n\n<div>\n[hidden](mailto:hidden@example.invalid)\n\n"
+                "**Kontakt:** " + canonical_markdown_link
+            ),
+        )
+        for accepted_markdown_context in accepted_markdown_contexts:
+            with self.subTest(markdown_context=accepted_markdown_context):
+                equivalent_markdown = original_markdown.replace(
+                    "**Kontakt:** " + canonical_markdown_link,
+                    accepted_markdown_context,
+                )
+                self.assertNotEqual(equivalent_markdown, original_markdown)
+                impressum.write_text(equivalent_markdown, encoding="utf-8")
+                self.assertEqual(self.run_check(name), (0, None))
+
         html_mutations = {
             "placeholder": (
                 "<b>Lowgiga</b>",
