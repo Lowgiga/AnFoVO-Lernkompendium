@@ -37,15 +37,15 @@
 
 | Bereich | Status | Nachweis |
 | --- | --- | --- |
-| Statische Projektprüfung | ✅ 32/32 Checks grün | `python tests/verify-build.py` |
+| Statische Projektprüfung | ✅ 33/33 Checks grün | `python tests/verify-build.py` |
 | Browser- & RobotNav-Harness | ✅ grün (lokal, Chromium/Playwright) | `npm run test:all` |
 | PWA/Offline (Subpath) | ✅ lokal getestet (Manifest, Worker, Cache, Offline-Ladevorgang) | `tests/pwa-subpath.cjs` |
 | Android-Build (Quellstand) | ✅ Version `2.9.5`, Version Code `295` | `android/app/build.gradle` |
-| GitHub-Actions-CI | ⚠️ Workflow definiert und gehärtet (17.11.2026); tatsächliche Läufe hängen an der Actions-Freigabe/Billing des Kontos | `.github/workflows/android-build.yml` |
-| Release-Signing | ✅ konfiguriert (Keystore lokal, nicht im Repo) | `docs/RELEASE_PROCESS.md` |
-| Geräteinstallation (Galaxy S25) | ✅ v2.9.3 verifiziert; v2.9.5-Reinstall nach APK-Rebuild noch offen | `PROJECT_MANIFEST.json` |
+| GitHub-Actions-CI | ✅ Main-Lauf und Pages-Deployment erfolgreich (25.11.2026) | [Main-CI](https://github.com/Lowgiga/AnFoVO-Lernkompendium/actions/runs/45576060676) · [Pages](https://github.com/Lowgiga/AnFoVO-Lernkompendium/actions/runs/45576058286) |
+| Release-Signing | ✅ lokal konfiguriert und nachgewiesen; CI validiert die Debug-APK-Signaturen | `docs/RELEASE_PROCESS.md` |
+| Geräteinstallation (Galaxy S25) | ✅ Release v2.9.3 verifiziert; ✅ v2.9.5-Debug-App parallel installiert und Kaltstart geprüft; ⏳ interaktive 7-Punkte-Checkliste offen | `PROJECT_MANIFEST.json` |
 
-> **Versionsstand (v2.9.5):** Alle Inhalte, Version Codes und Artefakte sind auf `2.9.5` angehoben. Die Buch-/Navigationsanimation wurde compositor-only überarbeitet (nur `transform`/`opacity`, rAF-gedrosselter Parallax, `prefers-reduced-motion` respektiert). RobotNav wird als eigenständige Datei (`robot-navigation.js`) geladen und vom Service-Worker vorgeladen (skip-waiting). Die Lerninhalte in `index.html` blieben unverändert. GitHub Pages sind aktiv unter `https://lowgiga.github.io/AnFoVO-Lernkompendium/`. Die Release-Signing wurde lokal konfiguriert und über CI validiert.
+> **Versionsstand (v2.9.5):** Alle Inhalte, Version Codes und Artefakte sind auf `2.9.5` angehoben. Die Buch-/Navigationsanimation wurde compositor-only überarbeitet (nur `transform`/`opacity`, rAF-gedrosselter Parallax, `prefers-reduced-motion` respektiert). RobotNav wird als eigenständige Datei (`robot-navigation.js`) geladen und vom Service-Worker vorgeladen (skip-waiting). Die Lerninhalte in `index.html` blieben unverändert. GitHub Pages sind aktiv unter `https://lowgiga.github.io/AnFoVO-Lernkompendium/`. Die Release-Signierung wurde lokal konfiguriert und nachgewiesen; die CI validiert zusätzlich die Signaturen der gebauten Debug-APKs.
 
 ## 🧠 Architektur
 
@@ -225,13 +225,13 @@ npm run test:all
 
 ### Verifizierter Stand (v2.9.5)
 
-- ✅ Statische Projektprüfung: **33/33 Checks bestanden** (17.11.2026; enthält die neue Versionsketten-Prüfung)
+- ✅ Statische Projektprüfung: **33/33 Checks bestanden** (25.11.2026; die CI-Fixture kopiert `tests/package.json` vollständig)
 - ✅ Browser- und RobotNav-Harness grün; 70 Lernseiten im Smoke-Test erkannt; keine Seiten- oder Konsolenfehler in den geprüften Läufen
 - ✅ PWA-Subpath (Manifest, Worker, Icons, Hintergrundframes, Offline-Ladevorgang) lokal grün
-- ✅ GitHub-Actions-CI: Workflow `android-build.yml` definiert und am 17.11.2026 gehärtet (Path-Filter, Concurrency, Timeout, Gradle-Cache, Lizenz-Akzeptanz, Selbsttest-Automation). **Lauf-Status:** auf `main` wurden grüne Läufe aufgezeichnet; ob Läufe aktuell erfolgen, hängt an der Actions-Freigabe/Billing des Kontos (Entscheid des Kontoinhabers, nicht des Repos).
+- ✅ GitHub-Actions-CI: Main-Validierung `45576060676` und Pages-Deployment `45576058286` am 25.11.2026 erfolgreich; der Debug-APK-Build, die Signaturprüfung und der Artifact-Upload sind im Main-Lauf enthalten.
 - ✅ App-Selbsttest automatisiert: `tests/selftest-app.cjs` fährt die 100 In-App-Prüfungen (`?test=1`) headless und ist in `npm run test:all` sowie CI eingebunden — am 17.11.2026 **100/100 bestanden, 0 übersprungen, 0 Seitenfehler**.
 - ✅ Release-Signing konfiguriert (Keystore in `AnFoeVO-Release-Keystore/`, nicht im Repo) — siehe [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)
-- ✅ Geräteinstallation (Galaxy S25) verifiziert: v2.9.3 installiert, App startet, Fortschritt bleibt erhalten; v2.9.5-Reinstall nach APK-Rebuild noch offen
+- ✅ Galaxy S25: Release v2.9.3 verifiziert und unverändert installiert; ein lokal gebautes v2.9.5-Debug-APK wurde mit eigener Application-ID parallel installiert, Kaltstart und Offline-Asset-Rendering wurden erfolgreich geprüft. Die interaktive 7-Punkte-Checkliste (LED, Shake, Konfetti, Rotation, SVG-Ringe, Präsentation, Antwort-Routing) ist noch offen.
 - ✅ Visueller Pixelvergleich: 0 Pixel Diff im App-Inhalt (v2.9.2 vs. v2.9.3); der Statusleisten-Diff ist außerhalb des App-Inhalts
 - ⏳ Play-Store-Veröffentlichung: Release-AAB + Store-Listing vorbereitet
 

@@ -14,10 +14,10 @@
         "Event Scheduler"
     ],
     "browser_runtime_verified": true,
-    "browser_test_limitation": "Local Windows Chrome and Playwright browser tests passed; Galaxy S25 installation verified (v2.9.3); v2.9.5 device reinstall pending (device offline).",
-    "robotnav_engine_chars": 22263,
+    "browser_test_limitation": "Local Windows Chrome and Playwright browser tests passed; Galaxy S25 release v2.9.3 remains installed, while a v2.9.5 debug build was installed side-by-side and cold-started successfully. The seven-point interactive device smoke checklist is still open (owner task wq8cx2).",
+    "robotnav_engine_chars": 21879,
     "robotnav_load_mode": "standalone robot-navigation.js via <script src>, precached by service worker (skip-waiting)",
-    "robotnav_asset_parity": "root == algorithm == android assets == wrapper assets (byte-identical)",
+    "robotnav_asset_parity": "root == algorithm == android assets (byte-identical)",
     "visual_upgrade": "Compositor-only book/robot page-turn animation (transform/opacity only, rAF-throttled parallax, reduced-motion aware); refined 3D book cover, page block, and green robot CSS",
     "design_direction": "hybrid",
     "robot_appearance": "silver",
@@ -37,13 +37,17 @@
         "debug_apk_signature_verified": true,
         "release_signing_configured": true,
         "device_install_tested": true,
-        "debug_apk_file": "release/AnFoeVO_Lernkompendium_v2.9.5-debug-arm64.apk",
-        "debug_apk_sha256": "844CFC34106886B994ADC7D078F1749E283B848701182286F65321BA884645F7",
+        "device_installation": {
+            "release_app": "Galaxy S25 release v2.9.3 verified and left installed; the release-signed app was not uninstalled.",
+            "debug_app": "A locally built v2.9.5 debug APK with applicationIdSuffix .debug was installed side-by-side; cold start and offline asset rendering succeeded. The seven-point interactive smoke checklist remains open in owner task wq8cx2."
+        },
+        "debug_apk_file": "GitHub Actions artifact AnFoeVO-debug-apks/app-arm64-v8a-debug.apk (run 45576060676)",
+        "debug_apk_sha256": "f9e2102437c0ff42ed9fe1cb362606e0bdbae618a6f8109514611b1b9f0ba298",
         "release_apk_sha256": "063FF7D92657C354C467931743D9C1B879EA0055B31FD0E3E6F4E217D69BA1FB",
-        "html_sha256": "2bd1dec44f87b85ed95c9e198de32f0df8e8da60962431d365d14328c9a133ec",
-        "html_bytes": 630032,
-        "debug_apk_matches_current_html": false,
-        "debug_apk_matches_current_html_note": "The shipped debug APKs are not tracked in this repository; html_sha256 above is the source-tree hash a reviewer can verify. A rebuild is required to prove APK/HTML parity after 2.9.5 (DATA.version and RobotNav version alignment, 17.11.2026).",
+        "html_sha256": "242e2822d64d85fa4b9fbdee11aac74c88350f65337b6492a6e9479e7d1740dd",
+        "html_bytes": 628957,
+        "debug_apk_matches_current_html": true,
+        "debug_apk_matches_current_html_note": "CI run 45576060676 built the debug APK from main commit bc08f8965ac4. Its assets/index.html is 628957 bytes with SHA-256 242e2822d64d85fa4b9fbdee11aac74c88350f65337b6492a6e9479e7d1740dd, matching the canonical repository blob. The device-tested side-by-side app was a separate locally built APK with applicationIdSuffix .debug.",
         "release_aab_sha256": "180D5E4F112F8A444FD259C173F2AFA7D8055286E915559CD34E1880BA04457A"
     },
     "pwa_shell": {
@@ -52,7 +56,7 @@
         "project_subpath": "/AnFoVO-Lernkompendium/",
         "service_worker_cache": "anfoevo_v2_cache_2.9.5-web-pwa-2.9.5",
         "impressum_placeholder_required": true,
-        "current_index_sha256": "2bd1dec44f87b85ed95c9e198de32f0df8e8da60962431d365d14328c9a133ec",
+        "current_index_sha256": "242e2822d64d85fa4b9fbdee11aac74c88350f65337b6492a6e9479e7d1740dd",
         "note": "GitHub Pages aktiv: https://lowgiga.github.io/AnFoVO-Lernkompendium/ (PWA installierbar, Offline-fähig). Impressum-Platzhalter vor öffentlicher Freigabe ersetzen."
     },
     "browser_validation": {
@@ -68,6 +72,6 @@
         "max_flush_ms": 5.5,
         "test_command": "npm run test:all",
         "visual_regression": "run (pixel diff: 0 differing pixels in app content, 978 in status bar)",
-        "browser_test_limitation": "Local Windows Chrome and Playwright browser tests passed; Galaxy S25 installation verified (v2.9.3); v2.9.5 device reinstall pending (device offline)."
+        "browser_test_limitation": "Local Windows Chrome and Playwright browser tests passed; Galaxy S25 release v2.9.3 remains installed, while a v2.9.5 debug build was installed side-by-side and cold-started successfully. The seven-point interactive device smoke checklist is still open (owner task wq8cx2)."
     }
 }
