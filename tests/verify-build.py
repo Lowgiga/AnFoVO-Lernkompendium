@@ -217,10 +217,41 @@ def has_html_contact_link(fragment, email):
 
 
 def markdown_inline_block_end(source, start):
-    # A blank line ends the current Markdown paragraph. Delimiter state must
-    # not leak into the next inline block.
+    # Delimiter state is local to one Markdown leaf block. It must not leak
+    # across blank lines, new list items, blockquote containers, or headings.
+    opener_line_start = source.rfind("\n", 0, start) + 1
+    opener_line_end = source.find("\n", start)
+    if opener_line_end < 0:
+        opener_line_end = len(source)
+    opener = parse_markdown_container(
+        source[opener_line_start:opener_line_end]
+    )
+    opener_quote_depth = opener["blockquote_depth"]
+
     boundary = re.search(r"\r?\n[ \t]*\r?\n", source[start:])
-    return len(source) if boundary is None else start + boundary.start()
+    block_end = len(source) if boundary is None else start + boundary.start()
+
+    line_start = opener_line_end + 1
+    while line_start < block_end:
+        line_end = source.find("\n", line_start)
+        if line_end < 0 or line_end > block_end:
+            line_end = block_end
+        parsed = parse_markdown_container(source[line_start:line_end])
+        quote_depth = parsed["blockquote_depth"]
+
+        if parsed["list_markers"]:
+            # A list marker starts a different leaf container.
+            return line_start
+        if quote_depth and quote_depth != opener_quote_depth:
+            # A blockquote marker at a different depth starts a different
+            # container. A missing marker may be a lazy paragraph continuation.
+            return line_start
+        if markdown_is_block_boundary_line(parsed["content"]):
+            return line_start
+
+        line_start = line_end + 1
+
+    return block_end
 
 
 def markdown_code_span_ranges(source):
@@ -621,6 +652,20 @@ def parse_markdown_container(line):
     }
 
 
+def markdown_is_block_boundary_line(content):
+    stripped = content
+    if re.match(r"^[ ]{0,3}#{1,6}(?:[ \t]+|$)", stripped):
+        return True
+    if re.match(
+        r"^[ ]{0,3}(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|"
+        r"(?:_[ \t]*){3,})$",
+        stripped,
+    ):
+        return True
+    # A setext heading underline ends the preceding paragraph as a block.
+    return bool(re.match(r"^[ ]{0,3}=+[ \t]*$", stripped))
+
+
 def mask_markdown_definition_blocks(source):
     footnote_definition = re.compile(
         r"^[ ]{0,3}\[\^(?:\\.|[^\]\\])+\]:"
@@ -865,6 +910,9 @@ def strip_markdown_code_and_comments(markdown):
     raw_block_until_blank = False
     comment_until_close = False
     previous_blank = True
+    paragraph_open = False
+    previous_quote_depth = 0
+    active_list_indent = 0
     indented_code = False
 
     for line in markdown.splitlines():
@@ -906,10 +954,21 @@ def strip_markdown_code_and_comments(markdown):
                     ):
                         fence = None
                         previous_blank = True
+                        paragraph_open = False
                 continue
 
         parsed = parse_markdown_container(line)
         content = parsed["content"]
+        quote_depth = parsed["blockquote_depth"]
+        if quote_depth != previous_quote_depth:
+            # A new quote container starts a fresh paragraph context.
+            paragraph_open = False
+            active_list_indent = 0
+        if parsed["list_markers"]:
+            # A new list item starts a fresh paragraph context.
+            paragraph_open = False
+            active_list_indent = parsed["list_indent"]
+        previous_quote_depth = quote_depth
         if "<!--" in content:
             code_ranges = markdown_code_span_ranges(content)
             if markdown_has_comment_outside_code(content, code_ranges):
@@ -925,6 +984,7 @@ def strip_markdown_code_and_comments(markdown):
                         line = mask_markdown_line(line)
                     lines.append(line)
                     previous_blank = True
+                    paragraph_open = False
                     continue
                 line = mask_html_comments(line, "\ue102")
                 parsed = parse_markdown_container(line)
@@ -938,13 +998,22 @@ def strip_markdown_code_and_comments(markdown):
                 continue
             lines.append("")
             previous_blank = True
+            paragraph_open = False
             continue
+        if active_list_indent and leading < active_list_indent:
+            # A dedented block start leaves the active list item. Plain text
+            # may still be a lazy paragraph continuation, but an HTML block
+            # cannot interrupt that paragraph from outside the list item.
+            paragraph_open = False
         if indented_code:
             if leading >= 4:
+                paragraph_open = False
                 continue
             indented_code = False
         elif leading >= 4 and (previous_blank or not lines):
             indented_code = True
+            paragraph_open = False
+            lines.append("")
             continue
 
         candidate = markdown_fence_candidate(line)
@@ -959,6 +1028,8 @@ def strip_markdown_code_and_comments(markdown):
                     "list_indent": parsed["list_indent"],
                 }
                 previous_blank = True
+                paragraph_open = False
+                lines.append("")
                 continue
 
         stripped = content.lstrip(" ")
@@ -976,18 +1047,29 @@ def strip_markdown_code_and_comments(markdown):
                 ):
                     raw_text_tag = tag
                 previous_blank = True
+                paragraph_open = False
+                lines.append("")
                 continue
             if (
                 raw_block_pattern.match(stripped)
                 or re.match(r"^<[!?]", stripped)
-                or html_tag_only(stripped)
+                or (not paragraph_open and html_tag_only(stripped))
             ):
                 raw_block_until_blank = True
                 previous_blank = True
+                paragraph_open = False
+                lines.append("")
                 continue
+
+        if markdown_is_block_boundary_line(content):
+            lines.append(line)
+            previous_blank = False
+            paragraph_open = False
+            continue
 
         lines.append(line)
         previous_blank = False
+        paragraph_open = True
 
     return "\n".join(lines)
 

@@ -156,14 +156,6 @@ class VerifyBuildTests(unittest.TestCase):
                 "(https://example.com)"
             ),
             r"[Vid80gmx@gmail\.com](mailto:Vid80gmx@gmail.com)",
-            (
-                f"```markdown\n{canonical_markdown_link}\n``` \n\n"
-                f"{canonical_markdown_link}"
-            ),
-            (
-                f"```markdown\n{canonical_markdown_link}\n```\t\n\n"
-                f"{canonical_markdown_link}"
-            ),
             "Example `\n\n" + canonical_markdown_link + "\n\n`",
             "Example [unfinished\n\n" + canonical_markdown_link,
             (
@@ -208,6 +200,14 @@ class VerifyBuildTests(unittest.TestCase):
 
         accepted_markdown_contexts = (
             (
+                f"```markdown\n{canonical_markdown_link}\n``` \n\n"
+                "**Kontakt:** " + canonical_markdown_link
+            ),
+            (
+                f"```markdown\n{canonical_markdown_link}\n```\t\n\n"
+                "**Kontakt:** " + canonical_markdown_link
+            ),
+            (
                 "`<div>`\n\n"
                 "**Kontakt:** " + canonical_markdown_link
             ),
@@ -218,6 +218,10 @@ class VerifyBuildTests(unittest.TestCase):
             (
                 "\n\n<div>\n[hidden](mailto:hidden@example.invalid)\n\n"
                 "**Kontakt:** " + canonical_markdown_link
+            ),
+            (
+                "`unclosed\n<span hidden>\n`**Kontakt:** "
+                + canonical_markdown_link
             ),
         )
         for accepted_markdown_context in accepted_markdown_contexts:
@@ -449,6 +453,10 @@ class VerifyBuildTests(unittest.TestCase):
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
                 "```markdown\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n```",
             ),
+            "code-fence-without-outside-contact": (
+                "**Kontakt:** [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "```markdown\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n```",
+            ),
             "invalid-fence-close-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
@@ -572,6 +580,11 @@ class VerifyBuildTests(unittest.TestCase):
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
                 "<div>[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)</div>",
             ),
+            "dedented-list-html-block-hidden contact link": (
+                "**Kontakt:** [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "\n- text\n<span>\n"
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
             "raw-html-base-block-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
@@ -591,6 +604,11 @@ class VerifyBuildTests(unittest.TestCase):
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
                 "<div>\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "raw-div-blank-boundary-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "\n<div>\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)\n\n"
+                "[visible](mailto:visible@example.invalid)",
             ),
             "raw-code-unclosed-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
@@ -637,6 +655,18 @@ class VerifyBuildTests(unittest.TestCase):
             "escaped-backtick-code-span-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 r"\` `[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)`",
+            ),
+            "cross-paragraph-code-span-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "`unclosed\n\n"
+                '<span hidden title="`">[Vid80gmx@gmail.com]'
+                "(mailto:Vid80gmx@gmail.com)</span>",
+            ),
+            "cross-container-code-span-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "- `unclosed\n"
+                '> <span hidden title="`">[Vid80gmx@gmail.com]'
+                "(mailto:Vid80gmx@gmail.com)</span>",
             ),
             "code-span-entity-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
