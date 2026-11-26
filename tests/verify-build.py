@@ -505,19 +505,40 @@ def mask_markdown_code_spans(source, ranges):
     return "".join(masked)
 
 
-def mask_html_comments(source, replacement=" "):
+def markdown_comment_openers(source, ignored_ranges=()):
+    """Return unescaped HTML-comment openers outside ignored ranges."""
+    openers = []
+    for match in re.finditer(r"<!--", source):
+        position = match.start()
+        if markdown_is_escaped(source, position):
+            continue
+        if any(
+            range_start <= position < range_end
+            for range_start, range_end, _ in ignored_ranges
+        ):
+            continue
+        openers.append(position)
+    return openers
+
+
+def markdown_comment_close(source, start, ignored_ranges=()):
+    close = source.find("-->", start + 4)
+    while close >= 0 and any(
+        range_start <= close < range_end
+        for range_start, range_end, _ in ignored_ranges
+    ):
+        close = source.find("-->", close + 3)
+    return close
+
+
+def mask_html_comments(source, replacement=" ", ignored_ranges=()):
     masked = list(source)
-    index = 0
-    while index < len(source):
-        start = source.find("<!--", index)
-        if start < 0:
-            break
-        close = source.find("-->", start + 4)
+    for start in markdown_comment_openers(source, ignored_ranges):
+        close = markdown_comment_close(source, start, ignored_ranges)
         end = len(source) if close < 0 else close + 3
         for position in range(start, end):
             if masked[position] not in "\r\n":
                 masked[position] = replacement
-        index = end
     return "".join(masked)
 
 
@@ -572,25 +593,11 @@ def markdown_closing_parenthesis(source, start):
 
 
 def markdown_unclosed_comment_start(source, ignored_ranges=()):
-    index = 0
-    while True:
-        start = source.find("<!--", index)
-        while start >= 0 and any(
-            range_start <= start < range_end
-            for range_start, range_end, _ in ignored_ranges
-        ):
-            start = source.find("<!--", start + 4)
-        if start < 0:
-            return None
-        close = source.find("-->", start + 4)
-        while close >= 0 and any(
-            range_start <= close < range_end
-            for range_start, range_end, _ in ignored_ranges
-        ):
-            close = source.find("-->", close + 3)
+    for start in markdown_comment_openers(source, ignored_ranges):
+        close = markdown_comment_close(source, start, ignored_ranges)
         if close < 0:
             return start
-        index = close + 3
+    return None
 
 
 def mask_markdown_line(source):
@@ -600,11 +607,7 @@ def mask_markdown_line(source):
 
 
 def markdown_has_comment_outside_code(source, code_ranges):
-    for match in re.finditer(r"<!--", source):
-        position = match.start()
-        if not any(start <= position < end for start, end, _ in code_ranges):
-            return True
-    return False
+    return bool(markdown_comment_openers(source, code_ranges))
 
 
 def markdown_is_escaped(source, index):
@@ -1370,23 +1373,17 @@ def strip_markdown_code_and_comments(markdown):
             in_table = False
         previous_quote_depth = quote_depth
         if "<!--" in content:
-            code_ranges = markdown_code_span_ranges(content)
-            if markdown_has_comment_outside_code(content, code_ranges):
-                if (
-                    markdown_unclosed_comment_start(content, code_ranges)
-                    is not None
-                ):
+            code_ranges = markdown_code_span_ranges(line)
+            if markdown_has_comment_outside_code(line, code_ranges):
+                opener = markdown_unclosed_comment_start(line, code_ranges)
+                if opener is not None:
                     comment_until_close = True
-                    opener = line.find("<!--")
-                    if opener >= 0:
-                        line = line[:opener] + mask_markdown_line(line[opener:])
-                    else:
-                        line = mask_markdown_line(line)
+                    line = line[:opener] + mask_markdown_line(line[opener:])
                     lines.append(line)
                     previous_blank = True
                     paragraph_open = False
                     continue
-                line = mask_html_comments(line, "\ue102")
+                line = mask_html_comments(line, "\ue102", code_ranges)
                 parsed = parse_markdown_container(line)
                 content = parsed["content"]
 
@@ -1560,7 +1557,7 @@ def strip_balanced_markdown_emphasis(label):
 
 def commonmark_unescape(text):
     entity = re.compile(
-        r"&(?:#[xX]([0-9A-Fa-f]{1,8})|#([0-9]{1,8})|"
+        r"&(?:#[xX]([0-9A-Fa-f]{1,6})|#([0-9]{1,7})|"
         r"([A-Za-z][A-Za-z0-9]+));"
     )
 

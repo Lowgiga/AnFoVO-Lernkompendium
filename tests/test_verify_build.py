@@ -164,7 +164,8 @@ class VerifyBuildTests(unittest.TestCase):
             "[*Vid80gmx@gmail.com*](mailto:Vid80gmx@gmail.com)",
             "[Vid80gmx&commat;gmail.com](mailto:Vid80gmx@gmail.com)",
             "[Vid80gmx&#64;gmail.com](mailto:Vid80gmx@gmail.com)",
-            "[Vid80gmx&#00000064;gmail.com](mailto:Vid80gmx@gmail.com)",
+            "[Vid80gmx&#0000064;gmail.com](mailto:Vid80gmx@gmail.com)",
+            "[Vid80gmx&#x000040;gmail.com](mailto:Vid80gmx@gmail.com)",
             "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)<!-- trailing -->",
             "<!-- leading -->[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
             "[Vid80gmx@gmail.com<!-- comment -->](mailto:Vid80gmx@gmail.com)",
@@ -229,6 +230,10 @@ class VerifyBuildTests(unittest.TestCase):
             ),
             (
                 "`<script>`\n\n"
+                "**Kontakt:** " + canonical_markdown_link
+            ),
+            (
+                "\\<!-- escaped comment opener\n\n"
                 "**Kontakt:** " + canonical_markdown_link
             ),
             (
@@ -713,6 +718,11 @@ class VerifyBuildTests(unittest.TestCase):
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
                 "<div>[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)</div>",
             ),
+            "self-closing-raw-html-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "<span/>\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
             "dedented-list-html-block-hidden contact link": (
                 "**Kontakt:** [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "\n- text\n<span>\n"
@@ -815,6 +825,16 @@ class VerifyBuildTests(unittest.TestCase):
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
                 "[Vid80gmx&#64gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "eight-digit-decimal-entity-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "[Vid80gmx&#00000064;gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
+            "seven-digit-hex-entity-hidden contact link": (
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
+                "[Vid80gmx&#x0000040;gmail.com](mailto:Vid80gmx@gmail.com)",
             ),
             "overlong-decimal-entity-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
