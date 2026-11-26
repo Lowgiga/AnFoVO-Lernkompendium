@@ -47,8 +47,31 @@ ARCHITECTURE = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
 
 def css_opacity_is_zero(value):
     value = value.strip().lower()
-    if value.endswith("!important"):
-        value = value[: -len("!important")].strip()
+    value = re.sub(r"!\s*important\s*$", "", value).strip()
+    if value.startswith("calc(") and value.endswith(")"):
+        expression = value[5:-1].replace(" ", "")
+        if re.fullmatch(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:%)?", expression):
+            number = expression[:-1] if expression.endswith("%") else expression
+            try:
+                return float(number) == 0.0
+            except ValueError:
+                return False
+        match = re.fullmatch(
+            r"([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:%)?)"
+            r"([*/])([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:%)?)",
+            expression,
+        )
+        if match:
+            left = float(match.group(1).rstrip("%"))
+            right = float(match.group(3).rstrip("%"))
+            if match.group(2) == "*":
+                value = left * right
+            else:
+                if right == 0:
+                    return False
+                value = left / right
+            return value == 0.0
+        return False
     if value.endswith("%"):
         value = value[:-1].strip()
     try:
@@ -57,17 +80,176 @@ def css_opacity_is_zero(value):
         return False
 
 
-def style_hides_content(style):
-    style = re.sub(r"/\*.*?\*/", "", style or "", flags=re.S)
-    normalized = re.sub(r"\s+", "", style).lower()
-    if re.search(
-        r"(?:^|;)(?:display:none|visibility:(?:hidden|collapse)|"
-        r"content-visibility:hidden)(?:!important|;|$)",
-        normalized,
-    ):
+def css_color_is_transparent(value):
+    value = re.sub(
+        r"!\s*important\s*$", "", (value or "").strip(), flags=re.IGNORECASE
+    ).strip().lower()
+    if value == "transparent":
         return True
-    opacity = re.search(r"(?:^|;)opacity:([^;]*)", normalized)
-    return bool(opacity and css_opacity_is_zero(opacity.group(1)))
+
+    hexadecimal = re.fullmatch(r"#([0-9a-f]{3,8})", value)
+    if hexadecimal:
+        digits = hexadecimal.group(1)
+        if len(digits) in {4, 8}:
+            return digits[-1] == "0"
+        return False
+
+    functional = re.fullmatch(r"(?:rgba?|hsla?)\((.*)\)", value, re.DOTALL)
+    if not functional:
+        return False
+    components = functional.group(1).strip()
+    if "/" in components:
+        alpha = components.rsplit("/", 1)[1].strip()
+    elif components.count(",") == 3:
+        alpha = components.rsplit(",", 1)[1].strip()
+    else:
+        return False
+    alpha = alpha.removesuffix("%").strip()
+    try:
+        return float(alpha) == 0.0
+    except ValueError:
+        return False
+
+
+def inline_style_declarations(style):
+    style = re.sub(r"/\*.*?\*/", "", style or "", flags=re.S)
+    declarations = []
+    for declaration in style.split(";"):
+        if ":" not in declaration:
+            continue
+        property_name, value = declaration.split(":", 1)
+        property_name = property_name.strip().lower()
+        value = value.strip()
+        if not property_name or not value:
+            continue
+        important = bool(re.search(r"!\s*important\s*$", value, re.IGNORECASE))
+        if important:
+            value = re.sub(r"!\s*important\s*$", "", value, flags=re.IGNORECASE)
+            value = value.strip()
+        declarations.append((property_name, value, important))
+    return declarations
+
+
+def effective_inline_style(style):
+    normal = {}
+    important = {}
+    for property_name, value, is_important in inline_style_declarations(style):
+        declarations = important if is_important else normal
+        declarations[property_name] = value
+    effective = dict(normal)
+    effective.update(important)
+    return effective
+
+
+def filter_has_zero_opacity(value):
+    for match in re.finditer(
+        r"(?:^|[,\s])opacity\s*\(\s*(calc\([^)]*\)|[^)]*)\)",
+        value.lower(),
+    ):
+        if css_opacity_is_zero(match.group(1).strip()):
+            return True
+    return False
+
+
+def clip_path_fully_clips(value):
+    match = re.fullmatch(r"inset\s*\(([^)]*)\)", value.strip(), re.IGNORECASE)
+    if not match:
+        return False
+    parts = [part.strip() for part in match.group(1).split()]
+    if not parts or any(not re.fullmatch(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)%", part) for part in parts):
+        return False
+    numbers = [float(part[:-1]) for part in parts]
+    if len(numbers) == 1:
+        top = right = bottom = left = numbers[0]
+    elif len(numbers) == 2:
+        top = bottom = numbers[0]
+        right = left = numbers[1]
+    elif len(numbers) == 3:
+        top, right, bottom = numbers
+        left = right
+    elif len(numbers) == 4:
+        top, right, bottom, left = numbers
+    else:
+        return False
+    return top + bottom >= 100.0 or left + right >= 100.0
+
+
+def style_hides_content(style):
+    effective = effective_inline_style(style)
+    if effective.get("display", "").strip().lower() == "none":
+        return True
+    if effective.get("visibility", "").strip().lower() in {"hidden", "collapse"}:
+        return True
+    if effective.get("content-visibility", "").strip().lower() == "hidden":
+        return True
+    if "opacity" in effective and css_opacity_is_zero(effective["opacity"]):
+        return True
+    if "filter" in effective and filter_has_zero_opacity(effective["filter"]):
+        return True
+    if "clip-path" in effective and clip_path_fully_clips(effective["clip-path"]):
+        return True
+    color = effective.get("color", "")
+    text_fill = effective.get("-webkit-text-fill-color", "")
+    if css_color_is_transparent(color) or css_color_is_transparent(text_fill):
+        return True
+    return False
+
+
+def html_first_attribute(tag_text, name):
+    """Return (present, raw value) for the first matching HTML attribute."""
+    if not tag_text:
+        return False, None
+    position = 1
+    while position < len(tag_text) and tag_text[position].isspace():
+        position += 1
+    if position < len(tag_text) and tag_text[position] == "/":
+        position += 1
+    while position < len(tag_text) and not tag_text[position].isspace() and tag_text[position] not in ">/":
+        position += 1
+    found = False
+    value = None
+    while position < len(tag_text):
+        while position < len(tag_text) and (tag_text[position].isspace() or tag_text[position] == "/"):
+            position += 1
+        if position >= len(tag_text) or tag_text[position] == ">":
+            break
+        name_start = position
+        while (
+            position < len(tag_text)
+            and not tag_text[position].isspace()
+            and tag_text[position] not in "=/>"
+        ):
+            position += 1
+        attribute_name = tag_text[name_start:position].lower()
+        while position < len(tag_text) and tag_text[position].isspace():
+            position += 1
+        attribute_value = None
+        if position < len(tag_text) and tag_text[position] == "=":
+            position += 1
+            while position < len(tag_text) and tag_text[position].isspace():
+                position += 1
+            if position < len(tag_text) and tag_text[position] in "\"'":
+                quote = tag_text[position]
+                position += 1
+                value_start = position
+                while position < len(tag_text) and tag_text[position] != quote:
+                    position += 1
+                attribute_value = tag_text[value_start:position]
+                if position < len(tag_text):
+                    position += 1
+            else:
+                value_start = position
+                while (
+                    position < len(tag_text)
+                    and not tag_text[position].isspace()
+                    and tag_text[position] != ">"
+                ):
+                    position += 1
+                attribute_value = tag_text[value_start:position]
+        if attribute_name == name.lower() and not found:
+            found = True
+            value = attribute_value
+    return found, value
 
 
 class _ContactAnchorParser(HTMLParser):
@@ -110,14 +292,14 @@ class _ContactAnchorParser(HTMLParser):
         "track",
         "wbr",
     }
+    FOREIGN_SELF_CLOSING_ROOTS = {"math", "svg"}
 
     def __init__(self, email):
         super().__init__(convert_charrefs=True)
         self.email = email
         self.found = False
         self._anchor = None
-        self._nonrendered_tags = []
-        self._hidden_tags = []
+        self._contexts = []
 
     @staticmethod
     def _attribute(attrs, name):
@@ -137,17 +319,24 @@ class _ContactAnchorParser(HTMLParser):
         style = cls._attribute(attrs, "style") or ""
         return style_hides_content(style)
 
-    @staticmethod
-    def _pop_context(context, tag):
-        for index in range(len(context) - 1, -1, -1):
-            if context[index] == tag:
-                del context[index]
+    def _pop_context(self, tag):
+        for index in range(len(self._contexts) - 1, -1, -1):
+            if self._contexts[index]["tag"] == tag:
+                del self._contexts[index:]
                 return
+
+    def _is_hidden_context(self):
+        return any(
+            context["hidden"] or context["nonrendered"]
+            for context in self._contexts
+        )
 
     def _finish_anchor(self):
         if not self._anchor:
             return
-        visible_text = " ".join("".join(self._anchor["text"]).split())
+        visible_text = re.sub(
+            r"[ \t\n\f\r]+", " ", "".join(self._anchor["text"])
+        ).strip(" \t\n\f\r")
         if (
             self._anchor["renderable"]
             and self._anchor["href"] == f"mailto:{self.email}"
@@ -161,6 +350,7 @@ class _ContactAnchorParser(HTMLParser):
         if tag == "a":
             # Browsers implicitly close an active anchor when another starts.
             self._finish_anchor()
+            self._pop_context("a")
 
         hidden = self._hides_content(attrs)
         if tag in self.CONDITIONAL_VISIBILITY_TAGS and not self._has_attribute(
@@ -169,27 +359,36 @@ class _ContactAnchorParser(HTMLParser):
             hidden = True
         if self._has_attribute(attrs, "popover"):
             hidden = True
+        nonrendered = tag in self.NON_RENDERED_TAGS
         renderable = not (
-            self._nonrendered_tags or self._hidden_tags or hidden
+            self._is_hidden_context() or hidden or nonrendered
         )
-        if tag in self.NON_RENDERED_TAGS:
-            self._nonrendered_tags.append(tag)
-        if hidden and tag not in self.VOID_TAGS:
-            self._hidden_tags.append(tag)
         if tag == "a" and renderable:
+            raw_tag = self.get_starttag_text() or ""
+            has_href, raw_href = html_first_attribute(raw_tag, "href")
             self._anchor = {
-                "href": self._attribute(attrs, "href"),
+                "href": raw_href if has_href else None,
                 "text": [],
                 "renderable": True,
             }
+        elif tag == "br" and self._anchor and renderable:
+            self._anchor["text"].append("\n")
+        if tag not in self.VOID_TAGS:
+            self._contexts.append(
+                {"tag": tag, "hidden": hidden, "nonrendered": nonrendered}
+            )
 
     def handle_startendtag(self, tag, attrs):
+        tag = tag.lower()
+        if tag in self.FOREIGN_SELF_CLOSING_ROOTS:
+            # Foreign-content roots honor the self-closing slash.
+            return
         # HTML ignores the self-closing slash on non-void elements. Keeping the
         # element open also keeps script/style/template contents inert.
         self.handle_starttag(tag, attrs)
 
     def handle_data(self, data):
-        if self._nonrendered_tags or self._hidden_tags:
+        if self._is_hidden_context():
             return
         if self._anchor:
             self._anchor["text"].append(data)
@@ -198,8 +397,7 @@ class _ContactAnchorParser(HTMLParser):
         tag = tag.lower()
         if tag == "a":
             self._finish_anchor()
-        self._pop_context(self._nonrendered_tags, tag)
-        self._pop_context(self._hidden_tags, tag)
+        self._pop_context(tag)
 
     def close(self):
         super().close()
@@ -418,13 +616,15 @@ def markdown_is_escaped(source, index):
     return backslashes % 2 == 1
 
 
-def markdown_title_end(source, start):
+def markdown_title_end(source, start, end=None):
+    if end is None:
+        end = len(source)
     opener = source[start]
     closer = opener if opener in "\"'" else ")"
     cursor = start + 1
-    while cursor < len(source):
+    while cursor < end:
         character = source[cursor]
-        if character == "\\" and cursor + 1 < len(source):
+        if character == "\\" and cursor + 1 < end:
             cursor += 2
             continue
         if character == closer:
@@ -436,46 +636,53 @@ def markdown_title_end(source, start):
 
 
 def parse_markdown_inline_link(source, closing_bracket):
-    if closing_bracket + 1 >= len(source) or source[closing_bracket + 1] != "(":
+    block_end = markdown_inline_block_end(source, closing_bracket)
+    if (
+        closing_bracket + 1 >= block_end
+        or source[closing_bracket + 1] != "("
+    ):
         return None
 
     cursor = closing_bracket + 2
-    while cursor < len(source) and source[cursor] in " \t\r\n":
+    while cursor < block_end and source[cursor] in " \t\r\n":
         cursor += 1
-    if cursor >= len(source):
+    if cursor >= block_end:
         return None
 
     if source[cursor] == "<":
         destination_start = cursor + 1
-        cursor = source.find(">", destination_start)
+        cursor = source.find(">", destination_start, block_end)
         if cursor < 0 or "\n" in source[destination_start:cursor]:
             return None
         destination = source[destination_start:cursor]
         cursor += 1
     else:
         destination_start = cursor
-        while cursor < len(source) and source[cursor] not in " \t\r\n)":
+        while (
+            cursor < block_end
+            and source[cursor] not in " \t\r\n)"
+        ):
             cursor += 1
         if cursor == destination_start:
             return None
         destination = source[destination_start:cursor]
 
     after_destination = cursor
-    while cursor < len(source) and source[cursor] in " \t\r\n":
+    while cursor < block_end and source[cursor] in " \t\r\n":
         cursor += 1
     had_whitespace = cursor > after_destination
 
-    if cursor < len(source) and source[cursor] in "\"'(":
+    if cursor < block_end and source[cursor] in "\"'(":
         if not had_whitespace:
             return None
-        title_end = markdown_title_end(source, cursor)
+        title_end = markdown_title_end(source, cursor, block_end)
         if title_end is None:
             return None
         cursor = title_end + 1
-        while cursor < len(source) and source[cursor] in " \t\r\n":
+        while cursor < block_end and source[cursor] in " \t\r\n":
             cursor += 1
 
-    if cursor >= len(source) or source[cursor] != ")":
+    if cursor >= block_end or source[cursor] != ")":
         return None
     return {
         "destination": destination,
@@ -499,21 +706,28 @@ def markdown_label_contains_inline_link(source, start, end):
     return False
 
 
-def markdown_inline_links(source):
+def markdown_inline_links(source, masked=None):
+    if masked is None:
+        masked = source
     links = []
     index = 0
-    while index < len(source):
-        if source[index] != "[" or markdown_is_escaped(source, index):
+    while index < len(masked):
+        if masked[index] != "[" or markdown_is_escaped(masked, index):
             index += 1
             continue
-        closing_bracket = markdown_closing_bracket(source, index)
+        closing_bracket = markdown_closing_bracket(masked, index)
         if closing_bracket is None:
             index += 1
             continue
-        if markdown_label_contains_inline_link(source, index, closing_bracket):
-            # GitHub renders a link nested in another link label as its own
-            # anchor rather than as part of the outer link.
-            index += 1
+        if markdown_label_contains_inline_link(masked, index, closing_bracket):
+            # The supported contract is deliberately limited to top-level
+            # inline links. A complete outer link construct hides any nested
+            # source link from this verifier.
+            outer_link = parse_markdown_inline_link(source, closing_bracket)
+            if outer_link is not None:
+                index = outer_link["end"]
+            else:
+                index = closing_bracket + 1
             continue
         link = parse_markdown_inline_link(source, closing_bracket)
         if link is None:
@@ -547,17 +761,30 @@ def mask_markdown_image_descriptions(source):
         if backslashes % 2:
             index += 1
             continue
-        end = markdown_closing_bracket(source, index + 1)
-        if end is None:
-            end = len(source)
+        closing_bracket = markdown_closing_bracket(source, index + 1)
+        if closing_bracket is None:
+            # An unmatched image opener is literal text. It must not mask a
+            # later paragraph.
+            index += 1
+            continue
+        destination = closing_bracket + 1
+        while destination < len(source) and source[destination] in " \t":
+            destination += 1
+        if destination < len(source) and source[destination] == "(":
+            close = markdown_closing_parenthesis(source, destination)
+            if close is None:
+                index += 1
+                continue
+            end = close
+        elif destination < len(source) and source[destination] == "[":
+            reference_end = markdown_closing_bracket(source, destination)
+            if reference_end is None:
+                index += 1
+                continue
+            end = reference_end + 1
         else:
-            end += 1
-            destination = end
-            while destination < len(source) and source[destination] in " \t":
-                destination += 1
-            if destination < len(source) and source[destination] == "(":
-                close = markdown_closing_parenthesis(source, destination)
-                end = len(source) if close is None else close
+            index += 1
+            continue
         for position in range(index + 1, end):
             if masked[position] not in "\r\n":
                 masked[position] = " "
@@ -620,6 +847,7 @@ def parse_markdown_container(line):
     position = 0
     blockquote_depth = 0
     list_markers = []
+    list_marker_positions = []
     list_indent = 0
     list_base = 0
     while position < len(expanded):
@@ -629,6 +857,7 @@ def parse_markdown_container(line):
             blockquote_depth += 1
             list_base = position
             list_markers = []
+            list_marker_positions = []
             list_indent = 0
             continue
         list_item = re.match(
@@ -639,6 +868,7 @@ def parse_markdown_container(line):
             marker = list_item.group(1)
             spaces = list_item.group(2)
             consumed_spaces = len(spaces) if len(spaces) <= 4 else 1
+            list_marker_positions.append(position)
             position += len(marker) + consumed_spaces
             list_markers.append(marker)
             list_indent = position - list_base
@@ -647,7 +877,9 @@ def parse_markdown_container(line):
     return {
         "blockquote_depth": blockquote_depth,
         "list_markers": list_markers,
+        "list_marker_positions": list_marker_positions,
         "list_indent": list_indent,
+        "list_base": list_base,
         "content": expanded[position:],
     }
 
@@ -683,26 +915,129 @@ def mask_markdown_definition_blocks(source):
     reference_definition = re.compile(
         r"^[ ]{0,3}\[(?!\^)(?:\\.|[^\]\\])+\]:"
     )
-    lines = []
-    in_definition = False
 
+    def title_closer(text, opener):
+        closer = opener if opener in "\"'" else ")"
+        cursor = 1
+        while cursor < len(text):
+            if text[cursor] == "\\":
+                cursor += 2
+                continue
+            if text[cursor] == closer:
+                return cursor
+            cursor += 1
+        return None
+
+    def split_destination_and_title(rest):
+        stripped = rest.strip()
+        if not stripped:
+            return None
+        if stripped.startswith("<"):
+            end = stripped.find(">")
+            if end < 0:
+                return None
+            destination = stripped[1:end]
+            remainder = stripped[end + 1 :]
+        else:
+            match = re.match(r"(\S+)(.*)$", stripped, re.DOTALL)
+            if not match:
+                return None
+            destination = match.group(1)
+            remainder = match.group(2)
+        return destination, remainder.lstrip()
+
+    lines = []
+    state = None
     for line in source.splitlines(keepends=True):
         body = line.rstrip("\r\n")
         ending = line[len(body) :]
         parsed = parse_markdown_container(body)
         content = parsed["content"]
+        stripped = content.strip()
 
-        if in_definition:
-            if not content.strip():
-                in_definition = False
-                lines.append(line)
-            else:
+        if state:
+            kind = state["kind"]
+            if kind == "footnote":
+                if not stripped:
+                    state = None
+                    lines.append(line)
+                else:
+                    lines.append(" " * len(body) + ending)
+                continue
+            if kind == "destination":
+                if not stripped:
+                    state = None
+                    lines.append(line)
+                    continue
+                if stripped.startswith(("\"", "'", "(")):
+                    state = None
+                else:
+                    parts = split_destination_and_title(stripped)
+                    is_inline_link = bool(
+                        re.fullmatch(r"\[[^\]]*\]\([^\n]*\)", stripped)
+                    )
+                    if parts is None or is_inline_link:
+                        state = None
+                    else:
+                        lines.append(" " * len(body) + ending)
+                        remainder = parts[1]
+                        if remainder and remainder[0] in "\"'(":
+                            closer = title_closer(remainder, remainder[0])
+                            if closer is None:
+                                state = {
+                                    "kind": "title_continuation",
+                                    "opener": remainder[0],
+                                }
+                            else:
+                                state = None
+                        else:
+                            state = {"kind": "title"}
+                        continue
+            elif kind == "title":
+                if not stripped:
+                    state = None
+                    lines.append(line)
+                    continue
+                if stripped[0] in "\"'(":
+                    lines.append(" " * len(body) + ending)
+                    closer = title_closer(stripped, stripped[0])
+                    if closer is None:
+                        state = {
+                            "kind": "title_continuation",
+                            "opener": stripped[0],
+                        }
+                    continue
+                state = None
+            elif kind == "title_continuation":
                 lines.append(" " * len(body) + ending)
-            continue
+                closer = title_closer(stripped, state["opener"])
+                if closer is not None:
+                    state = None
+                continue
 
-        if footnote_definition.match(content) or reference_definition.match(content):
+        footnote_match = footnote_definition.match(content)
+        reference_match = reference_definition.match(content)
+        if footnote_match:
             lines.append(" " * len(body) + ending)
-            in_definition = True
+            state = {"kind": "footnote"}
+            continue
+        if reference_match:
+            lines.append(" " * len(body) + ending)
+            rest = content[reference_match.end() :]
+            parts = split_destination_and_title(rest)
+            if parts is None:
+                state = {"kind": "destination"}
+            else:
+                remainder = parts[1]
+                if remainder and remainder[0] in "\"'(":
+                    closer = title_closer(remainder, remainder[0])
+                    if closer is None:
+                        state = {
+                            "kind": "title_continuation",
+                            "opener": remainder[0],
+                        }
+                else:
+                    state = {"kind": "title"}
             continue
 
         lines.append(line)
@@ -770,13 +1105,15 @@ def html_tag_only(source):
     return end is not None and not source[end:].strip()
 
 
-def markdown_has_hidden_html_context(source):
+def markdown_hidden_html_ranges(source):
+    """Return source ranges occupied by hidden or non-rendered HTML subtrees."""
     code_ranges = markdown_code_span_ranges(source)
     nonrendered = {
         "canvas",
         "datalist",
         "iframe",
         "listing",
+        "math",
         "noembed",
         "noframes",
         "noscript",
@@ -786,11 +1123,30 @@ def markdown_has_hidden_html_context(source):
         "script",
         "select",
         "style",
+        "svg",
         "template",
         "textarea",
         "title",
         "xmp",
     }
+    void_tags = {
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "param",
+        "source",
+        "track",
+        "wbr",
+    }
+    stack = []
+    ranges = []
     index = 0
     while index < len(source):
         start = source.find("<", index)
@@ -809,36 +1165,49 @@ def markdown_has_hidden_html_context(source):
             continue
         tag = source[start:end]
         name_match = re.match(r"<\s*/?\s*([A-Za-z][A-Za-z0-9-]*)", tag)
-        if name_match:
-            name = name_match.group(1).lower()
-            if not tag.lstrip().startswith("</") and name in nonrendered:
-                return True
-            if name in {"details", "dialog"} and not re.search(
-                r"(?:^|\s)open(?:\s|=|/?>)", tag, flags=re.IGNORECASE
-            ):
-                return True
-            if re.search(
-                r"(?:^|\s)popover(?=\s|=|/?>)", tag, flags=re.IGNORECASE
-            ):
-                return True
-            if re.search(
-                r"(?:^|\s)hidden(?=\s|=|/?>)", tag, flags=re.IGNORECASE
-            ):
-                return True
-            style = re.search(
-                r"(?:^|\s)style\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s>]+))",
-                tag,
-                flags=re.IGNORECASE,
+        if not name_match:
+            index = end
+            continue
+        name = name_match.group(1).lower()
+        if tag.lstrip().startswith("</"):
+            for stack_index in range(len(stack) - 1, -1, -1):
+                if stack[stack_index]["tag"] != name:
+                    continue
+                popped = stack[stack_index:]
+                del stack[stack_index:]
+                for frame in popped:
+                    if frame["hidden"] or frame["nonrendered"]:
+                        ranges.append((frame["start"], end))
+                break
+        else:
+            has_open, _ = html_first_attribute(tag, "open")
+            has_popover, _ = html_first_attribute(tag, "popover")
+            has_hidden, _ = html_first_attribute(tag, "hidden")
+            has_style, style = html_first_attribute(tag, "style")
+            hidden = (
+                has_hidden
+                or has_popover
+                or (name in {"details", "dialog"} and not has_open)
+                or (has_style and style_hides_content(unescape(style or "")))
             )
-            if style:
-                value = next(
-                    (group for group in style.groups() if group is not None),
-                    "",
+            nonrendered_element = name in nonrendered
+            self_closing = tag[:-1].rstrip().endswith("/")
+            if name not in void_tags and not (
+                self_closing and name in {"math", "svg"}
+            ):
+                stack.append(
+                    {
+                        "tag": name,
+                        "start": start,
+                        "hidden": hidden,
+                        "nonrendered": nonrendered_element,
+                    }
                 )
-                if style_hides_content(value):
-                    return True
         index = end
-    return False
+    for frame in stack:
+        if frame["hidden"] or frame["nonrendered"]:
+            ranges.append((frame["start"], len(source)))
+    return sorted(ranges)
 
 
 def strip_markdown_code_and_comments(markdown):
@@ -922,9 +1291,10 @@ def strip_markdown_code_and_comments(markdown):
     previous_blank = True
     paragraph_open = False
     previous_quote_depth = 0
-    active_list_indent = 0
     in_table = False
     indented_code = False
+    active_list_indent = None
+    active_list_base = 0
 
     for line in markdown.splitlines():
         if raw_text_tag:
@@ -951,8 +1321,24 @@ def strip_markdown_code_and_comments(markdown):
             previous_blank = True
         if fence:
             fence_parsed = parse_markdown_container(line)
-            if fence_parsed["blockquote_depth"] < fence["blockquote_depth"]:
-                # A quoted fenced block ends when its containing quote ends.
+            fence_content = fence_parsed["content"]
+            fence_leading = len(fence_content) - len(fence_content.lstrip(" "))
+            exits_fence = (
+                fence_parsed["blockquote_depth"] < fence["blockquote_depth"]
+            )
+            if fence["list_markers"]:
+                marker_positions = fence_parsed["list_marker_positions"]
+                if marker_positions:
+                    relative_marker = min(
+                        position - fence_parsed["list_base"]
+                        for position in marker_positions
+                    )
+                    exits_fence = exits_fence or relative_marker < fence["list_indent"]
+                else:
+                    exits_fence = exits_fence or fence_leading < fence["list_indent"]
+            if exits_fence:
+                # A quoted/list-item fence ends with its container. The current
+                # line must then be processed again outside the old fence.
                 fence = None
             else:
                 candidate = markdown_fence_candidate(line, fence)
@@ -974,7 +1360,8 @@ def strip_markdown_code_and_comments(markdown):
         if quote_depth != previous_quote_depth:
             # A new quote container starts a fresh paragraph context.
             paragraph_open = False
-            active_list_indent = 0
+            active_list_indent = None
+            active_list_base = 0
             in_table = False
         if parsed["list_markers"]:
             # A new list item starts a fresh paragraph context.
@@ -1014,7 +1401,7 @@ def strip_markdown_code_and_comments(markdown):
             paragraph_open = False
             in_table = False
             continue
-        if active_list_indent and leading < active_list_indent:
+        if active_list_indent is not None and leading < active_list_indent:
             # A dedented block start leaves the active list item. Plain text
             # may still be a lazy paragraph continuation, but an HTML block
             # cannot interrupt that paragraph from outside the list item.
@@ -1026,12 +1413,26 @@ def strip_markdown_code_and_comments(markdown):
             # Table rows are a block and cannot be interrupted by a type-7
             # HTML block until the table ends.
             paragraph_open = False
+
+        if parsed["list_markers"]:
+            active_list_indent = parsed["list_indent"]
+            active_list_base = parsed["list_base"]
+            relative_leading = leading
+        elif active_list_indent is not None:
+            if leading < active_list_indent:
+                active_list_indent = None
+                active_list_base = 0
+                relative_leading = leading
+            else:
+                relative_leading = leading - active_list_indent
+        else:
+            relative_leading = leading
         if indented_code:
-            if leading >= 4:
+            if relative_leading >= 4:
                 paragraph_open = False
                 continue
             indented_code = False
-        elif leading >= 4 and (previous_blank or not lines):
+        elif relative_leading >= 4 and (previous_blank or not lines):
             indented_code = True
             paragraph_open = False
             lines.append("")
@@ -1046,7 +1447,9 @@ def strip_markdown_code_and_comments(markdown):
                     "length": len(marker),
                     "blockquote_depth": parsed["blockquote_depth"],
                     "list_markers": parsed["list_markers"],
+                    "list_marker_positions": parsed["list_marker_positions"],
                     "list_indent": parsed["list_indent"],
+                    "list_base": parsed["list_base"],
                 }
                 previous_blank = True
                 paragraph_open = False
@@ -1181,23 +1584,27 @@ def plain_markdown_label(label):
     label = commonmark_unescape(label)
     for token, rendered in rendered_spans.items():
         label = label.replace(token, rendered)
-    return " ".join(label.split())
+    return re.sub(r"[ \t\n\f\r]+", " ", label).strip(" \t\n\f\r")
 
 
 def has_markdown_contact_link(markdown, email):
     source = mask_markdown_definition_blocks(
         strip_markdown_code_and_comments(markdown)
     )
-    if markdown_has_hidden_html_context(source):
-        return False
+    hidden_ranges = markdown_hidden_html_ranges(source)
     masked = mask_markdown_code_spans(
         source, markdown_code_span_ranges(source)
     )
     masked = mask_markdown_image_descriptions(masked)
     masked = mask_html_tags(masked)
-    links = markdown_inline_links(masked)
+    links = markdown_inline_links(source, masked)
     expected_destination = f"mailto:{email}"
     for link in links:
+        if any(
+            range_start <= link["label_start"] < range_end
+            for range_start, range_end in hidden_ranges
+        ):
+            continue
         label = source[link["label_start"] : link["label_end"]]
         if (
             link["destination"] == expected_destination
@@ -1411,7 +1818,12 @@ check(
     and 'href="/manifest.json"' not in HTML
     and 'href="data:,"' not in HTML,
 )
-impressum = re.search(r'id="imp-h"[\s\S]*?</section>', HTML)
+impressum = re.search(
+    r'<footer\b[^>]*>[\s\S]*?<section\b[^>]*'
+    r'aria-labelledby\s*=\s*["\']imp-h["\'][^>]*>[\s\S]*?</section>',
+    HTML,
+    flags=re.IGNORECASE,
+)
 impressum_text = impressum.group(0) if impressum else ""
 required_provider_details = (PROVIDER_NAME, PROVIDER_ADDRESS, CONTACT_EMAIL)
 html_has_provider_details = (

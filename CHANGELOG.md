@@ -10,13 +10,15 @@ Details in [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md).
   entfernt. Der Kontakt ist als nativer `mailto:`-Link erreichbar.
 - **Gate automatisiert abgesichert:** Der statische Verifier und sein Regressionstest verlangen
   dieselben Anbieterangaben sowie einen HTML-Anker mit browser-kompatibler Auswertung des ersten
-  `href` oder einen unterstützten Markdown-Inline-Kontaktlink. In beiden Dokumenten müssen das
-  `mailto:`-Ziel und das sichtbare E-Mail-Label exakt und case-sensitiv dem konfigurierten Wert
-  entsprechen; Links in Kommentaren, Code-/Raw-HTML-Blöcken oder nicht gerenderten HTML-Kontexten
-  sowie Link-Syntax in Bild-/Linktiteln, HTML-Attributen oder Linkdefinitionen zählen nicht. Der
-  Browser-Smoke-Test prüft zusätzlich, dass der HTML-Kontaktlink tatsächlich sichtbar gerendert
-  wird. `index.html` und die Android-Asset-Kopie bleiben byte-identisch; der In-App-Selbsttest prüft
-  die sichtbaren Angaben und den Kontakt-Link.
+  rohen `href`-Attributs oder einen unterstützten top-level Markdown-Inline-Kontaktlink. In beiden
+  Dokumenten müssen das `mailto:`-Ziel und das sichtbare E-Mail-Label exakt und case-sensitiv dem
+  konfigurierten Wert entsprechen; Entity-dekodierte HTML-Ziele, nicht gerenderte oder verborgene
+  HTML-Kontexte, absatzübergreifende Markdown-Links sowie Link-Syntax in Kommentaren,
+  Code-/Raw-HTML-Blöcken, Bild-/Linktiteln, HTML-Attributen oder Linkdefinitionen zählen nicht.
+  Der Browser-Smoke-Test prüft den Kontaktlink in der zuständigen Impressum-Sektion einschließlich
+  Vorfahren-Visibility, transparentem Text und paint-supprimierenden Filtern, Clip-Pfaden und
+  Masken. `index.html` und die Android-Asset-Kopie bleiben byte-identisch; der In-App-Selbsttest
+  prüft die sichtbaren Angaben und den Kontaktlink.
 - **PWA-Test robuster:** Die Subpath-Prüfung wartet nun gezielt auf den projekteigenen
   Service Worker und den vollständigen Cache, statt einen einmaligen `ready`-Snapshot mit
   Erweiterungs-Caches zu verwechseln.
