@@ -585,6 +585,11 @@ class VerifyBuildTests(unittest.TestCase):
                 "\n- text\n<span>\n"
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
             ),
+            "table-html-block-hidden contact link": (
+                "**Kontakt:** [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "\n| a | b |\n| - | - |\n<span>\n"
+                "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
             "raw-html-base-block-hidden contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"

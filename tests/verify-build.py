@@ -652,6 +652,16 @@ def parse_markdown_container(line):
     }
 
 
+def markdown_is_table_delimiter_row(content):
+    stripped = content.strip()
+    if "|" not in stripped:
+        return False
+    cells = stripped.strip("|").split("|")
+    return bool(cells) and all(
+        re.fullmatch(r":?-+:?", cell.strip()) for cell in cells
+    )
+
+
 def markdown_is_block_boundary_line(content):
     stripped = content
     if re.match(r"^[ ]{0,3}#{1,6}(?:[ \t]+|$)", stripped):
@@ -913,6 +923,7 @@ def strip_markdown_code_and_comments(markdown):
     paragraph_open = False
     previous_quote_depth = 0
     active_list_indent = 0
+    in_table = False
     indented_code = False
 
     for line in markdown.splitlines():
@@ -964,10 +975,12 @@ def strip_markdown_code_and_comments(markdown):
             # A new quote container starts a fresh paragraph context.
             paragraph_open = False
             active_list_indent = 0
+            in_table = False
         if parsed["list_markers"]:
             # A new list item starts a fresh paragraph context.
             paragraph_open = False
             active_list_indent = parsed["list_indent"]
+            in_table = False
         previous_quote_depth = quote_depth
         if "<!--" in content:
             code_ranges = markdown_code_span_ranges(content)
@@ -999,11 +1012,19 @@ def strip_markdown_code_and_comments(markdown):
             lines.append("")
             previous_blank = True
             paragraph_open = False
+            in_table = False
             continue
         if active_list_indent and leading < active_list_indent:
             # A dedented block start leaves the active list item. Plain text
             # may still be a lazy paragraph continuation, but an HTML block
             # cannot interrupt that paragraph from outside the list item.
+            paragraph_open = False
+        if markdown_is_table_delimiter_row(content):
+            in_table = True
+            paragraph_open = False
+        elif in_table:
+            # Table rows are a block and cannot be interrupted by a type-7
+            # HTML block until the table ends.
             paragraph_open = False
         if indented_code:
             if leading >= 4:
@@ -1029,6 +1050,7 @@ def strip_markdown_code_and_comments(markdown):
                 }
                 previous_blank = True
                 paragraph_open = False
+                in_table = False
                 lines.append("")
                 continue
 
@@ -1048,6 +1070,7 @@ def strip_markdown_code_and_comments(markdown):
                     raw_text_tag = tag
                 previous_blank = True
                 paragraph_open = False
+                in_table = False
                 lines.append("")
                 continue
             if (
@@ -1058,6 +1081,7 @@ def strip_markdown_code_and_comments(markdown):
                 raw_block_until_blank = True
                 previous_blank = True
                 paragraph_open = False
+                in_table = False
                 lines.append("")
                 continue
 
@@ -1065,11 +1089,12 @@ def strip_markdown_code_and_comments(markdown):
             lines.append(line)
             previous_blank = False
             paragraph_open = False
+            in_table = False
             continue
 
         lines.append(line)
         previous_blank = False
-        paragraph_open = True
+        paragraph_open = not in_table
 
     return "\n".join(lines)
 
