@@ -376,6 +376,8 @@ const { pathToFileURL } = require('url');
         : stops.every(color => colorIsFullyTransparent(color));
     };
     const maskLayerFullyTransparent = (layer, mode = 'match-source') => {
+      const normalized = (layer || '').trim().toLowerCase();
+      if (normalized === 'none') return true;
       if (/^(?:repeating-)?(?:linear|radial|conic)-gradient\(/i.test(layer)) {
         return maskGradientFullyTransparent(layer, mode);
       }
@@ -441,11 +443,15 @@ const { pathToFileURL } = require('url');
             if (child.nodeValue) {
               runs.push({ owner: node, text: child.nodeValue });
             }
-          } else if (
-            child.nodeType === 1 &&
-            !nonRenderedTextTags.has(child.localName)
-          ) {
-            collectTextRuns(child);
+          } else if (child.nodeType === 1) {
+            if (child.localName === 'br') {
+              // A rendered line break separates the label text runs.
+              runs.push({ owner: child, text: '\n' });
+              continue;
+            }
+            if (!nonRenderedTextTags.has(child.localName)) {
+              collectTextRuns(child);
+            }
           }
         }
       };
@@ -751,6 +757,25 @@ const { pathToFileURL } = require('url');
       host.remove();
       return accepted;
     };
+    const runSeparatorLabelProbe = separatorFactory => {
+      const host = document.createElement('div');
+      const anchor = document.createElement('a');
+      anchor.href = expectedHref;
+      const labelParts = [expectedLabel.slice(0, 5), expectedLabel.slice(5)];
+      const first = document.createElement('span');
+      first.textContent = labelParts[0];
+      anchor.appendChild(first);
+      if (separatorFactory) anchor.appendChild(separatorFactory());
+      const second = document.createElement('span');
+      second.textContent = labelParts[1];
+      anchor.appendChild(second);
+      host.appendChild(anchor);
+      document.body.appendChild(host);
+      anchor.scrollIntoView({ block: 'center' });
+      const accepted = visibleFor([anchor]).includes(anchor);
+      host.remove();
+      return accepted;
+    };
     const footerContactWithoutMatchingSectionRejected = (() => {
       if (!region) return false;
       const labelledBy = region.getAttribute('aria-labelledby');
@@ -857,6 +882,10 @@ const { pathToFileURL } = require('url');
         1,
         { visibility: 'hidden' }
       ),
+      adjacentInlineSpanLabelAccepted: runSeparatorLabelProbe(null),
+      brSplitLabelRejected: !runSeparatorLabelProbe(
+        () => document.createElement('br')
+      ),
       transparentTextRejected: !runProbe({ color: 'transparent' }),
       transparentRgbaTextRejected: !runProbe({ color: 'rgba(1, 2, 3, 0)' }),
       transparentHexTextRejected: !runProbe({ color: '#1230' }),
@@ -914,7 +943,8 @@ const { pathToFileURL } = require('url');
       cycledMaskModeRejected: !runProbe({
         maskImage: [
           'linear-gradient(black, black)',
-          'linear-gradient(transparent, transparent)'
+          'linear-gradient(transparent, transparent)',
+          'linear-gradient(black, black)'
         ].join(', '),
         maskMode: 'luminance, alpha'
       }),

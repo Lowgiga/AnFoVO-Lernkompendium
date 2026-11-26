@@ -1093,6 +1093,8 @@ class VerifyBuildTests(unittest.TestCase):
             '<span style="display:block">Vid80gmx@</span>gmail.com</a>',
             '<a href="mailto:Vid80gmx@gmail.com"><div>Vid80gmx@</div>'
             "<div>gmail.com</div></a>",
+            '<a href="mailto:Vid80gmx@gmail.com"><span>Vid80gmx@</span><br>'
+            "<span>gmail.com</span></a>",
         )
         for replacement in rejected_links:
             with self.subTest(replacement=replacement, expected="hidden"):
@@ -1414,6 +1416,95 @@ class VerifyBuildTests(unittest.TestCase):
         status, failure = self.run_check(name)
         self.assertEqual(status, 1)
         self.assertIsNotNone(failure)
+
+    def test_regression_html_template_scope_copy(self):
+        html = self.root / "index.html"
+        original = html.read_text(encoding="utf-8")
+
+        section_start = original.index(
+            '<section class="fsec" aria-labelledby="imp-h">'
+        )
+        section_end = original.index("</section>", section_start) + len(
+            "</section>"
+        )
+        impressum_section = original[section_start:section_end]
+
+        # A template copy before the live footer must not select the scope.
+        template_copy = (
+            original[:section_start]
+            + "<template>"
+            + impressum_section
+            + "</template>"
+            + original[section_start:]
+        )
+        self.assertNotEqual(template_copy, original)
+        self.write_html_pair(template_copy)
+        self.assert_impressum_check(True)
+
+        # Only a template copy is not a visible contact link.
+        template_only = (
+            original[:section_start]
+            + "<template>"
+            + impressum_section
+            + "</template>"
+            + original[section_end:]
+        )
+        self.assertNotEqual(template_only, original)
+        self.write_html_pair(template_only)
+        self.assert_impressum_check(False)
+
+    def test_regression_markdown_comment_container_boundary(self):
+        impressum = self.root / "IMPRESSUM.md"
+        original = impressum.read_text(encoding="utf-8")
+        original_contact = "**Kontakt:** " + self.CANONICAL_MARKDOWN_LINK
+
+        accepted_contexts = (
+            "> <!--\n\n" + self.CANONICAL_MARKDOWN_LINK,
+            "> <!--\n\n> \n\n" + self.CANONICAL_MARKDOWN_LINK,
+            "- item\n\n  <!--\n\n" + self.CANONICAL_MARKDOWN_LINK,
+        )
+        for context in accepted_contexts:
+            with self.subTest(context=context, expected="visible"):
+                mutated = original.replace(original_contact, context)
+                self.assertNotEqual(mutated, original)
+                impressum.write_text(mutated, encoding="utf-8")
+                self.assert_impressum_check(True)
+
+        rejected_contexts = (
+            "<!--\n\n" + self.CANONICAL_MARKDOWN_LINK,
+            "- item\n\n  <!--\n\n  " + self.CANONICAL_MARKDOWN_LINK,
+        )
+        for context in rejected_contexts:
+            with self.subTest(context=context, expected="hidden"):
+                mutated = original.replace(original_contact, context)
+                self.assertNotEqual(mutated, original)
+                impressum.write_text(mutated, encoding="utf-8")
+                self.assert_impressum_check(False)
+
+    def test_regression_markdown_processing_instruction_list_boundary(self):
+        impressum = self.root / "IMPRESSUM.md"
+        original = impressum.read_text(encoding="utf-8")
+        original_contact = "**Kontakt:** " + self.CANONICAL_MARKDOWN_LINK
+
+        accepted_contexts = (
+            "- item\n\n  <?probe\n\n" + self.CANONICAL_MARKDOWN_LINK,
+        )
+        for context in accepted_contexts:
+            with self.subTest(context=context, expected="visible"):
+                mutated = original.replace(original_contact, context)
+                self.assertNotEqual(mutated, original)
+                impressum.write_text(mutated, encoding="utf-8")
+                self.assert_impressum_check(True)
+
+        rejected_contexts = (
+            "- item\n\n  <?probe\n\n  " + self.CANONICAL_MARKDOWN_LINK,
+        )
+        for context in rejected_contexts:
+            with self.subTest(context=context, expected="hidden"):
+                mutated = original.replace(original_contact, context)
+                self.assertNotEqual(mutated, original)
+                impressum.write_text(mutated, encoding="utf-8")
+                self.assert_impressum_check(False)
 
 
 if __name__ == "__main__":

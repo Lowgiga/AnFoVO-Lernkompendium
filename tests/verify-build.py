@@ -784,6 +784,13 @@ class _ContactAnchorParser(HTMLParser):
                     and parent_context.get("element_id")
                     == self.required_target_parent_id
                 )
+            if target and any(
+                context["tag"] == "template" for context in self._contexts
+            ):
+                # Template contents are inert and are not part of the live
+                # document. A copy of the Impressum section inside a template
+                # must not select the scope of the rendered footer.
+                target = False
             self.scope_selected = target
 
         if tag == "a" and hard_renderable:
@@ -1556,7 +1563,7 @@ def markdown_fence_candidate(line, expected=None):
 def markdown_container_exits(parsed, container):
     """Return whether a line leaves the Markdown container that was opened."""
     exits = parsed["blockquote_depth"] < container["blockquote_depth"]
-    if container["list_markers"]:
+    if container["list_markers"] or container.get("list_indent"):
         marker_positions = parsed["list_marker_positions"]
         if marker_positions:
             relative_marker = min(
@@ -1567,6 +1574,34 @@ def markdown_container_exits(parsed, container):
             leading = len(parsed["content"]) - len(parsed["content"].lstrip(" "))
             exits = exits or leading < container["list_indent"]
     return exits
+
+
+def markdown_container_context(
+    parsed,
+    content,
+    active_list_indent=None,
+    active_list_base=0,
+):
+    """Describe the Markdown container of a line for later exit checks.
+
+    A continuation line without its own list marker still belongs to the
+    active list item, so the item boundary is kept for raw HTML blocks.
+    """
+    list_markers = parsed["list_markers"]
+    list_indent = parsed["list_indent"]
+    list_base = parsed["list_base"]
+    if not list_markers and active_list_indent:
+        leading = len(content) - len(content.lstrip(" "))
+        if leading >= active_list_indent:
+            list_indent = active_list_indent
+            list_base = active_list_base
+    return {
+        "blockquote_depth": parsed["blockquote_depth"],
+        "list_markers": list_markers,
+        "list_marker_positions": parsed["list_marker_positions"],
+        "list_indent": list_indent,
+        "list_base": list_base,
+    }
 
 
 def html_tag_end(source, start=0):
@@ -1867,7 +1902,7 @@ def strip_markdown_code_and_comments(markdown):
     raw_text_tag = None
     raw_block_until_blank = False
     processing_instruction = None
-    comment_until_close = False
+    comment_until_close = None
     previous_blank = True
     paragraph_open = False
     previous_quote_depth = 0
@@ -1913,16 +1948,22 @@ def strip_markdown_code_and_comments(markdown):
                 previous_blank = True
             continue
         if comment_until_close:
-            close = line.find("-->")
-            if close < 0:
-                lines.append(mask_markdown_line(line))
+            comment_parsed = parse_markdown_container(line)
+            if markdown_container_exits(comment_parsed, comment_until_close):
+                # The comment block ends with its opening Markdown container.
+                # The current line must be processed again outside the comment.
+                comment_until_close = None
+            else:
+                close = line.find("-->")
+                if close < 0:
+                    lines.append(mask_markdown_line(line))
+                    previous_blank = True
+                    continue
+                # The complete line belongs to the HTML comment block, including
+                # any Markdown-looking text after the closing delimiter.
+                line = mask_markdown_line(line)
+                comment_until_close = None
                 previous_blank = True
-                continue
-            # The complete line belongs to the HTML comment block, including
-            # any Markdown-looking text after the closing delimiter.
-            line = mask_markdown_line(line)
-            comment_until_close = False
-            previous_blank = True
         if fence:
             fence_parsed = parse_markdown_container(line)
             exits_fence = markdown_container_exits(fence_parsed, fence)
@@ -1969,7 +2010,12 @@ def strip_markdown_code_and_comments(markdown):
             if markdown_has_comment_outside_code(line, code_ranges):
                 opener = markdown_unclosed_comment_start(line, code_ranges)
                 if opener is not None:
-                    comment_until_close = True
+                    comment_until_close = markdown_container_context(
+                        parsed,
+                        content,
+                        active_list_indent,
+                        active_list_base,
+                    )
                     line = line[:opener] + mask_markdown_line(line[opener:])
                     lines.append(line)
                     previous_blank = True
@@ -2074,13 +2120,12 @@ def strip_markdown_code_and_comments(markdown):
             if re.match(r"^<\?", stripped):
                 close = stripped.find("?>")
                 if close < 0:
-                    processing_instruction = {
-                        "blockquote_depth": parsed["blockquote_depth"],
-                        "list_markers": parsed["list_markers"],
-                        "list_marker_positions": parsed["list_marker_positions"],
-                        "list_indent": parsed["list_indent"],
-                        "list_base": parsed["list_base"],
-                    }
+                    processing_instruction = markdown_container_context(
+                        parsed,
+                        content,
+                        active_list_indent,
+                        active_list_base,
+                    )
                 else:
                     processing_instruction = None
                 # A processing instruction is a raw HTML block. Its complete
