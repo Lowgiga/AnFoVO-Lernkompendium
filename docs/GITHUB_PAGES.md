@@ -1,13 +1,13 @@
 # GitHub Pages
 
-**Stand: 25.11.2026 – verifiziert (Live-Abruf nach Deployment von `7820a49`).** GitHub Pages
+**Stand: 25.11.2026 – verifiziert (Live-Abruf nach Deployment von `0902e45`).** GitHub Pages
 ist für dieses Repository **aktiv** und liefert die Web-App aus:
 
 - Projekt-Site: `https://lowgiga.github.io/AnFoVO-Lernkompendium/` (Antwort 200, Titel
   „Lern-Kompendium § 8 AnFöVO NRW – v2.9.5", 70 Lernseiten, PWA installierbar).
 - Für den Impressum-Stand verifizierter Deployment-Commit:
-  `7820a492bc30fbb83e59bd2c1ea4cd321d232da2`; Pages-Lauf `45629740818` und
-  Projektvalidierung `45629742055` erfolgreich.
+  `0902e453839261ae14ed3d3478ba9702917dbf54`; Pages-Lauf `45653872515` und
+  Projektvalidierung `45653876811` erfolgreich.
 
 ## Was heute wirklich published wird (wichtig)
 
@@ -27,7 +27,7 @@ bereitet genau diese bereinigte Fläche (`dist/pages/`) vor – ihre Ausgabe wir
 **Live vs. Repository:** Der Drift vom 17.11.2026 ist behoben. Der direkte Abruf der Live-Seite
 liefert `index.html` mit 629.155 Bytes und SHA-256
 `826c85e98ce08e070b15494318368999a111e58bc77777786fbaa146bdd371cb`; das entspricht exakt dem
-kanonischen Git-Blob aus `main`-Commit `7820a49`. Ein Windows-Checkout mit
+kanonischen Git-Blob aus `main`-Commit `0902e45`. Ein Windows-Checkout mit
 `core.autocrlf=true` kann wegen CRLF größere lokale Bytezahlen anzeigen; Linux-CI, APK und
 GitHub Pages verwenden denselben LF-Blob.
 
@@ -78,26 +78,43 @@ Angaben, nicht deren rechtliche Vollständigkeit:
 1. `index.html` enthält die konfigurierten Anbieterangaben direkt in der Fußzeile; `IMPRESSUM.md`
    dokumentiert dieselben Angaben als eigenständige Datei. Der frühere sichtbare
    Veröffentlichungs-Platzhalter wurde entfernt.
-2. `tests/verify-build.py` verlangt Name, Anschrift, Kontakt-E-Mail sowie echte HTML- und
-   Markdown-Kontaktlinks in beiden Dokumenten und schlägt bei fehlenden oder Platzhalter-Angaben
-   fehl. Der Regressionstest `test_impressum_requires_provider_details` mutiert Platzhalter, Name,
-   Anschrift, Linkziel und Link-Markup unabhängig voneinander.
-3. Direkter Live-Abruf nach Pages-Lauf `45629740818`: `index.html` antwortet mit HTTP 200,
+2. `tests/verify-build.py` verlangt Name, Anschrift, Kontakt-E-Mail sowie einen HTML-Anker oder
+   einen unterstützten Markdown-Inline-Link `[Label](mailto:…)` in beiden Dokumenten. Das
+   `mailto:`-Ziel muss exakt und case-sensitiv dem konfigurierten Ziel entsprechen; auch das
+   sichtbare E-Mail-Label wird exakt und case-sensitiv geprüft. Bei HTML-Ankern zählt der Rohwert
+   des ersten `href`-Attributs; Entity-dekodierte Ziele und spätere Duplikate ersetzen diesen
+   Wert nicht. Inline-Styles werden nach CSS-Kaskade und Deklarationsreihenfolge ausgewertet.
+   Sichtbare Zeilenumbrüche trennen das HTML-Label, während HTML-ASCII-Whitespace normalisiert
+   wird. Kommentare, Code-/Raw-HTML-Blöcke sowie Link-Syntax in Bild-/Linktiteln,
+   HTML-Attributen oder Linkdefinitionen zählen nicht; ebenso nicht gerenderte oder verborgene
+   HTML-Kontexte und deren Inhalte. Der Regressionstest `test_impressum_requires_provider_details`
+   mutiert Platzhalter, Name, Anschrift, Linkziel, Link-Markup und verborgene Linkquellen
+   unabhängig voneinander.
+3. Der Markdown-Scope ist bewusst konservativ: unterstützt sind nur top-level Inline-Links mit
+   exaktem Quelltext-Ziel und einfachen, vollständig umschlossenen Formatierungen. Ein Link darf
+   seinen Absatz nicht verlassen; verschachtelte Quelllinks, GFM-Autolinks, Referenzlinks und
+   rohe HTML-Anker im Markdown werden nicht als Ersatz akzeptiert. Verborgene HTML-Subtrees,
+   Listen- und Fence-Kontexte werden bei der Prüfung berücksichtigt. Der Browser-Smoke-Test
+   prüft separat den Kontaktlink in `footer#foot` beziehungsweise der darüber bezeichneten
+   Impressum-Sektion. Er berücksichtigt Vorfahren-Opacity, Display, Visibility,
+   Content-Visibility, transparente Texte sowie paint-supprimierende Filter, Clip-Pfade und
+   Masken; ein gleichartiger Link außerhalb dieser Sektion kann den Test nicht erfüllen.
+4. Direkter Live-Abruf nach Pages-Lauf `45653872515`: `index.html` antwortet mit HTTP 200,
    629.155 Bytes und SHA-256
    `826c85e98ce08e070b15494318368999a111e58bc77777786fbaa146bdd371cb`; `IMPRESSUM.md` und `sw.js`
    antworten ebenfalls mit HTTP 200 und enthalten dieselben Angaben bzw. den Cache-Namen
    `web-pwa-2.9.5-legal.1`.
-4. Browser-Prüfung der Live-Seite: 70 Lernseiten, kein sichtbarer Veröffentlichungs-Platzhalter,
+5. Browser-Prüfung der Live-Seite: 70 Lernseiten, kein sichtbarer Veröffentlichungs-Platzhalter,
    sichtbare Angaben „Lowgiga“, „New York 11354 USA“ und „Vid80gmx@gmail.com“ sowie ein funktionierendes
    natives `mailto:`-Ziel.
-5. `index.html` und `android/app/src/main/assets/index.html` bleiben byte-identisch; auch die im
+6. `index.html` und `android/app/src/main/assets/index.html` bleiben byte-identisch; auch die im
    CI-Artefakt `AnFoeVO-debug-apks` verpackte `assets/index.html` und die Live-Datei haben denselben
-   SHA-256-Wert. Der In-App-Selbsttest prüft die sichtbaren Angaben und den Kontakt-Link zusätzlich
+   SHA-256-Wert. Der In-App-Selbsttest prüft die sichtbaren Angaben und den Kontaktlink zusätzlich
    zur Laufzeit.
-6. Die rechtliche Identität, Vollständigkeit der Anschrift sowie gegebenenfalls Rechtsform und
+7. Die rechtliche Identität, Vollständigkeit der Anschrift sowie gegebenenfalls Rechtsform und
    Vertretungsberechtigung bleiben eine separate Owner-Bestätigung; automatisierte String- und
    Linkprüfungen können diese rechtliche Frage nicht ersetzen.
-7. Repository frei von Heft-Fotos, Heft-Wortlaut und persönlichen Notizen halten.
-8. Seiten-Cache-Hinweis: GitHub Pages erlaubt keine eigenen `Cache-Control`-Header. `sw.js`
+8. Repository frei von Heft-Fotos, Heft-Wortlaut und persönlichen Notizen halten.
+9. Seiten-Cache-Hinweis: GitHub Pages erlaubt keine eigenen `Cache-Control`-Header. `sw.js`
    arbeitet cache-first; Rückkehrer können daher kurz einen alten Stand ziehen, bis der
    Worker aktualisiert.
