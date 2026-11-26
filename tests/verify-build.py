@@ -404,12 +404,19 @@ def clip_path_fully_clips(value):
     return top + bottom >= 100.0 or left + right >= 100.0
 
 
-def style_hides_content_except_visibility(style):
+def style_removes_box(style):
+    """Return whether the style removes the element's box from the layout."""
     effective = effective_inline_style(style)
     if effective.get("display", "").strip().lower() == "none":
         return True
     if effective.get("content-visibility", "").strip().lower() == "hidden":
         return True
+    return False
+
+
+def style_suppresses_paint(style):
+    """Return whether the style suppresses the element's own paint."""
+    effective = effective_inline_style(style)
     if "opacity" in effective and css_opacity_is_fully_transparent(
         effective["opacity"]
     ):
@@ -418,11 +425,17 @@ def style_hides_content_except_visibility(style):
         return True
     if "clip-path" in effective and clip_path_fully_clips(effective["clip-path"]):
         return True
+    return False
+
+
+def style_hides_content_except_visibility(style):
+    """Return whether the style keeps the element's content from being shown."""
+    if style_removes_box(style) or style_suppresses_paint(style):
+        return True
+    effective = effective_inline_style(style)
     color = effective.get("color", "")
     text_fill = effective.get("-webkit-text-fill-color", "")
-    if css_color_is_transparent(color) or css_color_is_transparent(text_fill):
-        return True
-    return False
+    return css_color_is_transparent(color) or css_color_is_transparent(text_fill)
 
 
 def style_visibility_is_hidden(style):
@@ -640,7 +653,10 @@ class _ContactAnchorParser(HTMLParser):
         style = cls._attribute(attrs, "style") or ""
         if include_visibility:
             return style_hides_content(style)
-        return style_hides_content_except_visibility(style)
+        # A transparent text color only hides the glyphs it applies to. It is
+        # evaluated per text run, so a descendant with its own visible color
+        # stays detectable.
+        return style_removes_box(style) or style_suppresses_paint(style)
 
     def _pop_context(self, tag):
         for index in range(len(self._contexts) - 1, -1, -1):
@@ -697,6 +713,31 @@ class _ContactAnchorParser(HTMLParser):
             for tag in self.required_ancestor_tags
         )
 
+    def _is_layout_break(self, attrs, style):
+        """Return whether a <br> still breaks the line in the rendered layout."""
+        if self._has_attribute(attrs, "hidden"):
+            return False
+        effective = effective_inline_style(style)
+        if effective.get("display", "").strip().lower() == "none":
+            return False
+        return not any(
+            context["nonrendered"] or context["display_none"]
+            for context in self._contexts
+        )
+
+    def _effective_text_colors(self):
+        """Return the inherited text colors that apply to the current text."""
+        color = None
+        text_fill = None
+        for context in reversed(self._contexts):
+            if color is None and context["color"] is not None:
+                color = context["color"]
+            if text_fill is None and context["text_fill"] is not None:
+                text_fill = context["text_fill"]
+            if color is not None and text_fill is not None:
+                break
+        return color, text_fill
+
     def _finish_anchor(self):
         if not self._anchor:
             return
@@ -727,11 +768,11 @@ class _ContactAnchorParser(HTMLParser):
             hidden = True
         nonrendered = tag in self.NON_RENDERED_TAGS
 
-        effective_visibility = (
-            effective_inline_style(style).get("visibility", "").strip().lower()
-        )
+        effective_style = effective_inline_style(style)
+        effective_visibility = effective_style.get("visibility", "").strip().lower()
         visibility_hidden = effective_visibility in {"hidden", "collapse"}
         visibility_visible = effective_visibility == "visible"
+        display_none = effective_style.get("display", "").strip().lower() == "none"
         closed_details = tag == "details" and not self._has_attribute(
             attrs, "open"
         )
@@ -785,11 +826,12 @@ class _ContactAnchorParser(HTMLParser):
                     == self.required_target_parent_id
                 )
             if target and any(
-                context["tag"] == "template" for context in self._contexts
+                context["tag"] in {"template", "noscript"}
+                for context in self._contexts
             ):
-                # Template contents are inert and are not part of the live
-                # document. A copy of the Impressum section inside a template
-                # must not select the scope of the rendered footer.
+                # Template and noscript contents are inert and are not part of
+                # the live document. A copy of the Impressum section in one of
+                # them must not select the scope of the rendered footer.
                 target = False
             self.scope_selected = target
 
@@ -802,7 +844,9 @@ class _ContactAnchorParser(HTMLParser):
                 "renderable": True,
                 "in_scope": self._is_in_scope(),
             }
-        elif tag == "br" and self._anchor and renderable:
+        elif tag == "br" and self._anchor and self._is_layout_break(attrs, style):
+            # A line break belongs to the layout, not to the painted glyphs.
+            # An invisible break still separates the rendered label text.
             self._anchor["text"].append("\n")
         elif (
             tag != "a"
@@ -828,6 +872,9 @@ class _ContactAnchorParser(HTMLParser):
                     "closed_details": closed_details,
                     "summary_details_id": summary_details_id,
                     "summary_slot_used": False,
+                    "display_none": display_none,
+                    "color": effective_style.get("color"),
+                    "text_fill": effective_style.get("-webkit-text-fill-color"),
                 }
             )
 
@@ -842,6 +889,11 @@ class _ContactAnchorParser(HTMLParser):
 
     def handle_data(self, data):
         if self._is_hidden_context():
+            return
+        color, text_fill = self._effective_text_colors()
+        if css_color_is_transparent(color) or css_color_is_transparent(text_fill):
+            # The glyphs are not painted, so the text is not visible. A
+            # descendant with its own visible color is evaluated on its own.
             return
         if (
             self.capture_scope_text

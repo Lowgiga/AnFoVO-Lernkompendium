@@ -501,6 +501,11 @@ class VerifyBuildTests(unittest.TestCase):
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@<br>'
                 "gmail.com</a>",
             ),
+            "zero-opacity-br contact link": (
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@'
+                '<br style="opacity:0">gmail.com</a>',
+            ),
             "non-breaking-space contact label": (
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
                 '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com&nbsp;'
@@ -1421,37 +1426,118 @@ class VerifyBuildTests(unittest.TestCase):
         html = self.root / "index.html"
         original = html.read_text(encoding="utf-8")
 
-        section_start = original.index(
-            '<section class="fsec" aria-labelledby="imp-h">'
-        )
-        section_end = original.index("</section>", section_start) + len(
-            "</section>"
-        )
-        impressum_section = original[section_start:section_end]
+        footer_start = original.index('<footer id="foot">')
+        footer_end = original.index("</footer>", footer_start) + len("</footer>")
+        footer_markup = original[footer_start:footer_end]
 
-        # A template copy before the live footer must not select the scope.
-        template_copy = (
-            original[:section_start]
-            + "<template>"
-            + impressum_section
-            + "</template>"
-            + original[section_start:]
-        )
-        self.assertNotEqual(template_copy, original)
-        self.write_html_pair(template_copy)
-        self.assert_impressum_check(True)
+        # A complete inert copy before the live footer must not select the
+        # scope; the live footer keeps its own Impressum section.
+        for wrapper in ("template", "noscript"):
+            with self.subTest(wrapper=wrapper, expected="visible"):
+                inert_copy = (
+                    original[:footer_start]
+                    + f"<{wrapper}>"
+                    + footer_markup
+                    + f"</{wrapper}>"
+                    + original[footer_start:]
+                )
+                self.assertNotEqual(inert_copy, original)
+                self.write_html_pair(inert_copy)
+                self.assert_impressum_check(True)
 
-        # Only a template copy is not a visible contact link.
-        template_only = (
-            original[:section_start]
-            + "<template>"
-            + impressum_section
-            + "</template>"
-            + original[section_end:]
+            # Only an inert copy is not a visible contact link.
+            with self.subTest(wrapper=wrapper, expected="hidden"):
+                inert_only = (
+                    original[:footer_start]
+                    + f"<{wrapper}>"
+                    + footer_markup
+                    + f"</{wrapper}>"
+                    + original[footer_end:]
+                )
+                self.assertNotEqual(inert_only, original)
+                self.write_html_pair(inert_only)
+                self.assert_impressum_check(False)
+
+    def test_regression_html_transparent_text_color_inheritance(self):
+        html = self.root / "index.html"
+        original = html.read_text(encoding="utf-8")
+        anchor = '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>'
+        self.assertIn(anchor, original)
+
+        cases = (
+            (
+                "visible descendant overrides transparent ancestor color",
+                '<a href="mailto:Vid80gmx@gmail.com" style="color:transparent">'
+                '<span style="color:#123456">Vid80gmx@gmail.com</span></a>',
+                True,
+            ),
+            (
+                "transparent descendant stays hidden under transparent ancestor",
+                '<a href="mailto:Vid80gmx@gmail.com" style="color:transparent">'
+                '<span style="color:transparent">Vid80gmx@gmail.com</span></a>',
+                False,
+            ),
+            (
+                "transparent text fill stays inherited",
+                '<a href="mailto:Vid80gmx@gmail.com" '
+                'style="-webkit-text-fill-color:transparent">'
+                '<span style="color:#123456">Vid80gmx@gmail.com</span></a>',
+                False,
+            ),
+            (
+                "descendant text fill override restores the label",
+                '<a href="mailto:Vid80gmx@gmail.com" '
+                'style="-webkit-text-fill-color:transparent">'
+                '<span style="-webkit-text-fill-color:#123456">'
+                "Vid80gmx@gmail.com</span></a>",
+                True,
+            ),
         )
-        self.assertNotEqual(template_only, original)
-        self.write_html_pair(template_only)
-        self.assert_impressum_check(False)
+        for name, replacement, visible in cases:
+            with self.subTest(case=name, expected=visible):
+                mutated = original.replace(anchor, replacement)
+                self.assertNotEqual(mutated, original)
+                self.write_html_pair(mutated)
+                self.assert_impressum_check(visible)
+
+    def test_regression_html_line_break_boundaries(self):
+        html = self.root / "index.html"
+        original = html.read_text(encoding="utf-8")
+        anchor = '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>'
+        self.assertIn(anchor, original)
+
+        cases = (
+            (
+                "visible break splits the label",
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@<br>'
+                "gmail.com</a>",
+                False,
+            ),
+            (
+                "zero opacity break still splits the label",
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@'
+                '<br style="opacity:0">gmail.com</a>',
+                False,
+            ),
+            (
+                "break without a box keeps the label together",
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@'
+                '<br style="display:none">gmail.com</a>',
+                True,
+            ),
+            (
+                "hidden break keeps the label together",
+                '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@'
+                '<br hidden>gmail.com</a>',
+                True,
+            ),
+        )
+        for name, replacement, visible in cases:
+            with self.subTest(case=name, expected=visible):
+                mutated = original.replace(anchor, replacement)
+                self.assertNotEqual(mutated, original)
+                self.write_html_pair(mutated)
+                self.assert_impressum_check(visible)
 
     def test_regression_markdown_comment_container_boundary(self):
         impressum = self.root / "IMPRESSUM.md"

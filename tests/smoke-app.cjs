@@ -441,12 +441,12 @@ const { pathToFileURL } = require('url');
         for (const child of node.childNodes) {
           if (child.nodeType === 3) {
             if (child.nodeValue) {
-              runs.push({ owner: node, text: child.nodeValue });
+              runs.push({ owner: node, text: child.nodeValue, kind: 'text' });
             }
           } else if (child.nodeType === 1) {
             if (child.localName === 'br') {
-              // A rendered line break separates the label text runs.
-              runs.push({ owner: child, text: '\n' });
+              // A line break belongs to the layout, not to the painted glyphs.
+              runs.push({ owner: child, text: '\n', kind: 'separator' });
               continue;
             }
             if (!nonRenderedTextTags.has(child.localName)) {
@@ -478,8 +478,16 @@ const { pathToFileURL } = require('url');
       }
       return true;
     };
+    const layoutIsRendered = element => {
+      for (let current = element; current; current = current.parentElement) {
+        if (getComputedStyle(current).display === 'none') return false;
+      }
+      return true;
+    };
     const paintableLabelText = element => textRunsFor(element)
-      .filter(run => textOwnerCanPaint(run.owner))
+      .filter(run => (run.kind === 'separator'
+        ? layoutIsRendered(run.owner)
+        : textOwnerCanPaint(run.owner)))
       .map(run => run.text)
       .join('');
     const isRendered = element => {
@@ -886,6 +894,23 @@ const { pathToFileURL } = require('url');
       brSplitLabelRejected: !runSeparatorLabelProbe(
         () => document.createElement('br')
       ),
+      zeroOpacityBrSplitLabelRejected: !runSeparatorLabelProbe(() => {
+        const br = document.createElement('br');
+        br.style.opacity = '0';
+        return br;
+      }),
+      displayNoneBrLabelAccepted: runSeparatorLabelProbe(() => {
+        const br = document.createElement('br');
+        br.style.display = 'none';
+        return br;
+      }),
+      transparentAncestorColorDescendantAccepted: runVisibleLabelProbe(anchor => {
+        anchor.style.color = 'transparent';
+        const descendant = document.createElement('span');
+        descendant.style.color = '#123456';
+        descendant.textContent = expectedLabel;
+        anchor.appendChild(descendant);
+      }),
       transparentTextRejected: !runProbe({ color: 'transparent' }),
       transparentRgbaTextRejected: !runProbe({ color: 'rgba(1, 2, 3, 0)' }),
       transparentHexTextRejected: !runProbe({ color: '#1230' }),
