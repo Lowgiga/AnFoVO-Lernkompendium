@@ -1472,7 +1472,9 @@ class VerifyBuildTests(unittest.TestCase):
 
         rejected_contexts = (
             "<!--\n\n" + self.CANONICAL_MARKDOWN_LINK,
+            "> <!--\n> " + self.CANONICAL_MARKDOWN_LINK,
             "- item\n\n  <!--\n\n  " + self.CANONICAL_MARKDOWN_LINK,
+            "- item\n\n  <!--\n\n  > " + self.CANONICAL_MARKDOWN_LINK,
         )
         for context in rejected_contexts:
             with self.subTest(context=context, expected="hidden"):
@@ -1488,6 +1490,7 @@ class VerifyBuildTests(unittest.TestCase):
 
         accepted_contexts = (
             "- item\n\n  <?probe\n\n" + self.CANONICAL_MARKDOWN_LINK,
+            "- item\n\n  <?probe\n\n> " + self.CANONICAL_MARKDOWN_LINK,
         )
         for context in accepted_contexts:
             with self.subTest(context=context, expected="visible"):
@@ -1498,6 +1501,9 @@ class VerifyBuildTests(unittest.TestCase):
 
         rejected_contexts = (
             "- item\n\n  <?probe\n\n  " + self.CANONICAL_MARKDOWN_LINK,
+            "- item\n\n  <?probe\n\n  > " + self.CANONICAL_MARKDOWN_LINK,
+            "- item\n\n    <?probe\n\n  " + self.CANONICAL_MARKDOWN_LINK,
+            "- item\n\n    <?probe\n\n  > " + self.CANONICAL_MARKDOWN_LINK,
         )
         for context in rejected_contexts:
             with self.subTest(context=context, expected="hidden"):

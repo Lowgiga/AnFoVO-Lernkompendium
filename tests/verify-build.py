@@ -1335,11 +1335,14 @@ def parse_markdown_container(line):
     blockquote_depth = 0
     list_markers = []
     list_marker_positions = []
+    container_marker_positions = []
     list_indent = 0
     list_base = 0
     while position < len(expanded):
         blockquote = re.match(r"[ ]{0,3}>[ ]?", expanded[position:])
         if blockquote:
+            marker_offset = blockquote.group(0).index(">")
+            container_marker_positions.append(position + marker_offset)
             position += blockquote.end()
             blockquote_depth += 1
             list_base = position
@@ -1356,19 +1359,25 @@ def parse_markdown_container(line):
             spaces = list_item.group(2)
             consumed_spaces = len(spaces) if len(spaces) <= 4 else 1
             marker_offset = list_item.start(1)
-            list_marker_positions.append(position + marker_offset)
+            marker_position = position + marker_offset
+            list_marker_positions.append(marker_position)
+            container_marker_positions.append(marker_position)
             position += marker_offset + len(marker) + consumed_spaces
             list_markers.append(marker)
             list_indent = position - list_base
             continue
         break
+    content = expanded[position:]
+    leading = len(content) - len(content.lstrip(" "))
     return {
         "blockquote_depth": blockquote_depth,
         "list_markers": list_markers,
         "list_marker_positions": list_marker_positions,
+        "container_marker_positions": container_marker_positions,
         "list_indent": list_indent,
         "list_base": list_base,
-        "content": expanded[position:],
+        "leaf_column": position + leading,
+        "content": content,
     }
 
 
@@ -1564,15 +1573,19 @@ def markdown_container_exits(parsed, container):
     """Return whether a line leaves the Markdown container that was opened."""
     exits = parsed["blockquote_depth"] < container["blockquote_depth"]
     if container["list_markers"] or container.get("list_indent"):
-        marker_positions = parsed["list_marker_positions"]
-        if marker_positions:
-            relative_marker = min(
-                position - parsed["list_base"] for position in marker_positions
-            )
-            exits = exits or relative_marker < container["list_indent"]
+        list_base = container.get("list_base", 0)
+        list_boundary = list_base + container["list_indent"]
+        marker_positions = parsed.get("container_marker_positions", [])
+        relevant_markers = [
+            position for position in marker_positions if position >= list_base
+        ]
+        if relevant_markers:
+            # A new container at a column before the list item's content
+            # boundary leaves that item. Markers at or after the boundary are
+            # nested containers and remain inside it.
+            exits = exits or min(relevant_markers) < list_boundary
         elif parsed["content"].strip():
-            leading = len(parsed["content"]) - len(parsed["content"].lstrip(" "))
-            exits = exits or leading < container["list_indent"]
+            exits = exits or parsed.get("leaf_column", 0) < list_boundary
     return exits
 
 
@@ -1599,6 +1612,7 @@ def markdown_container_context(
         "blockquote_depth": parsed["blockquote_depth"],
         "list_markers": list_markers,
         "list_marker_positions": parsed["list_marker_positions"],
+        "container_marker_positions": parsed["container_marker_positions"],
         "list_indent": list_indent,
         "list_base": list_base,
     }
@@ -2099,8 +2113,7 @@ def strip_markdown_code_and_comments(markdown):
                 continue
 
         stripped = content.lstrip(" ")
-        indent = len(content) - len(stripped)
-        if indent <= 3:
+        if relative_leading <= 3:
             raw_text = re.match(
                 r"^<(script|pre|style|textarea|xmp)(?=[ \t/>])",
                 stripped,
