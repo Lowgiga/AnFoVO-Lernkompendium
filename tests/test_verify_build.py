@@ -1046,6 +1046,8 @@ class VerifyBuildTests(unittest.TestCase):
             "Vid80gmx@gmail.com</a>",
             '<a style="opacity:0;opacity:1" href="mailto:Vid80gmx@gmail.com">'
             "Vid80gmx@gmail.com</a>",
+            '<a style="opacity:0.01" href="mailto:Vid80gmx@gmail.com">'
+            "Vid80gmx@gmail.com</a>",
         )
         for replacement in accepted_links:
             with self.subTest(replacement=replacement, expected="visible"):
@@ -1061,6 +1063,8 @@ class VerifyBuildTests(unittest.TestCase):
             "Vid80gmx@gmail.com</a>",
             '<a style="opacity:0;opacity:bogus" '
             'href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+            '<a style="opacity:-0.1" href="mailto:Vid80gmx@gmail.com">'
+            "Vid80gmx@gmail.com</a>",
         )
         for replacement in rejected_links:
             with self.subTest(replacement=replacement, expected="hidden"):
@@ -1108,6 +1112,7 @@ class VerifyBuildTests(unittest.TestCase):
             + self.CANONICAL_MARKDOWN_LINK,
             "- ~~~\n  sample\n\noutside\n"
             + self.CANONICAL_MARKDOWN_LINK,
+            " - ~~~\n\n  " + self.CANONICAL_MARKDOWN_LINK,
         )
         for context in accepted_contexts:
             with self.subTest(context=context, expected="visible"):
@@ -1120,6 +1125,7 @@ class VerifyBuildTests(unittest.TestCase):
             "<span hidden>\n" + self.CANONICAL_MARKDOWN_LINK,
             "- ~~~\n  - sample\n  " + self.CANONICAL_MARKDOWN_LINK,
             "- ~~~\n  sample\n\n  " + self.CANONICAL_MARKDOWN_LINK,
+            "- ~~~\n\n  " + self.CANONICAL_MARKDOWN_LINK,
         )
         for context in rejected_contexts:
             with self.subTest(context=context, expected="hidden"):
@@ -1137,6 +1143,8 @@ class VerifyBuildTests(unittest.TestCase):
             "<!-- ` -->` `\n\n" + self.CANONICAL_MARKDOWN_LINK,
             "`<!--`\n\n" + self.CANONICAL_MARKDOWN_LINK,
             "<?probe?>\n" + self.CANONICAL_MARKDOWN_LINK,
+            "> <?probe\n\n" + self.CANONICAL_MARKDOWN_LINK,
+            "prefix <!-- note --> " + self.CANONICAL_MARKDOWN_LINK,
         )
         for context in accepted_contexts:
             with self.subTest(context=context, expected="visible"):
@@ -1147,6 +1155,9 @@ class VerifyBuildTests(unittest.TestCase):
 
         rejected_contexts = (
             "<?probe\n\n" + self.CANONICAL_MARKDOWN_LINK,
+            "<?probe?>" + self.CANONICAL_MARKDOWN_LINK,
+            "<?probe\n?>" + self.CANONICAL_MARKDOWN_LINK,
+            "  <!-- note -->" + self.CANONICAL_MARKDOWN_LINK,
             "<div>\n" + self.CANONICAL_MARKDOWN_LINK,
         )
         for context in rejected_contexts:
@@ -1178,6 +1189,25 @@ class VerifyBuildTests(unittest.TestCase):
         )
         self.assertIn(self.CANONICAL_HTML_LINK, moved_anchor)
         self.write_html_pair(moved_anchor)
+        self.assert_impressum_check(False)
+
+        section_start = original.index(
+            '<section class="fsec" aria-labelledby="imp-h">'
+        )
+        section_end = original.index("</section>", section_start) + len(
+            "</section>"
+        )
+        impressum_section = original[section_start:section_end]
+        commented_section = (
+            original[:section_start]
+            + "<!--\n"
+            + impressum_section
+            + "\n-->"
+            + original[section_end:]
+        )
+        for detail in ("Lowgiga", "New York 11354 USA", "Vid80gmx@gmail.com"):
+            self.assertIn(detail, commented_section)
+        self.write_html_pair(commented_section)
         self.assert_impressum_check(False)
 
         hidden_ancestor = original.replace(
@@ -1286,6 +1316,9 @@ class VerifyBuildTests(unittest.TestCase):
             '<div style="visibility:hidden"><span style="visibility:visible">'
             '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>'
             "</span></div>",
+            '<a style="visibility:hidden" '
+            'href="mailto:Vid80gmx@gmail.com"><span style="visibility:visible">'
+            "Vid80gmx@gmail.com</span></a>",
         )
         for replacement in accepted_links:
             with self.subTest(replacement=replacement, expected="visible"):
@@ -1296,6 +1329,9 @@ class VerifyBuildTests(unittest.TestCase):
 
         rejected_links = (
             "<details>" + self.CANONICAL_HTML_LINK + "</details>",
+            "<details><summary>More</summary><summary>"
+            + self.CANONICAL_HTML_LINK
+            + "</summary></details>",
             '<div style="visibility:hidden">'
             '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a></div>',
             '<div style="opacity:0">'
@@ -1336,6 +1372,30 @@ class VerifyBuildTests(unittest.TestCase):
             + "</span>"
         )
         mutated = original_markdown.replace(original_contact, hidden_markdown)
+        self.assertNotEqual(mutated, original_markdown)
+        impressum.write_text(mutated, encoding="utf-8")
+        self.assert_impressum_check(False)
+
+        first_summary_markdown = (
+            "prefix <details><summary>"
+            + self.CANONICAL_MARKDOWN_LINK
+            + "</summary></details>"
+        )
+        mutated = original_markdown.replace(
+            original_contact, first_summary_markdown
+        )
+        self.assertNotEqual(mutated, original_markdown)
+        impressum.write_text(mutated, encoding="utf-8")
+        self.assert_impressum_check(True)
+
+        second_summary_markdown = (
+            "prefix <details><summary>More</summary><summary>"
+            + self.CANONICAL_MARKDOWN_LINK
+            + "</summary></details>"
+        )
+        mutated = original_markdown.replace(
+            original_contact, second_summary_markdown
+        )
         self.assertNotEqual(mutated, original_markdown)
         impressum.write_text(mutated, encoding="utf-8")
         self.assert_impressum_check(False)

@@ -390,7 +390,7 @@ const { pathToFileURL } = require('url');
         .map(mode => mode.trim().toLowerCase());
       const layerStates = layers.map((layer, index) => {
         const mode = modeList.length
-          ? modeList[Math.min(index, modeList.length - 1)]
+          ? modeList[index % modeList.length]
           : 'match-source';
         return maskLayerFullyTransparent(layer, mode);
       });
@@ -399,7 +399,7 @@ const { pathToFileURL } = require('url');
       let fullyTransparent = layerStates[layerStates.length - 1];
       for (let index = layerStates.length - 2; index >= 0; index -= 1) {
         const operator = operators.length
-          ? operators[Math.min(index, operators.length - 1)]
+          ? operators[index % operators.length]
           : 'add';
         if (operator === 'add') {
           fullyTransparent = fullyTransparent && layerStates[index];
@@ -432,8 +432,7 @@ const { pathToFileURL } = require('url');
       style.contentVisibility === 'hidden';
     const computedVisibilityHides = style =>
       style.visibility === 'hidden' || style.visibility === 'collapse';
-    const descendantsContributingToEmailLabel = element => {
-      const descendants = Array.from(element.querySelectorAll('*'));
+    const textRunsFor = element => {
       const runs = [];
       const nonRenderedTextTags = new Set(['noscript', 'script', 'style', 'textarea']);
       const collectTextRuns = node => {
@@ -451,48 +450,38 @@ const { pathToFileURL } = require('url');
         }
       };
       collectTextRuns(element);
-      const canComposeLabel = excluded => {
-        const memo = new Map();
-        const search = (start, selectedText) => {
-          const normalized = normalize(selectedText);
-          if (normalized === expectedLabel) return true;
-          if (!expectedLabel.startsWith(normalized)) return false;
-          const key = `${start}\u0000${selectedText}`;
-          if (memo.has(key)) return memo.get(key);
-          for (let index = start; index < runs.length; index += 1) {
-            const run = runs[index];
-            const excludedByRoot = excluded === element;
-            if (
-              excluded &&
-              run.owner &&
-              (excludedByRoot
-                ? run.owner === element
-                : run.owner === excluded || excluded.contains(run.owner))
-            ) continue;
-            if (search(index + 1, selectedText + run.text)) {
-              memo.set(key, true);
-              return true;
-            }
-          }
-          memo.set(key, false);
-          return false;
-        };
-        return search(0, '');
-      };
-      const contributors = new Set();
-      if (!canComposeLabel(null)) return contributors;
-      for (const candidate of [element, ...descendants]) {
-        if (!canComposeLabel(candidate)) contributors.add(candidate);
-      }
-      return contributors;
+      return runs;
     };
+    const textOwnerCanPaint = owner => {
+      if (!owner) return false;
+      const style = getComputedStyle(owner);
+      const textFill = style.getPropertyValue('-webkit-text-fill-color');
+      if (
+        styleHidesElement(owner, style) ||
+        computedVisibilityHides(style) ||
+        colorAlpha(style.color) === 0 ||
+        colorIsFullyTransparent(style.color) ||
+        (textFill && (colorAlpha(textFill) === 0 || colorIsFullyTransparent(textFill)))
+      ) return false;
+      for (let current = owner; current; current = current.parentElement) {
+        const currentStyle = getComputedStyle(current);
+        if (
+          styleHidesElement(current, currentStyle) ||
+          hasPaintSuppression(currentStyle, current)
+        ) return false;
+      }
+      return true;
+    };
+    const paintableLabelText = element => textRunsFor(element)
+      .filter(run => textOwnerCanPaint(run.owner))
+      .map(run => run.text)
+      .join('');
     const isRendered = element => {
       if (typeof element.checkVisibility === 'function' && !element.checkVisibility({
         opacityProperty: true,
         visibilityProperty: false,
         contentVisibilityAuto: true,
-        checkOpacity: true,
-        checkVisibilityCSS: true
+        checkOpacity: true
       })) return false;
       for (let current = element; current; current = current.parentElement) {
         const style = getComputedStyle(current);
@@ -501,19 +490,7 @@ const { pathToFileURL } = require('url');
           hasPaintSuppression(style, current)
         ) return false;
       }
-      const contributingOwners = descendantsContributingToEmailLabel(element);
-      for (const owner of contributingOwners) {
-        const style = getComputedStyle(owner);
-        const textFill = style.getPropertyValue('-webkit-text-fill-color');
-        if (
-          styleHidesElement(owner, style) ||
-          computedVisibilityHides(style) ||
-          colorAlpha(style.color) === 0 ||
-          colorIsFullyTransparent(style.color) ||
-          (textFill && (colorAlpha(textFill) === 0 || colorIsFullyTransparent(textFill))) ||
-          hasPaintSuppression(style, owner)
-        ) return false;
-      }
+      if (normalize(paintableLabelText(element)) !== expectedLabel) return false;
       const rect = element.getBoundingClientRect();
       return rect.width > 0 && rect.height > 0;
     };
@@ -524,14 +501,13 @@ const { pathToFileURL } = require('url');
           opacityProperty: true,
           visibilityProperty: false,
           contentVisibilityAuto: true,
-          checkOpacity: true,
-          checkVisibilityCSS: true
+          checkOpacity: true
         })
       ) return false;
       for (let current = owner; current; current = current.parentElement) {
         const style = getComputedStyle(current);
         if (
-          Number(style.opacity) === 0 ||
+          styleHidesElement(current, style) ||
           hasPaintSuppression(style, current)
         ) return false;
       }
@@ -654,7 +630,7 @@ const { pathToFileURL } = require('url');
     const candidates = contactScope.candidates;
     candidates.forEach(anchor => anchor.scrollIntoView({ block: 'center' }));
     const exactLabelsFor = anchors => anchors.filter(
-      anchor => normalize(anchor.innerText) === expectedLabel &&
+      anchor => normalize(paintableLabelText(anchor)) === expectedLabel &&
         !hasVisibleGeneratedContent(anchor)
     );
     const visibleFor = anchors => exactLabelsFor(anchors).filter(anchor => {
@@ -663,6 +639,18 @@ const { pathToFileURL } = require('url');
       return rect.bottom > 0 && rect.right > 0 &&
         rect.top < innerHeight && rect.left < innerWidth;
     });
+    const runVisibleLabelProbe = populate => {
+      const host = document.createElement('div');
+      const anchor = document.createElement('a');
+      anchor.href = expectedHref;
+      populate(anchor);
+      host.appendChild(anchor);
+      document.body.appendChild(host);
+      anchor.scrollIntoView({ block: 'center' });
+      const accepted = visibleFor([anchor]).includes(anchor);
+      host.remove();
+      return accepted;
+    };
     const exactLabels = exactLabelsFor(candidates);
     const visible = visibleFor(candidates);
 
@@ -758,7 +746,8 @@ const { pathToFileURL } = require('url');
       });
       host.appendChild(anchor);
       document.body.appendChild(host);
-      const accepted = isRendered(anchor);
+      anchor.scrollIntoView({ block: 'center' });
+      const accepted = visibleFor([anchor]).includes(anchor);
       host.remove();
       return accepted;
     };
@@ -827,6 +816,23 @@ const { pathToFileURL } = require('url');
       nonBreakingSpaceLabelRejected: !runLabelProbe(`${expectedLabel}\u00A0`),
       displayNoneRejected: !runProbe({ display: 'none' }),
       visibilityHiddenRejected: !runProbe({ visibility: 'hidden' }),
+      nestedVisibilityOverrideAccepted: runNestedVisibilityOverrideProbe(),
+      paintSuppressedCopiesRejected: !runVisibleLabelProbe(anchor => {
+        const opacityCopy = document.createElement('span');
+        opacityCopy.style.opacity = '0';
+        opacityCopy.textContent = expectedLabel;
+        const displayCopy = document.createElement('span');
+        displayCopy.style.display = 'none';
+        displayCopy.textContent = expectedLabel;
+        anchor.append(opacityCopy, displayCopy);
+      }),
+      paintableEmailWithFilteredTextAccepted: runVisibleLabelProbe(anchor => {
+        anchor.append(document.createTextNode(expectedLabel));
+        const filteredText = document.createElement('span');
+        filteredText.style.filter = 'opacity(0)';
+        filteredText.textContent = ' unrelated';
+        anchor.append(filteredText);
+      }),
       opacityZeroRejected: !runProbe({ opacity: '0' }),
       filterOpacityZeroRejected: !runProbe({ filter: 'opacity(0)' }),
       unrelatedFilteredDescendantAccepted: runDescendantProbe(
@@ -895,6 +901,22 @@ const { pathToFileURL } = require('url');
       addCompositeMaskAccepted: runProbe({
         maskImage: compositeMaskLayers,
         maskComposite: 'add'
+      }),
+      cycledCompositeMaskRejected: !runProbe({
+        maskImage: [
+          'linear-gradient(black, black)',
+          'linear-gradient(transparent, transparent)',
+          'linear-gradient(transparent, transparent)',
+          'linear-gradient(black, black)'
+        ].join(', '),
+        maskComposite: 'intersect, add'
+      }),
+      cycledMaskModeRejected: !runProbe({
+        maskImage: [
+          'linear-gradient(black, black)',
+          'linear-gradient(transparent, transparent)'
+        ].join(', '),
+        maskMode: 'luminance, alpha'
       }),
       ancestorDisplayNoneRejected: !runProbe({}, { display: 'none' }),
       ancestorVisibilityHiddenRejected: !runProbe({}, { visibility: 'hidden' }),

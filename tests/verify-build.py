@@ -81,9 +81,9 @@ def css_opacity_number(value):
         return None
 
 
-def css_opacity_is_zero(value):
+def css_opacity_is_fully_transparent(value):
     number = css_opacity_number(value)
-    return number is not None and number == 0.0
+    return number is not None and number <= 0.0
 
 
 def css_color_is_transparent(value):
@@ -376,7 +376,7 @@ def filter_has_zero_opacity(value):
         r"(?:^|[,\s])opacity\s*\(\s*(calc\([^)]*\)|[^)]*)\)",
         value.lower(),
     ):
-        if css_opacity_is_zero(match.group(1).strip()):
+        if css_opacity_is_fully_transparent(match.group(1).strip()):
             return True
     return False
 
@@ -410,7 +410,9 @@ def style_hides_content_except_visibility(style):
         return True
     if effective.get("content-visibility", "").strip().lower() == "hidden":
         return True
-    if "opacity" in effective and css_opacity_is_zero(effective["opacity"]):
+    if "opacity" in effective and css_opacity_is_fully_transparent(
+        effective["opacity"]
+    ):
         return True
     if "filter" in effective and filter_has_zero_opacity(effective["filter"]):
         return True
@@ -602,12 +604,20 @@ class _ContactAnchorParser(HTMLParser):
         email,
         required_aria_labelledby=None,
         required_ancestor_tags=(),
+        required_target_parent_tag=None,
+        required_target_parent_id=None,
+        capture_scope_text=False,
     ):
         super().__init__(convert_charrefs=True)
         self.email = email
         self.required_aria_labelledby = required_aria_labelledby
         self.required_ancestor_tags = tuple(required_ancestor_tags)
+        self.required_target_parent_tag = required_target_parent_tag
+        self.required_target_parent_id = required_target_parent_id
+        self.capture_scope_text = capture_scope_text
         self.found = False
+        self.scope_selected = False
+        self.scope_text = []
         self._anchor = None
         self._contexts = []
         self._next_context_id = 0
@@ -655,13 +665,14 @@ class _ContactAnchorParser(HTMLParser):
         self,
         summary_details_id=None,
         visibility_visible=False,
+        include_visibility=True,
     ):
         if any(
             context["hidden"] or context["nonrendered"]
             for context in self._contexts
         ):
             return True
-        if self._visibility_is_hidden(visibility_visible):
+        if include_visibility and self._visibility_is_hidden(visibility_visible):
             return True
         for index, context in enumerate(self._contexts):
             if not context["closed_details"]:
@@ -724,32 +735,58 @@ class _ContactAnchorParser(HTMLParser):
         closed_details = tag == "details" and not self._has_attribute(
             attrs, "open"
         )
+        parent_context = self._contexts[-1] if self._contexts else None
         summary_details_id = None
-        if tag == "summary":
-            for context in reversed(self._contexts):
-                if context["closed_details"]:
-                    summary_details_id = context["id"]
-                    break
+        if (
+            tag == "summary"
+            and parent_context is not None
+            and parent_context["tag"] == "details"
+            and parent_context["closed_details"]
+            and not parent_context["summary_slot_used"]
+        ):
+            summary_details_id = parent_context["id"]
+            parent_context["summary_slot_used"] = True
 
-        renderable = not (
+        hard_renderable = not (
             self._is_hidden_context(
                 summary_details_id=summary_details_id,
-                visibility_visible=visibility_visible,
+                include_visibility=False,
             )
             or hidden
-            or visibility_hidden
             or nonrendered
         )
+        renderable = hard_renderable and not visibility_hidden
         block_boundary = (
             tag in self.BLOCK_LEVEL_TAGS
             or inline_style_creates_block_boundary(style)
         )
         target = False
-        if self.required_aria_labelledby is not None and tag == "section":
+        if (
+            self.required_aria_labelledby is not None
+            and tag == "section"
+            and not self.scope_selected
+        ):
             labelled_by = self._attribute(attrs, "aria-labelledby") or ""
             target = self.required_aria_labelledby in labelled_by.split()
+            if target:
+                target = all(
+                    any(context["tag"] == required for context in self._contexts)
+                    for required in self.required_ancestor_tags
+                )
+            if target and self.required_target_parent_tag is not None:
+                target = (
+                    parent_context is not None
+                    and parent_context["tag"] == self.required_target_parent_tag
+                )
+            if target and self.required_target_parent_id is not None:
+                target = (
+                    parent_context is not None
+                    and parent_context.get("element_id")
+                    == self.required_target_parent_id
+                )
+            self.scope_selected = target
 
-        if tag == "a" and renderable:
+        if tag == "a" and hard_renderable:
             raw_tag = self.get_starttag_text() or ""
             has_href, raw_href = html_first_attribute(raw_tag, "href")
             self._anchor = {
@@ -774,6 +811,7 @@ class _ContactAnchorParser(HTMLParser):
                 {
                     "id": context_id,
                     "tag": tag,
+                    "element_id": self._attribute(attrs, "id"),
                     "hidden": hidden,
                     "nonrendered": nonrendered,
                     "target": target,
@@ -782,6 +820,7 @@ class _ContactAnchorParser(HTMLParser):
                     "visibility_visible": visibility_visible,
                     "closed_details": closed_details,
                     "summary_details_id": summary_details_id,
+                    "summary_slot_used": False,
                 }
             )
 
@@ -797,6 +836,11 @@ class _ContactAnchorParser(HTMLParser):
     def handle_data(self, data):
         if self._is_hidden_context():
             return
+        if (
+            self.capture_scope_text
+            and any(context["target"] for context in self._contexts)
+        ):
+            self.scope_text.append(data)
         if self._anchor:
             self._anchor["text"].append(data)
 
@@ -832,100 +876,22 @@ def has_html_contact_link(
     return parser.found
 
 
-def labelled_html_section_bounds(source, label):
-    """Return the bounds of the section labelled by an aria-labelledby ID."""
-    for match in re.finditer(r"<section\b", source, re.IGNORECASE):
-        start = match.start()
-        end = html_tag_end(source, start)
-        if end is None:
-            continue
-        has_label, raw_label = html_first_attribute(
-            source[start:end],
-            "aria-labelledby",
-        )
-        if not has_label or label not in (raw_label or "").split():
-            continue
-
-        depth = 1
-        section_tag = re.compile(
-            r"<section\b[^>]*>|</section\s*>",
-            re.IGNORECASE,
-        )
-        for nested in section_tag.finditer(source, end):
-            if nested.group(0).lower().startswith("</"):
-                depth -= 1
-            else:
-                depth += 1
-            if depth == 0:
-                return start, nested.end()
-        return start, len(source)
-    return None
-
-
-def html_ancestor_context(source, end):
-    """Return opening tags for the elements that contain the given offset."""
-    prefix = source[:end]
-    raw_text = re.compile(
-        r"(<(?P<tag>script|style|textarea|xmp)\b[^>]*>).*?"
-        r"(?P<close></(?P=tag)\s*>)",
-        re.IGNORECASE | re.DOTALL,
-    )
-    prefix = raw_text.sub(lambda match: match.group(1) + match.group("close"), prefix)
-    stack = []
-    tag_pattern = re.compile(
-        r"<!--.*?-->|<![^>]*>|</?[A-Za-z][^>]*>",
-        flags=re.DOTALL,
-    )
-    name_pattern = re.compile(r"</?\s*([A-Za-z][A-Za-z0-9:-]*)")
-    for match in tag_pattern.finditer(prefix):
-        raw_tag = match.group(0)
-        if raw_tag.startswith("<!--") or raw_tag.startswith("<!"):
-            continue
-        name_match = name_pattern.match(raw_tag)
-        if not name_match:
-            continue
-        name = name_match.group(1).lower()
-        if raw_tag.startswith("</"):
-            for index in range(len(stack) - 1, -1, -1):
-                if stack[index][0] == name:
-                    del stack[index:]
-                    break
-            continue
-        if name in _ContactAnchorParser.VOID_TAGS:
-            continue
-        if (
-            name in _ContactAnchorParser.FOREIGN_SELF_CLOSING_ROOTS
-            and raw_tag.rstrip().endswith("/>")
-        ):
-            continue
-        stack.append((name, raw_tag))
-    return "".join(raw_tag for _, raw_tag in stack)
-
-
-def has_html_contact_link_in_labelled_section(
-    source,
-    email,
-    label,
-    required_ancestor_tags=(),
-):
-    bounds = labelled_html_section_bounds(source, label)
-    if bounds is None:
-        return False
-    start, end = bounds
+def parse_impressum_html(source, email, label):
+    """Parse the rendered footer section and its visible contact anchor."""
     parser = _ContactAnchorParser(
         email,
         required_aria_labelledby=label,
-        required_ancestor_tags=required_ancestor_tags,
+        required_ancestor_tags=("footer",),
+        required_target_parent_tag="footer",
+        required_target_parent_id="foot",
+        capture_scope_text=True,
     )
     try:
-        # Keep the ancestor stack, but avoid parsing unrelated text and data
-        # before the target section (the document can contain large blobs).
-        parser.feed(html_ancestor_context(source, start))
-        parser.feed(source[start:end])
+        parser.feed(source)
         parser.close()
     except (AssertionError, ValueError):
-        return False
-    return parser.found
+        return None
+    return parser
 
 
 def markdown_inline_block_end(source, start):
@@ -1382,8 +1348,9 @@ def parse_markdown_container(line):
             marker = list_item.group(1)
             spaces = list_item.group(2)
             consumed_spaces = len(spaces) if len(spaces) <= 4 else 1
-            list_marker_positions.append(position + list_item.start(1))
-            position += len(marker) + consumed_spaces
+            marker_offset = list_item.start(1)
+            list_marker_positions.append(position + marker_offset)
+            position += marker_offset + len(marker) + consumed_spaces
             list_markers.append(marker)
             list_indent = position - list_base
             continue
@@ -1586,6 +1553,22 @@ def markdown_fence_candidate(line, expected=None):
     return parsed, marker.group(1), marker.group(2)
 
 
+def markdown_container_exits(parsed, container):
+    """Return whether a line leaves the Markdown container that was opened."""
+    exits = parsed["blockquote_depth"] < container["blockquote_depth"]
+    if container["list_markers"]:
+        marker_positions = parsed["list_marker_positions"]
+        if marker_positions:
+            relative_marker = min(
+                position - parsed["list_base"] for position in marker_positions
+            )
+            exits = exits or relative_marker < container["list_indent"]
+        elif parsed["content"].strip():
+            leading = len(parsed["content"]) - len(parsed["content"].lstrip(" "))
+            exits = exits or leading < container["list_indent"]
+    return exits
+
+
 def html_tag_end(source, start=0):
     if start >= len(source) or source[start] != "<":
         return None
@@ -1767,11 +1750,15 @@ def markdown_hidden_html_ranges(source):
             visibility_visible = visibility == "visible"
             closed_details = name == "details" and not has_open
             summary_details_id = None
-            if name == "summary":
-                for frame in reversed(stack):
-                    if frame["closed_details"]:
-                        summary_details_id = frame["id"]
-                        break
+            if (
+                name == "summary"
+                and stack
+                and stack[-1]["tag"] == "details"
+                and stack[-1]["closed_details"]
+                and not stack[-1]["summary_slot_used"]
+            ):
+                summary_details_id = stack[-1]["id"]
+                stack[-1]["summary_slot_used"] = True
 
             nonrendered_element = name in nonrendered
             self_closing = tag[:-1].rstrip().endswith("/")
@@ -1792,6 +1779,7 @@ def markdown_hidden_html_ranges(source):
                         "visibility_overrides": [],
                         "closed_details": closed_details,
                         "summary_details_id": summary_details_id,
+                        "summary_slot_used": False,
                         "summary_ranges": [],
                     }
                 )
@@ -1878,7 +1866,7 @@ def strip_markdown_code_and_comments(markdown):
     fence = None
     raw_text_tag = None
     raw_block_until_blank = False
-    processing_instruction_until_close = False
+    processing_instruction = None
     comment_until_close = False
     previous_blank = True
     paragraph_open = False
@@ -1889,23 +1877,29 @@ def strip_markdown_code_and_comments(markdown):
     active_list_base = 0
 
     for line in markdown.splitlines():
-        if processing_instruction_until_close:
-            close = line.find("?>")
-            if close < 0:
-                # A processing instruction does not end at a blank line.
-                lines.append(mask_markdown_line(line))
-                previous_blank = True
-                continue
-            processing_instruction_until_close = False
-            remainder = line[close + 2 :]
-            if remainder.strip():
-                lines.append(remainder)
-                previous_blank = False
-                paragraph_open = True
+        if processing_instruction is not None:
+            parsed = parse_markdown_container(line)
+            if markdown_container_exits(parsed, processing_instruction):
+                # The instruction ends with its opening Markdown container.
+                # Reprocess this exact line in the surrounding context.
+                processing_instruction = None
             else:
+                close = line.find("?>")
+                if close < 0:
+                    # A processing instruction does not end at a blank line.
+                    lines.append(mask_markdown_line(line))
+                    previous_blank = True
+                    paragraph_open = False
+                    in_table = False
+                    continue
+                # The complete physical closing line belongs to the raw HTML
+                # block, including any Markdown-looking text after the closer.
+                processing_instruction = None
                 lines.append("")
                 previous_blank = True
-            continue
+                paragraph_open = False
+                in_table = False
+                continue
         if raw_text_tag:
             if re.search(
                 rf"</{raw_text_tag}[ \t]*>", line, flags=re.IGNORECASE
@@ -1931,23 +1925,7 @@ def strip_markdown_code_and_comments(markdown):
             previous_blank = True
         if fence:
             fence_parsed = parse_markdown_container(line)
-            fence_content = fence_parsed["content"]
-            fence_leading = len(fence_content) - len(fence_content.lstrip(" "))
-            exits_fence = (
-                fence_parsed["blockquote_depth"] < fence["blockquote_depth"]
-            )
-            if fence["list_markers"]:
-                marker_positions = fence_parsed["list_marker_positions"]
-                if marker_positions:
-                    relative_marker = min(
-                        position - fence_parsed["list_base"]
-                        for position in marker_positions
-                    )
-                    exits_fence = exits_fence or relative_marker < fence["list_indent"]
-                elif fence_content.strip():
-                    # A blank line can occur inside a list-item fence even when
-                    # it has no indentation. Only a nonblank dedent leaves it.
-                    exits_fence = exits_fence or fence_leading < fence["list_indent"]
+            exits_fence = markdown_container_exits(fence_parsed, fence)
             if exits_fence:
                 # A quoted/list-item fence ends with its container. The current
                 # line must then be processed again outside the old fence.
@@ -1997,9 +1975,10 @@ def strip_markdown_code_and_comments(markdown):
                     previous_blank = True
                     paragraph_open = False
                     continue
-                if line.startswith("<!--"):
-                    # A column-zero comment starts an HTML block whose complete
-                    # line is raw HTML, even when the comment closes mid-line.
+                if re.match(r"^[ ]{0,3}<!--", content):
+                    # A block-comment opener after permitted indentation starts
+                    # an HTML block whose complete line is raw HTML, even when
+                    # the comment closes mid-line.
                     line = mask_markdown_line(line)
                 else:
                     line = mask_html_comments(line, "\ue102", code_ranges)
@@ -2095,22 +2074,21 @@ def strip_markdown_code_and_comments(markdown):
             if re.match(r"^<\?", stripped):
                 close = stripped.find("?>")
                 if close < 0:
-                    processing_instruction_until_close = True
-                    previous_blank = True
-                    paragraph_open = False
-                    in_table = False
-                    lines.append("")
-                    continue
-                remainder = stripped[close + 2 :]
-                if remainder.strip():
-                    lines.append(remainder)
-                    previous_blank = False
-                    paragraph_open = True
+                    processing_instruction = {
+                        "blockquote_depth": parsed["blockquote_depth"],
+                        "list_markers": parsed["list_markers"],
+                        "list_marker_positions": parsed["list_marker_positions"],
+                        "list_indent": parsed["list_indent"],
+                        "list_base": parsed["list_base"],
+                    }
                 else:
-                    lines.append("")
-                    previous_blank = True
-                paragraph_open = bool(remainder.strip())
+                    processing_instruction = None
+                # A processing instruction is a raw HTML block. Its complete
+                # physical line, including text after the closer, stays raw.
+                previous_blank = True
+                paragraph_open = False
                 in_table = False
+                lines.append("")
                 continue
             if (
                 raw_block_pattern.match(stripped)
@@ -2458,25 +2436,18 @@ check(
     and 'href="/manifest.json"' not in HTML
     and 'href="data:,"' not in HTML,
 )
-impressum = re.search(
-    r'<footer\b[^>]*>[\s\S]*?<section\b[^>]*'
-    r'aria-labelledby\s*=\s*["\']imp-h["\'][^>]*>[\s\S]*?</section>',
-    HTML,
-    flags=re.IGNORECASE,
+impressum_parser = parse_impressum_html(HTML, CONTACT_EMAIL, "imp-h")
+impressum_text = (
+    "".join(impressum_parser.scope_text) if impressum_parser is not None else ""
 )
-impressum_text = impressum.group(0) if impressum else ""
 required_provider_details = (PROVIDER_NAME, PROVIDER_ADDRESS, CONTACT_EMAIL)
 html_has_provider_details = (
-    "v2.9.5" in impressum_text
+    impressum_parser is not None
+    and impressum_parser.found
+    and "v2.9.5" in impressum_text
     and "v2.7.0" not in impressum_text
     and "§ 5 DDG" in impressum_text
     and all(detail in impressum_text for detail in required_provider_details)
-    and has_html_contact_link_in_labelled_section(
-        HTML,
-        CONTACT_EMAIL,
-        "imp-h",
-        required_ancestor_tags=("footer",),
-    )
     and PLACEHOLDER not in impressum_text
 )
 markdown_has_provider_details = (
