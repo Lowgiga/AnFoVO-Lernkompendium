@@ -22,6 +22,14 @@ PWA_NAMES = (
 
 
 class VerifyBuildTests(unittest.TestCase):
+    IMPRESSUM_CHECK = "Impressum contains the required DDG provider details"
+    CANONICAL_HTML_LINK = (
+        '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>'
+    )
+    CANONICAL_MARKDOWN_LINK = (
+        "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)"
+    )
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
@@ -58,6 +66,19 @@ class VerifyBuildTests(unittest.TestCase):
             (item for item in report["failed_checks"] if item["name"] == name), None
         )
         return result.returncode, failure
+
+    def assert_impressum_check(self, should_pass):
+        status, failure = self.run_check(self.IMPRESSUM_CHECK)
+        if should_pass:
+            self.assertEqual(status, 0)
+            self.assertIsNone(failure)
+        else:
+            self.assertEqual(status, 1)
+            self.assertIsNotNone(failure)
+
+    def write_html_pair(self, html):
+        (self.root / "index.html").write_text(html, encoding="utf-8")
+        (self.root / ASSET / "index.html").write_text(html, encoding="utf-8")
 
     def test_android_asset_parity_and_missing_asset(self):
         name = "Android HTML asset matches index.html byte for byte"
@@ -167,7 +188,6 @@ class VerifyBuildTests(unittest.TestCase):
             "[Vid80gmx&#0000064;gmail.com](mailto:Vid80gmx@gmail.com)",
             "[Vid80gmx&#x000040;gmail.com](mailto:Vid80gmx@gmail.com)",
             "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)<!-- trailing -->",
-            "<!-- leading -->[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
             "[Vid80gmx@gmail.com<!-- comment -->](mailto:Vid80gmx@gmail.com)",
             r"[Vid80gmx@gmail\.com](mailto:Vid80gmx@gmail.com)",
             "Example `\n\n" + canonical_markdown_link + "\n\n`",
@@ -238,6 +258,10 @@ class VerifyBuildTests(unittest.TestCase):
             ),
             (
                 "\n\n<div>\n[hidden](mailto:hidden@example.invalid)\n\n"
+                "**Kontakt:** " + canonical_markdown_link
+            ),
+            (
+                "\n\n<div>\n[wrong](mailto:wrong@example.invalid)\n\n"
                 "**Kontakt:** " + canonical_markdown_link
             ),
             (
@@ -768,6 +792,10 @@ class VerifyBuildTests(unittest.TestCase):
                 "Vid80gmx@gmail.com (mailto:Vid80gmx@gmail.com)\n\n"
                 "<!--\n[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
             ),
+            "comment-block-same-line contact link": (
+                "**Kontakt:** [Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+                "<!-- leading -->[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
+            ),
             "comment-separated contact link": (
                 "[Vid80gmx@gmail.com](mailto:Vid80gmx@gmail.com)",
                 "[Vid80gmx@gmail.com]<!-- separator -->"
@@ -1006,6 +1034,311 @@ class VerifyBuildTests(unittest.TestCase):
                 status, failure = self.run_check(name)
                 self.assertEqual(status, 1)
                 self.assertIsNotNone(failure)
+
+    def test_regression_css_alpha_and_inline_declaration_precedence(self):
+        html = self.root / "index.html"
+        original = html.read_text(encoding="utf-8")
+
+        accepted_links = (
+            '<a style="color:#112233f0" href="mailto:Vid80gmx@gmail.com">'
+            "Vid80gmx@gmail.com</a>",
+            '<a style="color:#123f" href="mailto:Vid80gmx@gmail.com">'
+            "Vid80gmx@gmail.com</a>",
+            '<a style="opacity:0;opacity:1" href="mailto:Vid80gmx@gmail.com">'
+            "Vid80gmx@gmail.com</a>",
+        )
+        for replacement in accepted_links:
+            with self.subTest(replacement=replacement, expected="visible"):
+                mutated = original.replace(self.CANONICAL_HTML_LINK, replacement)
+                self.assertNotEqual(mutated, original)
+                self.write_html_pair(mutated)
+                self.assert_impressum_check(True)
+
+        rejected_links = (
+            '<a style="color:#11223300" href="mailto:Vid80gmx@gmail.com">'
+            "Vid80gmx@gmail.com</a>",
+            '<a style="color:#1230" href="mailto:Vid80gmx@gmail.com">'
+            "Vid80gmx@gmail.com</a>",
+            '<a style="opacity:0;opacity:bogus" '
+            'href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>',
+        )
+        for replacement in rejected_links:
+            with self.subTest(replacement=replacement, expected="hidden"):
+                mutated = original.replace(self.CANONICAL_HTML_LINK, replacement)
+                self.assertNotEqual(mutated, original)
+                self.write_html_pair(mutated)
+                self.assert_impressum_check(False)
+
+    def test_regression_html_visible_label_block_boundaries(self):
+        html = self.root / "index.html"
+        original = html.read_text(encoding="utf-8")
+
+        accepted_links = (
+            '<a href="mailto:Vid80gmx@gmail.com"><span>Vid80gmx@</span>'
+            "<span>gmail.com</span></a>",
+        )
+        for replacement in accepted_links:
+            with self.subTest(replacement=replacement, expected="visible"):
+                mutated = original.replace(self.CANONICAL_HTML_LINK, replacement)
+                self.assertNotEqual(mutated, original)
+                self.write_html_pair(mutated)
+                self.assert_impressum_check(True)
+
+        rejected_links = (
+            '<a href="mailto:Vid80gmx@gmail.com">'
+            '<span style="display:block">Vid80gmx@</span>gmail.com</a>',
+            '<a href="mailto:Vid80gmx@gmail.com"><div>Vid80gmx@</div>'
+            "<div>gmail.com</div></a>",
+        )
+        for replacement in rejected_links:
+            with self.subTest(replacement=replacement, expected="hidden"):
+                mutated = original.replace(self.CANONICAL_HTML_LINK, replacement)
+                self.assertNotEqual(mutated, original)
+                self.write_html_pair(mutated)
+                self.assert_impressum_check(False)
+
+    def test_regression_markdown_hidden_html_and_list_fences(self):
+        impressum = self.root / "IMPRESSUM.md"
+        original = impressum.read_text(encoding="utf-8")
+        original_contact = "**Kontakt:** " + self.CANONICAL_MARKDOWN_LINK
+
+        accepted_contexts = (
+            "\\<span hidden>\n" + self.CANONICAL_MARKDOWN_LINK,
+            "- ~~~\n  - sample\n- sibling\n"
+            + self.CANONICAL_MARKDOWN_LINK,
+            "- ~~~\n  sample\n\noutside\n"
+            + self.CANONICAL_MARKDOWN_LINK,
+        )
+        for context in accepted_contexts:
+            with self.subTest(context=context, expected="visible"):
+                mutated = original.replace(original_contact, context)
+                self.assertNotEqual(mutated, original)
+                impressum.write_text(mutated, encoding="utf-8")
+                self.assert_impressum_check(True)
+
+        rejected_contexts = (
+            "<span hidden>\n" + self.CANONICAL_MARKDOWN_LINK,
+            "- ~~~\n  - sample\n  " + self.CANONICAL_MARKDOWN_LINK,
+            "- ~~~\n  sample\n\n  " + self.CANONICAL_MARKDOWN_LINK,
+        )
+        for context in rejected_contexts:
+            with self.subTest(context=context, expected="hidden"):
+                mutated = original.replace(original_contact, context)
+                self.assertNotEqual(mutated, original)
+                impressum.write_text(mutated, encoding="utf-8")
+                self.assert_impressum_check(False)
+
+    def test_regression_markdown_comments_and_processing_instructions(self):
+        impressum = self.root / "IMPRESSUM.md"
+        original = impressum.read_text(encoding="utf-8")
+        original_contact = "**Kontakt:** " + self.CANONICAL_MARKDOWN_LINK
+
+        accepted_contexts = (
+            "<!-- ` -->` `\n\n" + self.CANONICAL_MARKDOWN_LINK,
+            "`<!--`\n\n" + self.CANONICAL_MARKDOWN_LINK,
+            "<?probe?>\n" + self.CANONICAL_MARKDOWN_LINK,
+        )
+        for context in accepted_contexts:
+            with self.subTest(context=context, expected="visible"):
+                mutated = original.replace(original_contact, context)
+                self.assertNotEqual(mutated, original)
+                impressum.write_text(mutated, encoding="utf-8")
+                self.assert_impressum_check(True)
+
+        rejected_contexts = (
+            "<?probe\n\n" + self.CANONICAL_MARKDOWN_LINK,
+            "<div>\n" + self.CANONICAL_MARKDOWN_LINK,
+        )
+        for context in rejected_contexts:
+            with self.subTest(context=context, expected="hidden"):
+                mutated = original.replace(original_contact, context)
+                self.assertNotEqual(mutated, original)
+                impressum.write_text(mutated, encoding="utf-8")
+                self.assert_impressum_check(False)
+
+    def test_regression_impressum_scope_visibility(self):
+        html = self.root / "index.html"
+        original = html.read_text(encoding="utf-8")
+
+        moved_anchor = original.replace(
+            self.CANONICAL_HTML_LINK,
+            "Vid80gmx@gmail.com",
+        )
+        footer_paragraph = (
+            '<p class="savehint"><span id="savestate">'
+            "💾 Gespeichert auf diesem Gerät</span></p>"
+        )
+        self.assertIn(footer_paragraph, moved_anchor)
+        moved_anchor = moved_anchor.replace(
+            footer_paragraph,
+            footer_paragraph.replace(
+                "</p>",
+                " " + self.CANONICAL_HTML_LINK + "</p>",
+            ),
+        )
+        self.assertIn(self.CANONICAL_HTML_LINK, moved_anchor)
+        self.write_html_pair(moved_anchor)
+        self.assert_impressum_check(False)
+
+        hidden_ancestor = original.replace(
+            '<footer id="foot">',
+            '<div hidden><footer id="foot">',
+            1,
+        ).replace("</footer>", "</footer></div>", 1)
+        self.assertNotEqual(hidden_ancestor, original)
+        self.write_html_pair(hidden_ancestor)
+        self.assert_impressum_check(False)
+
+    def test_regression_markdown_comment_block_line_semantics(self):
+        impressum = self.root / "IMPRESSUM.md"
+        original = impressum.read_text(encoding="utf-8")
+        original_contact = "**Kontakt:** " + self.CANONICAL_MARKDOWN_LINK
+
+        same_line = "<!-- leading -->" + self.CANONICAL_MARKDOWN_LINK
+        mutated = original.replace(original_contact, same_line)
+        self.assertNotEqual(mutated, original)
+        impressum.write_text(mutated, encoding="utf-8")
+        self.assert_impressum_check(False)
+
+        next_line = "<!-- leading -->\n" + self.CANONICAL_MARKDOWN_LINK
+        mutated = original.replace(original_contact, next_line)
+        self.assertNotEqual(mutated, original)
+        impressum.write_text(mutated, encoding="utf-8")
+        self.assert_impressum_check(True)
+
+    def test_regression_markdown_heading_indented_code(self):
+        impressum = self.root / "IMPRESSUM.md"
+        original = impressum.read_text(encoding="utf-8")
+        original_contact = "**Kontakt:** " + self.CANONICAL_MARKDOWN_LINK
+
+        immediate_code = "# Kontakt\n    " + self.CANONICAL_MARKDOWN_LINK
+        mutated = original.replace(original_contact, immediate_code)
+        self.assertNotEqual(mutated, original)
+        impressum.write_text(mutated, encoding="utf-8")
+        self.assert_impressum_check(False)
+
+        after_blank = "# Kontakt\n\n" + self.CANONICAL_MARKDOWN_LINK
+        mutated = original.replace(original_contact, after_blank)
+        self.assertNotEqual(mutated, original)
+        impressum.write_text(mutated, encoding="utf-8")
+        self.assert_impressum_check(True)
+
+        for underline in ("=", "-"):
+            with self.subTest(setext_underline=underline, expected="hidden"):
+                setext_code = (
+                    f"Kontakt\n{underline}\n    " + self.CANONICAL_MARKDOWN_LINK
+                )
+                mutated = original.replace(original_contact, setext_code)
+                self.assertNotEqual(mutated, original)
+                impressum.write_text(mutated, encoding="utf-8")
+                self.assert_impressum_check(False)
+
+            with self.subTest(setext_underline=underline, expected="visible"):
+                setext_link = (
+                    f"Kontakt\n{underline}\n" + self.CANONICAL_MARKDOWN_LINK
+                )
+                mutated = original.replace(original_contact, setext_link)
+                self.assertNotEqual(mutated, original)
+                impressum.write_text(mutated, encoding="utf-8")
+                self.assert_impressum_check(True)
+
+    def test_regression_markdown_fence_info_comment_literal(self):
+        impressum = self.root / "IMPRESSUM.md"
+        original = impressum.read_text(encoding="utf-8")
+        original_contact = "**Kontakt:** " + self.CANONICAL_MARKDOWN_LINK
+
+        after_fence = (
+            "```markdown <!--\ncode\n```\n" + self.CANONICAL_MARKDOWN_LINK
+        )
+        mutated = original.replace(original_contact, after_fence)
+        self.assertNotEqual(mutated, original)
+        impressum.write_text(mutated, encoding="utf-8")
+        self.assert_impressum_check(True)
+
+        after_list_fence = (
+            "- ```markdown <!--\n  code\n  ```\n"
+            + self.CANONICAL_MARKDOWN_LINK
+        )
+        mutated = original.replace(original_contact, after_list_fence)
+        self.assertNotEqual(mutated, original)
+        impressum.write_text(mutated, encoding="utf-8")
+        self.assert_impressum_check(True)
+
+        inside_fence = (
+            "```markdown <!--\n" + self.CANONICAL_MARKDOWN_LINK + "\n```"
+        )
+        mutated = original.replace(original_contact, inside_fence)
+        self.assertNotEqual(mutated, original)
+        impressum.write_text(mutated, encoding="utf-8")
+        self.assert_impressum_check(False)
+
+    def test_regression_html_details_and_visibility_overrides(self):
+        html = self.root / "index.html"
+        original = html.read_text(encoding="utf-8")
+
+        accepted_links = (
+            "<details><summary>" + self.CANONICAL_HTML_LINK
+            + "</summary></details>",
+            "<details open>" + self.CANONICAL_HTML_LINK + "</details>",
+            '<div style="visibility:hidden">'
+            '<a style="visibility:visible" '
+            'href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a></div>',
+            '<div style="visibility:hidden"><span style="visibility:visible">'
+            '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a>'
+            "</span></div>",
+        )
+        for replacement in accepted_links:
+            with self.subTest(replacement=replacement, expected="visible"):
+                mutated = original.replace(self.CANONICAL_HTML_LINK, replacement)
+                self.assertNotEqual(mutated, original)
+                self.write_html_pair(mutated)
+                self.assert_impressum_check(True)
+
+        rejected_links = (
+            "<details>" + self.CANONICAL_HTML_LINK + "</details>",
+            '<div style="visibility:hidden">'
+            '<a href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a></div>',
+            '<div style="opacity:0">'
+            '<a style="visibility:visible" '
+            'href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a></div>',
+            '<div style="display:none">'
+            '<a style="visibility:visible" '
+            'href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a></div>',
+            '<div style="clip-path:inset(50%)">'
+            '<a style="visibility:visible" '
+            'href="mailto:Vid80gmx@gmail.com">Vid80gmx@gmail.com</a></div>',
+        )
+        for replacement in rejected_links:
+            with self.subTest(replacement=replacement, expected="hidden"):
+                mutated = original.replace(self.CANONICAL_HTML_LINK, replacement)
+                self.assertNotEqual(mutated, original)
+                self.write_html_pair(mutated)
+                self.assert_impressum_check(False)
+
+        self.write_html_pair(original)
+        impressum = self.root / "IMPRESSUM.md"
+        original_markdown = impressum.read_text(encoding="utf-8")
+        original_contact = "**Kontakt:** " + self.CANONICAL_MARKDOWN_LINK
+        visible_markdown = (
+            '<span style="visibility:hidden">'
+            '<span style="visibility:visible">'
+            + self.CANONICAL_MARKDOWN_LINK
+            + "</span></span>"
+        )
+        mutated = original_markdown.replace(original_contact, visible_markdown)
+        self.assertNotEqual(mutated, original_markdown)
+        impressum.write_text(mutated, encoding="utf-8")
+        self.assert_impressum_check(True)
+
+        hidden_markdown = (
+            '<span style="visibility:hidden">'
+            + self.CANONICAL_MARKDOWN_LINK
+            + "</span>"
+        )
+        mutated = original_markdown.replace(original_contact, hidden_markdown)
+        self.assertNotEqual(mutated, original_markdown)
+        impressum.write_text(mutated, encoding="utf-8")
+        self.assert_impressum_check(False)
 
     def test_relative_manifest_scope_is_required(self):
         name = "PWA manifest uses relative scope and start_url"

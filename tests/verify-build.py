@@ -45,7 +45,10 @@ PLACEHOLDER = "[vor Veröffentlichung ergänzen: Name, Anschrift, Kontakt]"
 JS = (ROOT / "algorithm" / "robot-navigation.js").read_text(encoding="utf-8").strip()
 ARCHITECTURE = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
 
-def css_opacity_is_zero(value):
+CSS_WIDE_KEYWORDS = {"inherit", "initial", "revert", "revert-layer", "unset"}
+
+
+def css_opacity_number(value):
     value = value.strip().lower()
     value = re.sub(r"!\s*important\s*$", "", value).strip()
     if value.startswith("calc(") and value.endswith(")"):
@@ -53,9 +56,9 @@ def css_opacity_is_zero(value):
         if re.fullmatch(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:%)?", expression):
             number = expression[:-1] if expression.endswith("%") else expression
             try:
-                return float(number) == 0.0
+                return float(number)
             except ValueError:
-                return False
+                return None
         match = re.fullmatch(
             r"([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:%)?)"
             r"([*/])([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:%)?)",
@@ -65,19 +68,22 @@ def css_opacity_is_zero(value):
             left = float(match.group(1).rstrip("%"))
             right = float(match.group(3).rstrip("%"))
             if match.group(2) == "*":
-                value = left * right
-            else:
-                if right == 0:
-                    return False
-                value = left / right
-            return value == 0.0
-        return False
+                return left * right
+            if right == 0:
+                return None
+            return left / right
+        return None
     if value.endswith("%"):
         value = value[:-1].strip()
     try:
-        return float(value) == 0.0
+        return float(value)
     except ValueError:
-        return False
+        return None
+
+
+def css_opacity_is_zero(value):
+    number = css_opacity_number(value)
+    return number is not None and number == 0.0
 
 
 def css_color_is_transparent(value):
@@ -90,8 +96,10 @@ def css_color_is_transparent(value):
     hexadecimal = re.fullmatch(r"#([0-9a-f]{3,8})", value)
     if hexadecimal:
         digits = hexadecimal.group(1)
-        if len(digits) in {4, 8}:
+        if len(digits) == 4:
             return digits[-1] == "0"
+        if len(digits) == 8:
+            return digits[-2:] == "00"
         return False
 
     functional = re.fullmatch(r"(?:rgba?|hsla?)\((.*)\)", value, re.DOTALL)
@@ -109,6 +117,224 @@ def css_color_is_transparent(value):
         return float(alpha) == 0.0
     except ValueError:
         return False
+
+
+CSS_NAMED_COLORS = set(
+    """
+    aliceblue antiquewhite aqua aquamarine azure beige bisque black
+    blanchedalmond blue blueviolet brown burlywood cadetblue chartreuse
+    chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan
+    darkgoldenrod darkgray darkgreen darkgrey darkkhaki darkmagenta
+    darkolivegreen darkorange darkorchid darkred darksalmon darkseagreen
+    darkslateblue darkslategray darkslategrey darkturquoise darkviolet
+    deeppink deepskyblue dimgray dimgrey dodgerblue firebrick floralwhite
+    forestgreen fuchsia gainsboro ghostwhite gold goldenrod gray green
+    greenyellow grey honeydew hotpink indianred indigo ivory khaki lavender
+    lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan
+    lightgoldenrodyellow lightgray lightgreen lightgrey lightpink lightsalmon
+    lightseagreen lightskyblue lightslategray lightslategrey lightsteelblue
+    lightyellow lime limegreen linen magenta maroon mediumaquamarine
+    mediumblue mediumorchid mediumpurple mediumseagreen mediumslateblue
+    mediumspringgreen mediumturquoise mediumvioletred midnightblue mintcream
+    mistyrose moccasin navajowhite navy oldlace olive olivedrab orange
+    orangered orchid palegoldenrod palegreen paleturquoise palevioletred
+    papayawhip peachpuff peru pink plum powderblue purple rebeccapurple red
+    rosybrown royalblue saddlebrown salmon sandybrown seagreen seashell sienna
+    silver skyblue slateblue slategray slategrey snow springgreen steelblue tan
+    teal thistle tomato turquoise violet wheat white whitesmoke yellow
+    yellowgreen
+    """.split()
+)
+CSS_COLOR_FUNCTIONS = {
+    "color",
+    "color-mix",
+    "env",
+    "hsl",
+    "hsla",
+    "hwb",
+    "lab",
+    "lch",
+    "light-dark",
+    "oklab",
+    "oklch",
+    "rgb",
+    "rgba",
+    "var",
+}
+CSS_DISPLAY_KEYWORDS = {
+    "block",
+    "contents",
+    "flow",
+    "flow-root",
+    "flex",
+    "grid",
+    "inline",
+    "inline-block",
+    "inline-flex",
+    "inline-grid",
+    "inline-list-item",
+    "inline-table",
+    "list-item",
+    "none",
+    "ruby",
+    "ruby-base",
+    "ruby-base-container",
+    "ruby-text",
+    "ruby-text-container",
+    "run-in",
+    "table",
+    "table-caption",
+    "table-cell",
+    "table-column",
+    "table-column-group",
+    "table-footer-group",
+    "table-header-group",
+    "table-row",
+    "table-row-group",
+}
+CSS_FILTER_FUNCTIONS = {
+    "blur",
+    "brightness",
+    "contrast",
+    "drop-shadow",
+    "env",
+    "grayscale",
+    "hue-rotate",
+    "invert",
+    "opacity",
+    "saturate",
+    "sepia",
+    "url",
+    "var",
+}
+CSS_CLIP_PATH_FUNCTIONS = {
+    "circle",
+    "ellipse",
+    "env",
+    "inset",
+    "path",
+    "polygon",
+    "url",
+    "var",
+}
+
+
+def css_function_arguments(value):
+    """Return function calls in a CSS value, or None for invalid syntax."""
+    calls = []
+    index = 0
+    while index < len(value):
+        if value[index].isspace():
+            index += 1
+            continue
+        name_match = re.match(r"[-A-Za-z_][-\w]*", value[index:])
+        if not name_match:
+            return None
+        name = name_match.group(0).lower()
+        index += name_match.end()
+        if index >= len(value) or value[index] != "(":
+            return None
+        depth = 1
+        argument_start = index + 1
+        index += 1
+        while index < len(value) and depth:
+            if value[index] == "(":
+                depth += 1
+            elif value[index] == ")":
+                depth -= 1
+            index += 1
+        if depth:
+            return None
+        calls.append((name, value[argument_start : index - 1].strip()))
+    return calls
+
+
+def css_display_is_valid(value):
+    value = value.strip().lower()
+    if value in CSS_WIDE_KEYWORDS:
+        return True
+    tokens = value.split()
+    return bool(tokens) and all(token in CSS_DISPLAY_KEYWORDS for token in tokens)
+
+
+def css_filter_is_valid(value):
+    value = value.strip().lower()
+    if value in CSS_WIDE_KEYWORDS or value == "none":
+        return True
+    calls = css_function_arguments(value)
+    if not calls:
+        return False
+    for name, arguments in calls:
+        if name not in CSS_FILTER_FUNCTIONS or not arguments:
+            return False
+        if name == "opacity" and css_opacity_number(arguments) is None:
+            return False
+    return True
+
+
+def css_clip_path_is_valid(value):
+    value = value.strip().lower()
+    if value in CSS_WIDE_KEYWORDS or value == "none":
+        return True
+    calls = css_function_arguments(value)
+    if not calls:
+        return False
+    return all(
+        name in CSS_CLIP_PATH_FUNCTIONS and arguments
+        for name, arguments in calls
+    )
+
+
+def css_color_is_valid(value):
+    value = value.strip().lower()
+    if value in CSS_WIDE_KEYWORDS:
+        return True
+    if value in {"currentcolor", "transparent"}:
+        return True
+    if value in CSS_NAMED_COLORS:
+        return True
+    if re.fullmatch(r"#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})", value):
+        return True
+    calls = css_function_arguments(value)
+    if not calls:
+        return False
+    return all(
+        name in CSS_COLOR_FUNCTIONS and arguments
+        for name, arguments in calls
+    )
+
+
+def css_declaration_is_valid(property_name, value):
+    property_name = property_name.strip().lower()
+    value = value.strip()
+    if property_name == "display":
+        return css_display_is_valid(value)
+    if property_name == "visibility":
+        return value.strip().lower() in {
+            "collapse",
+            "hidden",
+            "visible",
+            *CSS_WIDE_KEYWORDS,
+        }
+    if property_name == "content-visibility":
+        return value.strip().lower() in {
+            "auto",
+            "hidden",
+            "visible",
+            *CSS_WIDE_KEYWORDS,
+        }
+    if property_name == "opacity":
+        return (
+            value.strip().lower() in CSS_WIDE_KEYWORDS
+            or css_opacity_number(value) is not None
+        )
+    if property_name == "filter":
+        return css_filter_is_valid(value)
+    if property_name == "clip-path":
+        return css_clip_path_is_valid(value)
+    if property_name in {"color", "-webkit-text-fill-color"}:
+        return css_color_is_valid(value)
+    return False
 
 
 def inline_style_declarations(style):
@@ -134,6 +360,10 @@ def effective_inline_style(style):
     normal = {}
     important = {}
     for property_name, value, is_important in inline_style_declarations(style):
+        if not css_declaration_is_valid(property_name, value):
+            # Invalid declarations are discarded by the CSS parser and must
+            # not replace an earlier valid declaration during cascade.
+            continue
         declarations = important if is_important else normal
         declarations[property_name] = value
     effective = dict(normal)
@@ -174,11 +404,9 @@ def clip_path_fully_clips(value):
     return top + bottom >= 100.0 or left + right >= 100.0
 
 
-def style_hides_content(style):
+def style_hides_content_except_visibility(style):
     effective = effective_inline_style(style)
     if effective.get("display", "").strip().lower() == "none":
-        return True
-    if effective.get("visibility", "").strip().lower() in {"hidden", "collapse"}:
         return True
     if effective.get("content-visibility", "").strip().lower() == "hidden":
         return True
@@ -193,6 +421,17 @@ def style_hides_content(style):
     if css_color_is_transparent(color) or css_color_is_transparent(text_fill):
         return True
     return False
+
+
+def style_visibility_is_hidden(style):
+    effective = effective_inline_style(style)
+    return effective.get("visibility", "").strip().lower() in {"hidden", "collapse"}
+
+
+def style_hides_content(style):
+    return style_hides_content_except_visibility(style) or style_visibility_is_hidden(
+        style
+    )
 
 
 def html_first_attribute(tag_text, name):
@@ -252,6 +491,21 @@ def html_first_attribute(tag_text, name):
     return found, value
 
 
+def inline_style_creates_block_boundary(style):
+    effective = effective_inline_style(style)
+    display = effective.get("display", "").strip().lower()
+    if not display:
+        return False
+    return display.split()[0] in {
+        "block",
+        "flow-root",
+        "flex",
+        "grid",
+        "list-item",
+        "table",
+    }
+
+
 class _ContactAnchorParser(HTMLParser):
     NON_RENDERED_TAGS = {
         "canvas",
@@ -275,7 +529,56 @@ class _ContactAnchorParser(HTMLParser):
         "title",
         "xmp",
     }
-    CONDITIONAL_VISIBILITY_TAGS = {"details", "dialog"}
+    BLOCK_LEVEL_TAGS = {
+        "address",
+        "article",
+        "aside",
+        "blockquote",
+        "body",
+        "caption",
+        "center",
+        "dd",
+        "details",
+        "dialog",
+        "dir",
+        "div",
+        "dl",
+        "dt",
+        "fieldset",
+        "figcaption",
+        "figure",
+        "footer",
+        "form",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "header",
+        "hgroup",
+        "hr",
+        "html",
+        "legend",
+        "li",
+        "main",
+        "menu",
+        "nav",
+        "ol",
+        "p",
+        "pre",
+        "search",
+        "section",
+        "summary",
+        "table",
+        "tbody",
+        "td",
+        "tfoot",
+        "th",
+        "thead",
+        "tr",
+        "ul",
+    }
     VOID_TAGS = {
         "area",
         "base",
@@ -294,12 +597,20 @@ class _ContactAnchorParser(HTMLParser):
     }
     FOREIGN_SELF_CLOSING_ROOTS = {"math", "svg"}
 
-    def __init__(self, email):
+    def __init__(
+        self,
+        email,
+        required_aria_labelledby=None,
+        required_ancestor_tags=(),
+    ):
         super().__init__(convert_charrefs=True)
         self.email = email
+        self.required_aria_labelledby = required_aria_labelledby
+        self.required_ancestor_tags = tuple(required_ancestor_tags)
         self.found = False
         self._anchor = None
         self._contexts = []
+        self._next_context_id = 0
 
     @staticmethod
     def _attribute(attrs, name):
@@ -313,22 +624,66 @@ class _ContactAnchorParser(HTMLParser):
         return any(attribute.lower() == name for attribute, _ in attrs)
 
     @classmethod
-    def _hides_content(cls, attrs):
+    def _hides_content(cls, attrs, include_visibility=True):
         if any(attribute.lower() == "hidden" for attribute, _ in attrs):
             return True
         style = cls._attribute(attrs, "style") or ""
-        return style_hides_content(style)
+        if include_visibility:
+            return style_hides_content(style)
+        return style_hides_content_except_visibility(style)
 
     def _pop_context(self, tag):
         for index in range(len(self._contexts) - 1, -1, -1):
             if self._contexts[index]["tag"] == tag:
+                popped = self._contexts[index:]
                 del self._contexts[index:]
-                return
+                return popped
+        return []
 
-    def _is_hidden_context(self):
-        return any(
+    def _visibility_is_hidden(self, visibility_visible=False):
+        hidden = False
+        for context in self._contexts:
+            if context["visibility_visible"]:
+                hidden = False
+            elif context["visibility_hidden"]:
+                hidden = True
+        if visibility_visible:
+            hidden = False
+        return hidden
+
+    def _is_hidden_context(
+        self,
+        summary_details_id=None,
+        visibility_visible=False,
+    ):
+        if any(
             context["hidden"] or context["nonrendered"]
             for context in self._contexts
+        ):
+            return True
+        if self._visibility_is_hidden(visibility_visible):
+            return True
+        for index, context in enumerate(self._contexts):
+            if not context["closed_details"]:
+                continue
+            if context["id"] == summary_details_id:
+                continue
+            if any(
+                later["summary_details_id"] == context["id"]
+                for later in self._contexts[index + 1 :]
+            ):
+                continue
+            return True
+        return False
+
+    def _is_in_scope(self):
+        if self.required_aria_labelledby is not None and not any(
+            context["target"] for context in self._contexts
+        ):
+            return False
+        return all(
+            any(context["tag"] == tag for context in self._contexts)
+            for tag in self.required_ancestor_tags
         )
 
     def _finish_anchor(self):
@@ -339,6 +694,7 @@ class _ContactAnchorParser(HTMLParser):
         ).strip(" \t\n\f\r")
         if (
             self._anchor["renderable"]
+            and self._anchor["in_scope"]
             and self._anchor["href"] == f"mailto:{self.email}"
             and visible_text == self.email
         ):
@@ -352,17 +708,47 @@ class _ContactAnchorParser(HTMLParser):
             self._finish_anchor()
             self._pop_context("a")
 
-        hidden = self._hides_content(attrs)
-        if tag in self.CONDITIONAL_VISIBILITY_TAGS and not self._has_attribute(
-            attrs, "open"
-        ):
+        style = self._attribute(attrs, "style") or ""
+        hidden = self._hides_content(attrs, include_visibility=False)
+        if tag == "dialog" and not self._has_attribute(attrs, "open"):
             hidden = True
         if self._has_attribute(attrs, "popover"):
             hidden = True
         nonrendered = tag in self.NON_RENDERED_TAGS
-        renderable = not (
-            self._is_hidden_context() or hidden or nonrendered
+
+        effective_visibility = (
+            effective_inline_style(style).get("visibility", "").strip().lower()
         )
+        visibility_hidden = effective_visibility in {"hidden", "collapse"}
+        visibility_visible = effective_visibility == "visible"
+        closed_details = tag == "details" and not self._has_attribute(
+            attrs, "open"
+        )
+        summary_details_id = None
+        if tag == "summary":
+            for context in reversed(self._contexts):
+                if context["closed_details"]:
+                    summary_details_id = context["id"]
+                    break
+
+        renderable = not (
+            self._is_hidden_context(
+                summary_details_id=summary_details_id,
+                visibility_visible=visibility_visible,
+            )
+            or hidden
+            or visibility_hidden
+            or nonrendered
+        )
+        block_boundary = (
+            tag in self.BLOCK_LEVEL_TAGS
+            or inline_style_creates_block_boundary(style)
+        )
+        target = False
+        if self.required_aria_labelledby is not None and tag == "section":
+            labelled_by = self._attribute(attrs, "aria-labelledby") or ""
+            target = self.required_aria_labelledby in labelled_by.split()
+
         if tag == "a" and renderable:
             raw_tag = self.get_starttag_text() or ""
             has_href, raw_href = html_first_attribute(raw_tag, "href")
@@ -370,12 +756,33 @@ class _ContactAnchorParser(HTMLParser):
                 "href": raw_href if has_href else None,
                 "text": [],
                 "renderable": True,
+                "in_scope": self._is_in_scope(),
             }
         elif tag == "br" and self._anchor and renderable:
             self._anchor["text"].append("\n")
+        elif (
+            tag != "a"
+            and self._anchor
+            and renderable
+            and block_boundary
+        ):
+            self._anchor["text"].append("\n")
         if tag not in self.VOID_TAGS:
+            context_id = self._next_context_id
+            self._next_context_id += 1
             self._contexts.append(
-                {"tag": tag, "hidden": hidden, "nonrendered": nonrendered}
+                {
+                    "id": context_id,
+                    "tag": tag,
+                    "hidden": hidden,
+                    "nonrendered": nonrendered,
+                    "target": target,
+                    "visible_block": renderable and block_boundary,
+                    "visibility_hidden": visibility_hidden,
+                    "visibility_visible": visibility_visible,
+                    "closed_details": closed_details,
+                    "summary_details_id": summary_details_id,
+                }
             )
 
     def handle_startendtag(self, tag, attrs):
@@ -397,17 +804,124 @@ class _ContactAnchorParser(HTMLParser):
         tag = tag.lower()
         if tag == "a":
             self._finish_anchor()
-        self._pop_context(tag)
+        popped = self._pop_context(tag)
+        if self._anchor and popped and popped[0]["visible_block"]:
+            self._anchor["text"].append("\n")
 
     def close(self):
         super().close()
         self._finish_anchor()
 
 
-def has_html_contact_link(fragment, email):
-    parser = _ContactAnchorParser(email)
+def has_html_contact_link(
+    fragment,
+    email,
+    required_aria_labelledby=None,
+    required_ancestor_tags=(),
+):
+    parser = _ContactAnchorParser(
+        email,
+        required_aria_labelledby=required_aria_labelledby,
+        required_ancestor_tags=required_ancestor_tags,
+    )
     try:
         parser.feed(fragment)
+        parser.close()
+    except (AssertionError, ValueError):
+        return False
+    return parser.found
+
+
+def labelled_html_section_bounds(source, label):
+    """Return the bounds of the section labelled by an aria-labelledby ID."""
+    for match in re.finditer(r"<section\b", source, re.IGNORECASE):
+        start = match.start()
+        end = html_tag_end(source, start)
+        if end is None:
+            continue
+        has_label, raw_label = html_first_attribute(
+            source[start:end],
+            "aria-labelledby",
+        )
+        if not has_label or label not in (raw_label or "").split():
+            continue
+
+        depth = 1
+        section_tag = re.compile(
+            r"<section\b[^>]*>|</section\s*>",
+            re.IGNORECASE,
+        )
+        for nested in section_tag.finditer(source, end):
+            if nested.group(0).lower().startswith("</"):
+                depth -= 1
+            else:
+                depth += 1
+            if depth == 0:
+                return start, nested.end()
+        return start, len(source)
+    return None
+
+
+def html_ancestor_context(source, end):
+    """Return opening tags for the elements that contain the given offset."""
+    prefix = source[:end]
+    raw_text = re.compile(
+        r"(<(?P<tag>script|style|textarea|xmp)\b[^>]*>).*?"
+        r"(?P<close></(?P=tag)\s*>)",
+        re.IGNORECASE | re.DOTALL,
+    )
+    prefix = raw_text.sub(lambda match: match.group(1) + match.group("close"), prefix)
+    stack = []
+    tag_pattern = re.compile(
+        r"<!--.*?-->|<![^>]*>|</?[A-Za-z][^>]*>",
+        flags=re.DOTALL,
+    )
+    name_pattern = re.compile(r"</?\s*([A-Za-z][A-Za-z0-9:-]*)")
+    for match in tag_pattern.finditer(prefix):
+        raw_tag = match.group(0)
+        if raw_tag.startswith("<!--") or raw_tag.startswith("<!"):
+            continue
+        name_match = name_pattern.match(raw_tag)
+        if not name_match:
+            continue
+        name = name_match.group(1).lower()
+        if raw_tag.startswith("</"):
+            for index in range(len(stack) - 1, -1, -1):
+                if stack[index][0] == name:
+                    del stack[index:]
+                    break
+            continue
+        if name in _ContactAnchorParser.VOID_TAGS:
+            continue
+        if (
+            name in _ContactAnchorParser.FOREIGN_SELF_CLOSING_ROOTS
+            and raw_tag.rstrip().endswith("/>")
+        ):
+            continue
+        stack.append((name, raw_tag))
+    return "".join(raw_tag for _, raw_tag in stack)
+
+
+def has_html_contact_link_in_labelled_section(
+    source,
+    email,
+    label,
+    required_ancestor_tags=(),
+):
+    bounds = labelled_html_section_bounds(source, label)
+    if bounds is None:
+        return False
+    start, end = bounds
+    parser = _ContactAnchorParser(
+        email,
+        required_aria_labelledby=label,
+        required_ancestor_tags=required_ancestor_tags,
+    )
+    try:
+        # Keep the ancestor stack, but avoid parsing unrelated text and data
+        # before the target section (the document can contain large blobs).
+        parser.feed(html_ancestor_context(source, start))
+        parser.feed(source[start:end])
         parser.close()
     except (AssertionError, ValueError):
         return False
@@ -521,20 +1035,17 @@ def markdown_comment_openers(source, ignored_ranges=()):
     return openers
 
 
-def markdown_comment_close(source, start, ignored_ranges=()):
-    close = source.find("-->", start + 4)
-    while close >= 0 and any(
-        range_start <= close < range_end
-        for range_start, range_end, _ in ignored_ranges
-    ):
-        close = source.find("-->", close + 3)
-    return close
+def markdown_comment_close(source, start):
+    # Once an opener outside code has been recognized, comment content is raw
+    # HTML: the first following terminator closes it even when backticks would
+    # otherwise make the terminator look like part of a code span.
+    return source.find("-->", start + 4)
 
 
 def mask_html_comments(source, replacement=" ", ignored_ranges=()):
     masked = list(source)
     for start in markdown_comment_openers(source, ignored_ranges):
-        close = markdown_comment_close(source, start, ignored_ranges)
+        close = markdown_comment_close(source, start)
         end = len(source) if close < 0 else close + 3
         for position in range(start, end):
             if masked[position] not in "\r\n":
@@ -594,7 +1105,7 @@ def markdown_closing_parenthesis(source, start):
 
 def markdown_unclosed_comment_start(source, ignored_ranges=()):
     for start in markdown_comment_openers(source, ignored_ranges):
-        close = markdown_comment_close(source, start, ignored_ranges)
+        close = markdown_comment_close(source, start)
         if close < 0:
             return start
     return None
@@ -871,7 +1382,7 @@ def parse_markdown_container(line):
             marker = list_item.group(1)
             spaces = list_item.group(2)
             consumed_spaces = len(spaces) if len(spaces) <= 4 else 1
-            list_marker_positions.append(position)
+            list_marker_positions.append(position + list_item.start(1))
             position += len(marker) + consumed_spaces
             list_markers.append(marker)
             list_indent = position - list_base
@@ -907,8 +1418,12 @@ def markdown_is_block_boundary_line(content):
         stripped,
     ):
         return True
-    # A setext heading underline ends the preceding paragraph as a block.
-    return bool(re.match(r"^[ ]{0,3}=+[ \t]*$", stripped))
+    # Setext heading underlines end the preceding paragraph as a block. A
+    # single or double hyphen is a valid setext underline; three or more
+    # hyphens can also be a thematic break, which has the same block boundary.
+    return bool(
+        re.match(r"^[ ]{0,3}(?:=+|-+)[ \t]*$", stripped)
+    )
 
 
 def mask_markdown_definition_blocks(source):
@@ -1150,11 +1665,64 @@ def markdown_hidden_html_ranges(source):
     }
     stack = []
     ranges = []
+    next_frame_id = 0
+
+    def append_without(start, end, exclusions):
+        if end <= start:
+            return
+        cursor = start
+        for exclusion_start, exclusion_end in sorted(exclusions):
+            if exclusion_end <= cursor:
+                continue
+            if exclusion_start >= end:
+                break
+            if exclusion_start > cursor:
+                ranges.append((cursor, min(exclusion_start, end)))
+            cursor = max(cursor, exclusion_end)
+            if cursor >= end:
+                break
+        if cursor < end:
+            ranges.append((cursor, end))
+
+    def close_frames(frames, ancestors, end):
+        for index, frame in enumerate(frames):
+            outer_frames = ancestors + frames[:index]
+            if frame["visibility_visible"]:
+                for ancestor in outer_frames:
+                    if ancestor["visibility_hidden"]:
+                        ancestor["visibility_overrides"].append((frame["start"], end))
+            if frame["summary_details_id"] is not None:
+                for ancestor in outer_frames:
+                    if ancestor["id"] == frame["summary_details_id"]:
+                        ancestor["summary_ranges"].append((frame["start"], end))
+                        break
+
+        for frame in frames:
+            frame_end = end
+            if frame["hidden"] or frame["nonrendered"]:
+                ranges.append((frame["start"], frame_end))
+            if frame["visibility_hidden"]:
+                append_without(
+                    frame["start"],
+                    frame_end,
+                    frame["visibility_overrides"],
+                )
+            if frame["closed_details"]:
+                append_without(
+                    frame["start"],
+                    frame_end,
+                    frame["summary_ranges"],
+                )
+
     index = 0
     while index < len(source):
         start = source.find("<", index)
         if start < 0:
             break
+        if markdown_is_escaped(source, start):
+            # An escaped opening angle bracket is literal Markdown text.
+            index = start + 1
+            continue
         # HTML-looking text inside a code span is literal, not a hidden context.
         if any(
             range_start <= start < range_end
@@ -1177,39 +1745,59 @@ def markdown_hidden_html_ranges(source):
                 if stack[stack_index]["tag"] != name:
                     continue
                 popped = stack[stack_index:]
+                close_frames(popped, stack[:stack_index], end)
                 del stack[stack_index:]
-                for frame in popped:
-                    if frame["hidden"] or frame["nonrendered"]:
-                        ranges.append((frame["start"], end))
                 break
         else:
             has_open, _ = html_first_attribute(tag, "open")
             has_popover, _ = html_first_attribute(tag, "popover")
             has_hidden, _ = html_first_attribute(tag, "hidden")
             has_style, style = html_first_attribute(tag, "style")
+            style = unescape(style or "")
             hidden = (
                 has_hidden
                 or has_popover
-                or (name in {"details", "dialog"} and not has_open)
-                or (has_style and style_hides_content(unescape(style or "")))
+                or (name == "dialog" and not has_open)
+                or (has_style and style_hides_content_except_visibility(style))
             )
+            visibility = (
+                effective_inline_style(style).get("visibility", "").strip().lower()
+            )
+            visibility_hidden = visibility in {"hidden", "collapse"}
+            visibility_visible = visibility == "visible"
+            closed_details = name == "details" and not has_open
+            summary_details_id = None
+            if name == "summary":
+                for frame in reversed(stack):
+                    if frame["closed_details"]:
+                        summary_details_id = frame["id"]
+                        break
+
             nonrendered_element = name in nonrendered
             self_closing = tag[:-1].rstrip().endswith("/")
             if name not in void_tags and not (
                 self_closing and name in {"math", "svg"}
             ):
+                frame_id = next_frame_id
+                next_frame_id += 1
                 stack.append(
                     {
+                        "id": frame_id,
                         "tag": name,
                         "start": start,
                         "hidden": hidden,
                         "nonrendered": nonrendered_element,
+                        "visibility_hidden": visibility_hidden,
+                        "visibility_visible": visibility_visible,
+                        "visibility_overrides": [],
+                        "closed_details": closed_details,
+                        "summary_details_id": summary_details_id,
+                        "summary_ranges": [],
                     }
                 )
         index = end
-    for frame in stack:
-        if frame["hidden"] or frame["nonrendered"]:
-            ranges.append((frame["start"], len(source)))
+    if stack:
+        close_frames(stack, [], len(source))
     return sorted(ranges)
 
 
@@ -1290,6 +1878,7 @@ def strip_markdown_code_and_comments(markdown):
     fence = None
     raw_text_tag = None
     raw_block_until_blank = False
+    processing_instruction_until_close = False
     comment_until_close = False
     previous_blank = True
     paragraph_open = False
@@ -1300,6 +1889,23 @@ def strip_markdown_code_and_comments(markdown):
     active_list_base = 0
 
     for line in markdown.splitlines():
+        if processing_instruction_until_close:
+            close = line.find("?>")
+            if close < 0:
+                # A processing instruction does not end at a blank line.
+                lines.append(mask_markdown_line(line))
+                previous_blank = True
+                continue
+            processing_instruction_until_close = False
+            remainder = line[close + 2 :]
+            if remainder.strip():
+                lines.append(remainder)
+                previous_blank = False
+                paragraph_open = True
+            else:
+                lines.append("")
+                previous_blank = True
+            continue
         if raw_text_tag:
             if re.search(
                 rf"</{raw_text_tag}[ \t]*>", line, flags=re.IGNORECASE
@@ -1318,8 +1924,9 @@ def strip_markdown_code_and_comments(markdown):
                 lines.append(mask_markdown_line(line))
                 previous_blank = True
                 continue
-            end = close + 3
-            line = mask_markdown_line(line[:end]) + line[end:]
+            # The complete line belongs to the HTML comment block, including
+            # any Markdown-looking text after the closing delimiter.
+            line = mask_markdown_line(line)
             comment_until_close = False
             previous_blank = True
         if fence:
@@ -1337,7 +1944,9 @@ def strip_markdown_code_and_comments(markdown):
                         for position in marker_positions
                     )
                     exits_fence = exits_fence or relative_marker < fence["list_indent"]
-                else:
+                elif fence_content.strip():
+                    # A blank line can occur inside a list-item fence even when
+                    # it has no indentation. Only a nonblank dedent leaves it.
                     exits_fence = exits_fence or fence_leading < fence["list_indent"]
             if exits_fence:
                 # A quoted/list-item fence ends with its container. The current
@@ -1372,7 +1981,12 @@ def strip_markdown_code_and_comments(markdown):
             active_list_indent = parsed["list_indent"]
             in_table = False
         previous_quote_depth = quote_depth
-        if "<!--" in content:
+        fence_candidate = markdown_fence_candidate(line)
+        if fence_candidate:
+            _, fence_marker, fence_suffix = fence_candidate
+            if fence_marker[0] == "`" and "`" in fence_suffix:
+                fence_candidate = None
+        if "<!--" in content and fence_candidate is None:
             code_ranges = markdown_code_span_ranges(line)
             if markdown_has_comment_outside_code(line, code_ranges):
                 opener = markdown_unclosed_comment_start(line, code_ranges)
@@ -1383,7 +1997,12 @@ def strip_markdown_code_and_comments(markdown):
                     previous_blank = True
                     paragraph_open = False
                     continue
-                line = mask_html_comments(line, "\ue102", code_ranges)
+                if line.startswith("<!--"):
+                    # A column-zero comment starts an HTML block whose complete
+                    # line is raw HTML, even when the comment closes mid-line.
+                    line = mask_markdown_line(line)
+                else:
+                    line = mask_html_comments(line, "\ue102", code_ranges)
                 parsed = parse_markdown_container(line)
                 content = parsed["content"]
 
@@ -1435,7 +2054,7 @@ def strip_markdown_code_and_comments(markdown):
             lines.append("")
             continue
 
-        candidate = markdown_fence_candidate(line)
+        candidate = fence_candidate or markdown_fence_candidate(line)
         if candidate:
             parsed, marker, suffix = candidate
             if marker[0] != "`" or "`" not in suffix:
@@ -1473,9 +2092,29 @@ def strip_markdown_code_and_comments(markdown):
                 in_table = False
                 lines.append("")
                 continue
+            if re.match(r"^<\?", stripped):
+                close = stripped.find("?>")
+                if close < 0:
+                    processing_instruction_until_close = True
+                    previous_blank = True
+                    paragraph_open = False
+                    in_table = False
+                    lines.append("")
+                    continue
+                remainder = stripped[close + 2 :]
+                if remainder.strip():
+                    lines.append(remainder)
+                    previous_blank = False
+                    paragraph_open = True
+                else:
+                    lines.append("")
+                    previous_blank = True
+                paragraph_open = bool(remainder.strip())
+                in_table = False
+                continue
             if (
                 raw_block_pattern.match(stripped)
-                or re.match(r"^<[!?]", stripped)
+                or re.match(r"^<!", stripped)
                 or (not paragraph_open and html_tag_only(stripped))
             ):
                 raw_block_until_blank = True
@@ -1487,7 +2126,11 @@ def strip_markdown_code_and_comments(markdown):
 
         if markdown_is_block_boundary_line(content):
             lines.append(line)
-            previous_blank = False
+            # Every block boundary ends the current paragraph. The next line
+            # may therefore begin an indented-code block, including after a
+            # setext heading underline or a thematic break.
+            previous_blank = True
+            indented_code = False
             paragraph_open = False
             in_table = False
             continue
@@ -1828,7 +2471,12 @@ html_has_provider_details = (
     and "v2.7.0" not in impressum_text
     and "§ 5 DDG" in impressum_text
     and all(detail in impressum_text for detail in required_provider_details)
-    and has_html_contact_link(impressum_text, CONTACT_EMAIL)
+    and has_html_contact_link_in_labelled_section(
+        HTML,
+        CONTACT_EMAIL,
+        "imp-h",
+        required_ancestor_tags=("footer",),
+    )
     and PLACEHOLDER not in impressum_text
 )
 markdown_has_provider_details = (
