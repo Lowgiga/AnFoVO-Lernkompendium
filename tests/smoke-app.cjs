@@ -911,6 +911,15 @@ const { pathToFileURL } = require('url');
       transparentMaskRejected: !runProbe({
         maskImage: 'linear-gradient(transparent, transparent)'
       }),
+      standaloneNoneMaskAccepted: runProbe({ maskImage: 'none' }),
+      noneMaskLayerRejected: !runProbe({
+        maskImage: [
+          'linear-gradient(black, black)',
+          'none',
+          'linear-gradient(black, black)'
+        ].join(', '),
+        maskMode: 'luminance, alpha'
+      }),
       transparentRadialMaskRejected: !runProbe({
         maskImage: 'radial-gradient(circle at center, transparent, transparent)'
       }),
